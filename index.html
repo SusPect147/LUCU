@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cube Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="robots" content="noindex, nofollow">
+  <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="icon" href="emoji_u1f3b2.png" type="image/x-icon">
+  <title>LUCU game</title>
   <style>
     body {
       margin: 0;
@@ -14,15 +18,15 @@
       align-items: center;
       height: 100vh;
       font-family: Arial, sans-serif;
-      transition: background 1s ease-in-out;
+      transition-duration: 1s ease-in-out;
     }
 
     #coins {
       font-size: 2rem;
       font-weight: bold;
       position: absolute;
-      top: 10px;
-      left: 10px;
+      top: 10%;
+      bottom: 50%;
       color: rgb(58, 58, 58);
     }
 
@@ -44,6 +48,7 @@
       ),
       linear-gradient(127deg, rgba(43, 43, 43, 0.8), rgba(0, 255, 0, 0) 70.71%),
       linear-gradient(336deg, rgba(105, 105, 105, 0.8), rgba(0, 0, 255, 0) 70.71%);
+      transition-duration: 1s ease-in-out;
     }
 
     .pink-gradient {
@@ -54,6 +59,7 @@
       ),
       linear-gradient(127deg, rgba(0, 255, 0, 0.8), rgba(0, 255, 0, 0) 70.71%),
       linear-gradient(336deg, rgba(0, 0, 255, 0.8), rgba(0, 0, 255, 0) 70.71%);
+      transition-duration: 1s ease-in-out;
     }
 
     #progressBar {
@@ -151,6 +157,10 @@
       Quests
     </div>
     <div class="menu-item">
+      <img src="магазин.png" alt="Upgrades">
+      Upgrades
+    </div>
+    <div class="menu-item">
       <img src="таблица лидеров.png" alt="Leaderboard">
       Leader Board
     </div>
@@ -229,7 +239,7 @@
         setTimeout(() => {
           rollCube();
           isAnimating = false;
-        }, 3000);
+        }, 2500);
       };
     }
 
@@ -245,6 +255,13 @@
   }
 }
 spawnSparkles();
+const tg = window.Telegram.WebApp;
+
+tg.expand();
+window.Telegram.WebApp.initData = window.Telegram.WebApp.initDat
+
+window.Telegram.WebApp.expand();
+window.Telegram.WebApp.requestFullscreen();
   </script>
 </body>
 </html>
