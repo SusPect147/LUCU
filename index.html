@@ -285,11 +285,15 @@ tonConnectUI.uiOptions = {
     twaReturnUrl: 'https://t.me/TESTforTESTTESTforTESTbot'  // Убедитесь, что ссылка правильная
 };
 
-tg.expand();
-			window.Telegram.WebApp.initData = window.Telegram.WebApp.initDat;
-			
-			window.Telegram.WebApp.expand();
-			window.Telegram.WebApp.requestFullscreen();
+// Инициализация Telegram Web App
+    const tg = window.Telegram.WebApp;
+
+    // Применяем режим полного экрана для мини-приложения
+        window.Telegram.WebApp.expand();
+        window.Telegram.WebApp.requestFullscreen();
+    
+    // Настройка темы
+    tg.expand(); // Открыть приложение на весь экран
 		</script>
 	</body>
 </html>
