@@ -102,9 +102,10 @@
 			color: #000;
 			}
 			#ton-connect {
-    position: fixed; /* Фиксированное позиционирование */
-    bottom: 90%; /* Отступ от нижней границы */
-    right: 42%; /* Отступ от правой границы */
+				position: fixed; /* Фиксированное позиционирование */
+bottom: 94%; /* Отступ от нижней границы */
+left: 50%; /* Смещение от левого края */
+transform: translateX(-50%); /* Центрирование по горизонтали */
 }
 		</style>
 	</head>
@@ -265,28 +266,27 @@
 			}
 			
 			rollCube();
-			async function connectToWallet() {
-        const connectedWallet = await tonConnectUI.connectWallet();
-        // Do something with connectedWallet if needed
-        console.log(connectedWallet);
-    }
-    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://<YOUR_APP_URL>/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect'
-    });
-	async function connectToWallet() {
-        const connectedWallet = await tonConnectUI.connectWallet();
-        // Do something with connectedWallet if needed
-        console.log(connectedWallet);
-    }
 
-    // Call the function
-    connectToWallet().catch(error => {
-        console.error("Error connecting to wallet:", error);
-    });	const tg = window.Telegram.WebApp;
 			
+			const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+				manifestUrl: 'https://suspect147.github.io/LUCU/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect'
+});
+
+
+	async function connectToWallet() {
+    const connectedWallet = await tonConnectUI.connectWallet();
+    console.log(connectedWallet);
+}
+
+// Инициализация кнопки
+tonConnectUI.uiOptions = {
+    twaReturnUrl: 'https://t.me/TESTforTESTTESTforTESTbot'  // Убедитесь, что ссылка правильная
+};
+
+
 			tg.expand();
-			window.Telegram.WebApp.initData = window.Telegram.WebApp.initDat;
+			window.Telegram.WebApp.initData = window.Telegram.WebApp.initData;
 			
 			window.Telegram.WebApp.expand();
 			window.Telegram.WebApp.requestFullscreen();
