@@ -85,6 +85,7 @@
       border-top-right-radius: 15px;
       backdrop-filter: blur(10px); /* Для эффекта размытия */
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      flex-basis: 0;
       }
       .menu-item {
       display: flex;
@@ -115,24 +116,95 @@
       display: none;
       justify-content: center;
       align-items: center;
+      flex-basis: 0;
       }
       #profile-menu-content {
       background-color: #dddddd;
-	  padding: 5%;
+      padding: 15%;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       text-align: center;
+      flex-basis: 0;
       }
       #profile-menu-content h2 {
       font-size: 35px;
-      margin: 0 0 5px;
       }
       #profile-menu-content p {
       font-size: 25px;
       }
-      #ton-connect {
-	  bottom: 50%;
-      }
+      #skins-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  display: none;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+#skins-menu-content {
+  background-color: white;
+  width: 100%;
+  height: 100%;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+.skin-row {
+  margin-bottom: 20px;
+}
+
+.skin-row h3 {
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.skins {
+  display: flex;
+  justify-content: flex-start; /* Начало ряда */
+  overflow-x: scroll; /* Горизонтальный скролл */
+  margin-bottom: 10px;
+  gap: 10px; /* Расстояние между элементами */
+}
+
+
+.skins img {
+  width: 123px; /* Увеличено с 60px */
+  height: 123px; /* Увеличено с 60px */
+  border-radius: 10px;
+  transition: transform 0.3s;
+}
+
+.skins img:hover {
+  transform: scale(1.1);
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  font-size: 18px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.hidden {
+  display: none;
+}
+
     </style>
   </head>
   <body class="gray-gradient">
@@ -143,10 +215,10 @@
     </div>
     <img id="cube" src="начальный кубик.gif" alt="Cube">
     <div class="menu">
-		<div class="menu-item">
-			<img src="cubeee.png" alt="Profile" id="profile-button">
-			Profile
-		  </div>
+      <div class="menu-item">
+        <img src="cubeee.png" alt="Profile" id="profile-button">
+        Profile
+      </div>
       <div class="menu-item">
         <img src="друзья.png" alt="Friends">
         Friends
@@ -157,17 +229,69 @@
       </div>
       <div class="menu-item">
         <img src="таблица лидеров.png" alt="Leaderboard">
-        Leader Board
+        Leaders
+      </div>
+      <div class="menu-item">
+        <img src="магазин.png" alt="Skins">
+        Skins
+      </div>
+    </div>
+    <div id="profile-menu">
+      <div id="profile-menu-content">
+        <h2 id="profile-name">Hello, NoName</h2>
+        <p>Your TON wallet</p>
+        <div id="ton-connect"></div>
       </div>
     </div>
 
-    <div id="profile-menu">
-		<div id="profile-menu-content">
-		  <h2 id="profile-name">Hello, NoName</h2>
-		  <p>Your TON wallet</p>
-		  <div id="ton-connect"></div>
-		</div>
-	  </div>
+    <div id="skins-menu" class="hidden">
+      <div id="skins-menu-content">
+        
+        <button id="close-skins-menu">Close</button>
+        <div class="skin-row">
+          <h3>Classic CubeS</h3>
+          <div class="skins">
+            <img src="начальный кубик.gif" alt="Cube 11">
+            <img src="супер начальный кубик.gif" alt="Cube 111">
+            <img src="1-кубик.gif" alt="Cube 1">
+            <img src="2-кубик.gif" alt="Cube 2">
+            <img src="3-кубик.gif" alt="Cube 3">
+            <img src="4-кубик.gif" alt="Cube 4">
+            <img src="5-кубик.gif" alt="Cube 5">
+            <img src="6-кубик.gif" alt="Cube 6">
+          </div>
+          <button id="equip-classic">Equip</button>
+        </div>
+        <div class="skin-row">
+          <h3>Negative Cubes</h3>
+          <div class="skins">
+            <img src="нач-ezgif.com-effects.gif" alt="Negative Cube 11">
+            <img src="начальный-ezgif.com-effects.gif" alt="Negative Cube 111">
+            <img src="1--ezgif.com-effects.gif" alt="Negative Cube 1">
+            <img src="2--ezgif.com-effects.gif" alt="Negative Cube 2">
+            <img src="3--ezgif.com-effects.gif" alt="Negative Cube 3">
+            <img src="4--ezgif.com-effects.gif" alt="Negative Cube 4">
+            <img src="5--ezgif.com-effects.gif" alt="Negative Cube 5">
+            <img src="6--ezgif.com-effects.gif" alt="Negative Cube 6">
+          </div>
+          <button id="buy-negative">Buy //599 $LUCU/</button>
+        </div>
+        <div class="skin-row">
+          <h3>Emerald CubeS</h3>
+          <div class="skins">
+            <img src="ИЗУМРУДНЫЙ-КУБИК.gif" alt="Emerald Cube 11">
+            <img src="ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif" alt="Emerald Cube 111">
+            <img src="ИЗУМРУДНЫЙ-КУБИК-1.gif" alt="Emerald Cube 1">
+            <img src="ИЗУМРУДНЫЙ-КУБИК-2.gif" alt="Emerald Cube 2">
+            <img src="ИЗУМРУДНЫЙ-КУБИК-3.gif" alt="Emerald Cube 3">
+            <img src="ИЗУМРУДНЫЙ-КУБИК-4.gif" alt="Emerald Cube 4">
+            <img src="ИЗУМРУДНЫЙ-КУБИК-5.gif" alt="Emerald Cube 5">
+            <img src="ИЗУМРУДНЫЙ-КУБИК-6.gif" alt="Emerald Cube 6">
+          </div>
+          <button id="buy-Emerald">Buy //1190 $LUCU/</button>
+        </div>
+      </div>
+    </div>
     <script>
       const cube = document.getElementById('cube');
       const coinsDisplay = document.getElementById('coins');
@@ -176,141 +300,273 @@
       let coins = 0;
       let bestLuck = Infinity;
       let isAnimating = false;
+      
       function getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+          return Math.floor(Math.random() * (max - min + 1)) + min;
       }
       
       function updateCoins(amount) {
-        coins += amount;
-        coinsDisplay.textContent = `${coins} $LUCU`;
+          coins += amount;
+          coinsDisplay.textContent = `${coins} $LUCU`;
       }
+      
       function updateBestLuck() {
-        const min = 0.0000000000001;
-        const max = 1000;
-        let randomLuck = Math.random() * (max - min) + min;
-        if (randomLuck > 1) {
-          randomLuck = Math.round(randomLuck);
-        }
-        if (bestLuck === null || randomLuck < bestLuck) {
-          bestLuck = randomLuck;
-          const formattedLuck = formatNumber(bestLuck);
-          bestLuckDisplay.textContent = `Your Best MIN Luck: ${formattedLuck}`;
-          adjustFontSizeToFit(bestLuckDisplay);
-        }
+          const min = 0.0000000000001;
+          const max = 1000;
+          let randomLuck = Math.random() * (max - min) + min;
+          if (randomLuck > 1) {
+              randomLuck = Math.round(randomLuck);
+          }
+          if (bestLuck === null || randomLuck < bestLuck) {
+              bestLuck = randomLuck;
+              const formattedLuck = formatNumber(bestLuck);
+              bestLuckDisplay.textContent = `Your Best MIN Luck: ${formattedLuck}`;
+              adjustFontSizeToFit(bestLuckDisplay);
+          }
       }
+      
       function formatNumber(number) {
-        if (number >= 1) {
-          return Math.round(number);
-        }
-        const str = number.toString();
-        let significantDigits = '';
-        let count = 0;
-        for (let i = 0; i < str.length; i++) {
-          const char = str[i];
-          if (char === '0' || char === '.') {
-            significantDigits += char;
-          } else {
-            significantDigits += char;
-            count++;
-            if (count === 4) break;
+          if (number >= 1) {
+              return Math.round(number);
           }
-        }
-        return significantDigits;
+          const str = number.toString();
+          let significantDigits = '';
+          let count = 0;
+          for (let i = 0; i < str.length; i++) {
+              const char = str[i];
+              if (char === '0' || char === '.') {
+                  significantDigits += char;
+              } else {
+                  significantDigits += char;
+                  count++;
+                  if (count === 4) break;
+              }
+          }
+          return significantDigits;
       }
+      
+      const skinsMenu = document.getElementById('skins-menu');
+      const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
+      const buyNegativeButton = document.getElementById('buy-negative');
+      const buyEmeraldButton = document.getElementById('buy-Emerald');
+      const equipClassicButton = document.getElementById('equip-classic');
+      let hasBoughtNegative = false;
+      let hasBoughtEmerald = false;
+      let equippedSkin = 'classic';
+      
+      // Открытие меню "Skins"
+      skinsButton.addEventListener('click', () => {
+          skinsMenu.style.display = 'flex';
+      });
+      
+      // Закрытие меню при клике на затемненный фон
+      skinsMenu.addEventListener('click', (e) => {
+          if (e.target === skinsMenu) {
+              skinsMenu.style.display = 'none';
+          }
+      });
+      
+      // Покупка и экипировка Negative Skins
+      buyNegativeButton.addEventListener('click', () => {
+          if (!hasBoughtNegative) {
+              if (coins >= 599) {
+                  coins -= 599;
+                  updateCoins(0); // Обновляем текст монет
+                  hasBoughtNegative = true;
+                  buyNegativeButton.textContent = 'Equip';
+              }
+          } else {
+              equipSkin('negative');
+          }
+      });
+      
+      // Покупка и экипировка Emerald Skins
+      buyEmeraldButton.addEventListener('click', () => {
+          if (!hasBoughtEmerald) {
+              if (coins >= 1190) {
+                  coins -= 1190;
+                  updateCoins(0); // Обновляем текст монет
+                  hasBoughtEmerald = true;
+                  buyEmeraldButton.textContent = 'Equip';
+              }
+          } else {
+              equipSkin('Emerald');
+          }
+      });
+      
+      // Выбор Classic Skins
+      equipClassicButton.addEventListener('click', () => {
+          equipSkin('classic');
+      });
+      
+      // Функция для изменения скина
+      function equipSkin(type) {
+          equippedSkin = type;
+          if (type === 'negative') {
+              cube.src = 'нач-ezgif.com-effects.gif';
+          } else if (type === 'Emerald') {
+              cube.src = 'ИЗУМРУДНЫЙ-КУБИК.gif';
+          } else {
+              cube.src = 'начальный кубик.gif';
+          }
+      
+          if (hasBoughtNegative) {
+              buyNegativeButton.textContent = type === 'negative' ? 'Equipped' : 'Equip';
+          }
+          if (hasBoughtEmerald) {
+              buyEmeraldButton.textContent = type === 'Emerald' ? 'Equipped' : 'Equip';
+          }
+          equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
+      }
+      
       function adjustFontSizeToFit(element) {
-        const parentWidth = element.parentElement.offsetWidth;
-        let fontSize = 35; // Начальный размер шрифта
-        element.style.fontSize = `${fontSize}px`;
-        while (element.scrollWidth > parentWidth && fontSize > 5) {
-          fontSize -= 1;
+          const parentWidth = element.parentElement.offsetWidth;
+          let fontSize = 35;
           element.style.fontSize = `${fontSize}px`;
-        }
-      }
-      function startProgress(duration) {
-        progressBar.style.transition = `width ${duration}s linear`;
-        progressBar.style.width = '100%';
-        setTimeout(() => {
-          progressBar.style.transition = 'none';
-          progressBar.style.width = '0%';
-        }, duration * 1000);
-      }
-      function rollCube() {
-        let isRainbow = Math.random() < 0.2;
-        document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
-        cube.src = isRainbow ? 'супер начальный кубик.gif' : 'начальный кубик.gif';
-        cube.onclick = async () => {
-          if (isAnimating) return;
-          isAnimating = true;
-          startProgress(3);
-          let random = Math.random() * 100;
-          let outcome;
-          if (isRainbow) {
-            if (random < 15) outcome = { src: '1-кубик.gif', coins: 2 };
-            else if (random < 45) outcome = { src: '2-кубик.gif', coins: 4 };
-            else if (random < 70) outcome = { src: '3-кубик.gif', coins: 6 };
-            else if (random < 85) outcome = { src: '4-кубик.gif', coins: 8 };
-            else if (random < 94) outcome = { src: '5-кубик.gif', coins: 10 };
-            else outcome = { src: '6-кубик.gif', coins: 12 };
-          } else if (cube.src.includes('супер начальный кубик.gif')) {
-            if (random < 40) outcome = { src: '1-кубик.gif', coins: 2 };
-            else if (random < 65) outcome = { src: '2-кубик.gif', coins: 4 };
-            else if (random < 80) outcome = { src: '3-кубик.gif', coins: 6 };
-            else if (random < 90) outcome = { src: '4-кубик.gif', coins: 8 };
-            else if (random < 97) outcome = { src: '5-кубик.gif', coins: 10 };
-            else outcome = { src: '6-кубик.gif', coins: 12 };
-          } else {
-            if (random < 40) outcome = { src: '1-кубик.gif', coins: 1 };
-            else if (random < 65) outcome = { src: '2-кубик.gif', coins: 2 };
-            else if (random < 80) outcome = { src: '3-кубик.gif', coins: 3 };
-            else if (random < 90) outcome = { src: '4-кубик.gif', coins: 4 };
-            else if (random < 97) outcome = { src: '5-кубик.gif', coins: 5 };
-            else outcome = { src: '6-кубик.gif', coins: 6 };
+          while (element.scrollWidth > parentWidth && fontSize > 5) {
+              fontSize -= 1;
+              element.style.fontSize = `${fontSize}px`;
           }
-          cube.src = outcome.src;
-          await new Promise((resolve) => setTimeout(resolve, 550));
-          updateBestLuck();
-          updateCoins(outcome.coins);
+      }
+      
+      function startProgress(duration) {
+          progressBar.style.transition = `width ${duration}s linear`;
+          progressBar.style.width = '100%';
           setTimeout(() => {
-            rollCube();
-            isAnimating = false;
-          }, 2700);
-        };
+              progressBar.style.transition = 'none';
+              progressBar.style.width = '0%';
+          }, duration * 1000);
       }
-      rollCube();
-      const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-      	manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
-       buttonRootId: 'ton-connect'
-      });
-      async function connectToWallet() {
-       const connectedWallet = await tonConnectUI.connectWallet();
-       console.log(connectedWallet);
-      }
-      tonConnectUI.uiOptions = {
-       twaReturnUrl: 'https://t.me/TESTforTESTTESTforTESTbot'
-      };
-      const tg = window.Telegram.WebApp;
-      tg.expand();
+      
+function rollCube() {
+    let isRainbow = Math.random() < 0.2;
+    document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
 
-      const profileButton = document.getElementById("profile-button");
-      const profileMenu = document.getElementById("profile-menu");
-      const profileName = document.getElementById("profile-name");
+    // Выбор скина в зависимости от текущего экипированного скина
+    if (equippedSkin === 'classic') {
+        cube.src = isRainbow ? 'супер начальный кубик.gif' : 'начальный кубик.gif';
+    } else if (equippedSkin === 'negative') {
+        cube.src = isRainbow ? 'начальный-ezgif.com-effects.gif' : 'нач-ezgif.com-effects.gif';
+    } else if (equippedSkin === 'Emerald') {
+        // Пример скина "otherSkin"
+        cube.src = isRainbow ? 'ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif' : 'ИЗУМРУДНЫЙ-КУБИК.gif';
+    }
 
-      // Set Telegram username or default to NoName
-      const userName = tg.initDataUnsafe?.user?.username || "NoName";
-      profileName.textContent = `Hello, ${userName}`;
+    cube.onclick = async () => {
+    if (isAnimating) return;
+    isAnimating = true;
+    startProgress(3);
+    let random = Math.random() * 100;
+    let outcome;
 
-      profileButton.addEventListener("click", () => {
-        profileMenu.style.display = "flex";
-      });
+    // Проверка для rainbow-состояния
+    if (isRainbow && equippedSkin === 'negative'){
+        cube.src = 'начальный-ezgif.com-effects.gif';  // Установим начальный скин
+        if (random < 15) outcome = { src: '1--ezgif.com-effects.gif', coins: 2 };
+        else if (random < 45) outcome = { src: '2--ezgif.com-effects.gif', coins: 4 };
+        else if (random < 70) outcome = { src: '3--ezgif.com-effects.gif', coins: 6 };
+        else if (random < 85) outcome = { src: '4--ezgif.com-effects.gif', coins: 8 };
+        else if (random < 94) outcome = { src: '5--ezgif.com-effects.gif', coins: 10 };
+        else outcome = { src: '6--ezgif.com-effects.gif', coins: 12 };
+    } 
+        // Проверка для негативного скина
+        else if (equippedSkin === 'negative') {
+        cube.src = 'нач-ezgif.com-effects.gif';  // Установим начальный скин
+        if (random < 40) outcome = { src: '1--ezgif.com-effects.gif', coins: 2 };
+        else if (random < 65) outcome = { src: '2--ezgif.com-effects.gif', coins: 4 };
+        else if (random < 80) outcome = { src: '3--ezgif.com-effects.gif', coins: 6 };
+        else if (random < 90) outcome = { src: '4--ezgif.com-effects.gif', coins: 8 };
+        else if (random < 97) outcome = { src: '5--ezgif.com-effects.gif', coins: 10 };
+        else outcome = { src: '6--ezgif.com-effects.gif', coins: 12 };
+    } 
+        // Проверка для rainbow-состояния
+        else if (isRainbow && equippedSkin === 'Emerald'){
+        cube.src = 'ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif.gif';  // Установим начальный скин
+        if (random < 15) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-1.gif', coins: 2 };
+        else if (random < 45) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-2.gif', coins: 4 };
+        else if (random < 70) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-3.gif', coins: 6 };
+        else if (random < 85) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-4.gif', coins: 8 };
+        else if (random < 94) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-5.gif', coins: 10 };
+        else outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-6.gif', coins: 12 };
+    } 
+        // Проверка для негативного скина
+        else if (equippedSkin === 'Emerald') {
+        cube.src = 'ИЗУМРУДНЫЙ-КУБИК.gif';  // Установим начальный скин
+        if (random < 40) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-1.gif', coins: 2 };
+        else if (random < 65) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-2.gif', coins: 4 };
+        else if (random < 80) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-3.gif', coins: 6 };
+        else if (random < 90) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-4.gif', coins: 8 };
+        else if (random < 97) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-5.gif', coins: 10 };
+        else outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-6.gif', coins: 12 };
+    } 
+    // Проверка для нового скина
+    else if (isRainbow)  {
+        if (random < 40) outcome = { src: '1-кубик.gif', coins: 2 };
+        else if (random < 65) outcome = { src: '2-кубик.gif', coins: 4 };
+        else if (random < 80) outcome = { src: '3-кубик.gif', coins: 6 };
+        else if (random < 90) outcome = { src: '4-кубик.gif', coins: 8 };
+        else if (random < 97) outcome = { src: '5-кубик.gif', coins: 10 };
+        else outcome = { src: '6-кубик.gif', coins: 12 };
+    } 
+    
+    // Для других случаев
+    else {
+        if (random < 40) outcome = { src: '1-кубик.gif', coins: 1 };
+        else if (random < 65) outcome = { src: '2-кубик.gif', coins: 2 };
+        else if (random < 80) outcome = { src: '3-кубик.gif', coins: 3 };
+        else if (random < 90) outcome = { src: '4-кубик.gif', coins: 4 };
+        else if (random < 97) outcome = { src: '5-кубик.gif', coins: 5 };
+        else outcome = { src: '6-кубик.gif', coins: 6 };
+    }
 
-      profileMenu.addEventListener("click", (e) => {
-        if (e.target === profileMenu) {
-          profileMenu.style.display = "none";
-        }
-      });
-           window.Telegram.WebApp.expand();
-           window.Telegram.WebApp.requestFullscreen();
-       tg.expand();
+    cube.src = outcome.src;
+    await new Promise((resolve) => setTimeout(resolve, 550)); // Задержка для анимации
+    updateBestLuck();
+    updateCoins(outcome.coins);
+    setTimeout(() => {
+        rollCube();
+        isAnimating = false;
+    }, 2600);
+};
+
+}
+
+rollCube();
+
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
+    buttonRootId: 'ton-connect'
+});
+
+tonConnectUI.uiOptions = {
+    twaReturnUrl: 'https://t.me/TESTforTESTTESTforTESTbot'
+};
+
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+const profileButton = document.getElementById("profile-button");
+const profileMenu = document.getElementById("profile-menu");
+const profileName = document.getElementById("profile-name");
+const closeSkinsButton = document.getElementById('close-skins-menu');
+
+closeSkinsButton.addEventListener('click', () => {
+    skinsMenu.style.display = 'none';
+});
+
+const userName = tg.initDataUnsafe?.user?.username || "NoName";
+profileName.textContent = `Hello, ${userName}`;
+
+profileButton.addEventListener("click", () => {
+    profileMenu.style.display = "flex";
+});
+
+profileMenu.addEventListener("click", (e) => {
+    if (e.target === profileMenu) {
+        profileMenu.style.display = "none";
+    }
+});
+</script>
     </script>
   </body>
 </html>
