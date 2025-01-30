@@ -21,13 +21,13 @@
       transition-duration: 1s ease-in-out;
       }
       #coins {
-      font-size: 2rem;
-      font-weight: bold;
-      position: absolute;
-      top: 10%;
-      bottom: 50%;
-      color: rgb(31, 31, 31);
-      }
+            font-size: 40px;
+            font-weight: bold;
+            position: absolute;
+            top: 7%; /* Можно изменить на нужное значение */
+            right: 10%; /* Позиционируем элемент справа */
+            color: rgb(31, 31, 31);
+        }
       #bestLuck {
       font-weight: bold;
       position: absolute;
@@ -133,78 +133,67 @@
       font-size: 25px;
       }
       #skins-menu {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-#skins-menu-content {
-  background-color: white;
-  width: 100%;
-  height: 100%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  overflow-y: auto;
-}
-
-.skin-row {
-  margin-bottom: 20px;
-}
-
-.skin-row h3 {
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.skins {
-  display: flex;
-  justify-content: flex-start; /* Начало ряда */
-  overflow-x: scroll; /* Горизонтальный скролл */
-  margin-bottom: 10px;
-  gap: 10px; /* Расстояние между элементами */
-}
-
-
-.skins img {
-  width: 123px; /* Увеличено с 60px */
-  height: 123px; /* Увеличено с 60px */
-  border-radius: 10px;
-  transition: transform 0.3s;
-}
-
-.skins img:hover {
-  transform: scale(1.1);
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  font-size: 18px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-
-.hidden {
-  display: none;
-}
-
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      display: none;
+      justify-content: center;
+      align-items: flex-end;
+      }
+      #skins-menu-content {
+      background-color: white;
+      width: 100%;
+      height: 100%;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+      }
+      .skin-row {
+      margin-bottom: 20px;
+      }
+      .skin-row h3 {
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 10px;
+      }
+      .skins {
+      display: flex;
+      justify-content: flex-start; /* Начало ряда */
+      overflow-x: scroll; /* Горизонтальный скролл */
+      margin-bottom: 10px;
+      gap: 10px; /* Расстояние между элементами */
+      }
+      .skins img {
+      width: 123px; /* Увеличено с 60px */
+      height: 123px; /* Увеличено с 60px */
+      border-radius: 10px;
+      transition: transform 0.3s;
+      }
+      .skins img:hover {
+      transform: scale(1.1);
+      }
+      button {
+      width: 100%;
+      padding: 10px;
+      font-size: 18px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      }
+      button:hover {
+      background-color: #0056b3;
+      }
+      .hidden {
+      display: none;
+      }
     </style>
   </head>
   <body class="gray-gradient">
@@ -243,10 +232,8 @@ button:hover {
         <div id="ton-connect"></div>
       </div>
     </div>
-
     <div id="skins-menu" class="hidden">
       <div id="skins-menu-content">
-        
         <button id="close-skins-menu">Close</button>
         <div class="skin-row">
           <h3>Classic CubeS</h3>
@@ -300,16 +287,13 @@ button:hover {
       let coins = 0;
       let bestLuck = Infinity;
       let isAnimating = false;
-      
       function getRandomInt(min, max) {
           return Math.floor(Math.random() * (max - min + 1)) + min;
       }
-      
       function updateCoins(amount) {
           coins += amount;
           coinsDisplay.textContent = `${coins} $LUCU`;
       }
-      
       function updateBestLuck() {
           const min = 0.0000000000001;
           const max = 1000;
@@ -324,7 +308,6 @@ button:hover {
               adjustFontSizeToFit(bestLuckDisplay);
           }
       }
-      
       function formatNumber(number) {
           if (number >= 1) {
               return Math.round(number);
@@ -344,7 +327,6 @@ button:hover {
           }
           return significantDigits;
       }
-      
       const skinsMenu = document.getElementById('skins-menu');
       const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
       const buyNegativeButton = document.getElementById('buy-negative');
@@ -353,20 +335,14 @@ button:hover {
       let hasBoughtNegative = false;
       let hasBoughtEmerald = false;
       let equippedSkin = 'classic';
-      
-      // Открытие меню "Skins"
       skinsButton.addEventListener('click', () => {
           skinsMenu.style.display = 'flex';
       });
-      
-      // Закрытие меню при клике на затемненный фон
       skinsMenu.addEventListener('click', (e) => {
           if (e.target === skinsMenu) {
               skinsMenu.style.display = 'none';
           }
       });
-      
-      // Покупка и экипировка Negative Skins
       buyNegativeButton.addEventListener('click', () => {
           if (!hasBoughtNegative) {
               if (coins >= 599) {
@@ -379,8 +355,6 @@ button:hover {
               equipSkin('negative');
           }
       });
-      
-      // Покупка и экипировка Emerald Skins
       buyEmeraldButton.addEventListener('click', () => {
           if (!hasBoughtEmerald) {
               if (coins >= 1190) {
@@ -393,13 +367,9 @@ button:hover {
               equipSkin('Emerald');
           }
       });
-      
-      // Выбор Classic Skins
       equipClassicButton.addEventListener('click', () => {
           equipSkin('classic');
       });
-      
-      // Функция для изменения скина
       function equipSkin(type) {
           equippedSkin = type;
           if (type === 'negative') {
@@ -409,7 +379,6 @@ button:hover {
           } else {
               cube.src = 'начальный кубик.gif';
           }
-      
           if (hasBoughtNegative) {
               buyNegativeButton.textContent = type === 'negative' ? 'Equipped' : 'Equip';
           }
@@ -418,7 +387,6 @@ button:hover {
           }
           equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
       }
-      
       function adjustFontSizeToFit(element) {
           const parentWidth = element.parentElement.offsetWidth;
           let fontSize = 35;
@@ -428,7 +396,6 @@ button:hover {
               element.style.fontSize = `${fontSize}px`;
           }
       }
-      
       function startProgress(duration) {
           progressBar.style.transition = `width ${duration}s linear`;
           progressBar.style.width = '100%';
@@ -437,30 +404,23 @@ button:hover {
               progressBar.style.width = '0%';
           }, duration * 1000);
       }
-      
-function rollCube() {
-    let isRainbow = Math.random() < 0.2;
-    document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
-
-    // Выбор скина в зависимости от текущего экипированного скина
-    if (equippedSkin === 'classic') {
+      function rollCube() {
+      let isRainbow = Math.random() < 0.2;
+      document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
+      if (equippedSkin === 'classic') {
         cube.src = isRainbow ? 'супер начальный кубик.gif' : 'начальный кубик.gif';
-    } else if (equippedSkin === 'negative') {
+      } else if (equippedSkin === 'negative') {
         cube.src = isRainbow ? 'начальный-ezgif.com-effects.gif' : 'нач-ezgif.com-effects.gif';
-    } else if (equippedSkin === 'Emerald') {
-        // Пример скина "otherSkin"
+      } else if (equippedSkin === 'Emerald') {
         cube.src = isRainbow ? 'ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif' : 'ИЗУМРУДНЫЙ-КУБИК.gif';
-    }
-
-    cube.onclick = async () => {
-    if (isAnimating) return;
-    isAnimating = true;
-    startProgress(3);
-    let random = Math.random() * 100;
-    let outcome;
-
-    // Проверка для rainbow-состояния
-    if (isRainbow && equippedSkin === 'negative'){
+      }
+      cube.onclick = async () => {
+      if (isAnimating) return;
+      isAnimating = true;
+      startProgress(3);
+      let random = Math.random() * 100;
+      let outcome;
+      if (isRainbow && equippedSkin === 'negative'){
         cube.src = 'начальный-ezgif.com-effects.gif';  // Установим начальный скин
         if (random < 15) outcome = { src: '1--ezgif.com-effects.gif', coins: 2 };
         else if (random < 45) outcome = { src: '2--ezgif.com-effects.gif', coins: 4 };
@@ -468,8 +428,7 @@ function rollCube() {
         else if (random < 85) outcome = { src: '4--ezgif.com-effects.gif', coins: 8 };
         else if (random < 94) outcome = { src: '5--ezgif.com-effects.gif', coins: 10 };
         else outcome = { src: '6--ezgif.com-effects.gif', coins: 12 };
-    } 
-        // Проверка для негативного скина
+      } 
         else if (equippedSkin === 'negative') {
         cube.src = 'нач-ezgif.com-effects.gif';  // Установим начальный скин
         if (random < 40) outcome = { src: '1--ezgif.com-effects.gif', coins: 2 };
@@ -478,8 +437,7 @@ function rollCube() {
         else if (random < 90) outcome = { src: '4--ezgif.com-effects.gif', coins: 8 };
         else if (random < 97) outcome = { src: '5--ezgif.com-effects.gif', coins: 10 };
         else outcome = { src: '6--ezgif.com-effects.gif', coins: 12 };
-    } 
-        // Проверка для rainbow-состояния
+      } 
         else if (isRainbow && equippedSkin === 'Emerald'){
         cube.src = 'ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif.gif';  // Установим начальный скин
         if (random < 15) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-1.gif', coins: 2 };
@@ -488,8 +446,7 @@ function rollCube() {
         else if (random < 85) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-4.gif', coins: 8 };
         else if (random < 94) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-5.gif', coins: 10 };
         else outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-6.gif', coins: 12 };
-    } 
-        // Проверка для негативного скина
+      } 
         else if (equippedSkin === 'Emerald') {
         cube.src = 'ИЗУМРУДНЫЙ-КУБИК.gif';  // Установим начальный скин
         if (random < 40) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-1.gif', coins: 2 };
@@ -498,75 +455,61 @@ function rollCube() {
         else if (random < 90) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-4.gif', coins: 8 };
         else if (random < 97) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-5.gif', coins: 10 };
         else outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-6.gif', coins: 12 };
-    } 
-    // Проверка для нового скина
-    else if (isRainbow)  {
+      } 
+      else if (isRainbow)  {
         if (random < 40) outcome = { src: '1-кубик.gif', coins: 2 };
         else if (random < 65) outcome = { src: '2-кубик.gif', coins: 4 };
         else if (random < 80) outcome = { src: '3-кубик.gif', coins: 6 };
         else if (random < 90) outcome = { src: '4-кубик.gif', coins: 8 };
         else if (random < 97) outcome = { src: '5-кубик.gif', coins: 10 };
         else outcome = { src: '6-кубик.gif', coins: 12 };
-    } 
-    
-    // Для других случаев
-    else {
+      } 
+      else {
         if (random < 40) outcome = { src: '1-кубик.gif', coins: 1 };
         else if (random < 65) outcome = { src: '2-кубик.gif', coins: 2 };
         else if (random < 80) outcome = { src: '3-кубик.gif', coins: 3 };
         else if (random < 90) outcome = { src: '4-кубик.gif', coins: 4 };
         else if (random < 97) outcome = { src: '5-кубик.gif', coins: 5 };
         else outcome = { src: '6-кубик.gif', coins: 6 };
-    }
-
-    cube.src = outcome.src;
-    await new Promise((resolve) => setTimeout(resolve, 550)); // Задержка для анимации
-    updateBestLuck();
-    updateCoins(outcome.coins);
-    setTimeout(() => {
+      }
+      cube.src = outcome.src;
+      await new Promise((resolve) => setTimeout(resolve, 550));
+      updateBestLuck();
+      updateCoins(outcome.coins);
+      setTimeout(() => {
         rollCube();
         isAnimating = false;
-    }, 2600);
-};
-
-}
-
-rollCube();
-
-const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-    manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
-    buttonRootId: 'ton-connect'
-});
-
-tonConnectUI.uiOptions = {
-    twaReturnUrl: 'https://t.me/TESTforTESTTESTforTESTbot'
-};
-
-const tg = window.Telegram.WebApp;
-tg.expand();
-
-const profileButton = document.getElementById("profile-button");
-const profileMenu = document.getElementById("profile-menu");
-const profileName = document.getElementById("profile-name");
-const closeSkinsButton = document.getElementById('close-skins-menu');
-
-closeSkinsButton.addEventListener('click', () => {
-    skinsMenu.style.display = 'none';
-});
-
-const userName = tg.initDataUnsafe?.user?.username || "NoName";
-profileName.textContent = `Hello, ${userName}`;
-
-profileButton.addEventListener("click", () => {
-    profileMenu.style.display = "flex";
-});
-
-profileMenu.addEventListener("click", (e) => {
-    if (e.target === profileMenu) {
+      }, 2600);
+      };
+      }
+      rollCube();
+      const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+      manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
+      buttonRootId: 'ton-connect'
+      });
+      tonConnectUI.uiOptions = {
+      twaReturnUrl: 'https://t.me/TESTforTESTTESTforTESTbot'
+      };
+      const profileButton = document.getElementById("profile-button");
+      const profileMenu = document.getElementById("profile-menu");
+      const profileName = document.getElementById("profile-name");
+      const closeSkinsButton = document.getElementById('close-skins-menu');
+      closeSkinsButton.addEventListener('click', () => {
+      skinsMenu.style.display = 'none';
+      });
+      const tg = window.Telegram.WebApp;
+      const userName = tg.initDataUnsafe?.user?.username || "NoName";
+      profileName.textContent = `Hello, ${userName}`;
+      profileButton.addEventListener("click", () => {
+      profileMenu.style.display = "flex";
+      });
+      profileMenu.addEventListener("click", (e) => {
+      if (e.target === profileMenu) {
         profileMenu.style.display = "none";
-    }
-});
-</script>
+      }
+      });
+      tg.expand();
+    </script>
     </script>
   </body>
 </html>
