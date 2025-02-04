@@ -9,31 +9,94 @@
     <link rel="icon" href="cubeee.png" type="image/x-icon">
     <title>LUCU game</title>
     <style>
-      body {
-      margin: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-      transition-duration: 1s ease-in-out;
-      }
+      /* Добавляем эффект звездного фона */
+body {
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+  transition-duration: 1s ease-in-out;
+  position: relative; /* Для позиционирования звезд */
+}
+
+/* Фоновые звезды */
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Чтобы не мешали взаимодействию с другими элементами */
+  z-index: -1; /* Помещаем их за основным контентом */
+}
+
+.star {
+  position: absolute;
+  background-color: white;
+  border-radius: 50%;
+  opacity: 0.2; /* Прозрачность 20% */
+  animation: twinkle 5s infinite alternate; /* Мерцание */
+}
+
+/* Анимация мерцания для звезд */
+@keyframes twinkle {
+  0% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+/* Движущиеся точки, летящие вверх */
+.flying-stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Чтобы не мешали взаимодействию с другими элементами */
+  z-index: -1; /* Помещаем их за основным контентом */
+}
+
+.flying-star {
+  position: absolute;
+  background-color: white;
+  border-radius: 50%;
+  opacity: 0.8; /* Более яркие, чем фоновые звезды */
+  animation: flyUp 5s linear infinite; /* Летят вверх */
+}
+
+/* Анимация движения вверх */
+@keyframes flyUp {
+  0% {
+    transform: translateY(100vh);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
       #coins {
-            font-size: 40px;
+            font-size: 55px;
             font-weight: bold;
             position: absolute;
             top: 7%; /* Можно изменить на нужное значение */
             right: 10%; /* Позиционируем элемент справа */
-            color: rgb(31, 31, 31);
+            color: rgb(162, 175, 175);
         }
       #bestLuck {
       font-weight: bold;
       position: absolute;
-      top: 15%;
+      top: 20%;
+      
       font-size: 20px;
-      color: rgb(27, 27, 27);
+      color: rgb(162, 175, 175);
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
@@ -49,15 +112,16 @@
       outline: none;
       }
       .gray-gradient {
-      background: linear-gradient(217deg, #dadada 0%, rgba(255, 0, 0, 0) 70.71%),
-      linear-gradient(127deg, #444444 0%, rgba(0, 255, 0, 0) 70.71%),
-      linear-gradient(336deg, #adadad 0%, rgba(0, 0, 255, 0) 70.71%);
+      background: linear-gradient(217deg, #161616 0%, rgba(0, 0, 0, 0.89) 70.71%),
+      linear-gradient(127deg, #05171b 0%, rgba(0, 0, 0, 0) 70.71%),
+      linear-gradient(336deg, #161618 0%, rgba(0, 0, 0, 0) 70.71%);
       }
       .pink-gradient {
-      background: linear-gradient(217deg, rgba(70, 13, 13, 0.8), rgba(255, 0, 0, 0) 70.71%),
-      linear-gradient(127deg, rgba(21, 16, 90, 0.8), rgba(0, 255, 0, 0) 70.71%),
-      linear-gradient(336deg, rgba(10, 83, 13, 0.8), rgba(0, 0, 255, 0) 70.71%);
-      }
+    background: linear-gradient(217deg, rgb(36, 3, 3), rgba(31, 2, 2, 0.493) 70.71%),
+                linear-gradient(127deg, rgb(3, 26, 3), rgba(4, 37, 4, 0.219) 70.71%),
+                linear-gradient(336deg, rgb(4, 4, 32), rgba(5, 5, 49, 0.288) 70.71%);
+    background-blend-mode: multiply; /* Добавляем смешивание для устранения белого пятна */
+}
       #progressBar {
       position: absolute;
       bottom: 25%;
@@ -70,7 +134,7 @@
       #progressBar div {
       height: 100%;
       width: 0;
-      background: linear-gradient(90deg, #3f3f3f, #141414);
+      background: linear-gradient(90deg, #c2c5c9, #76777a);
       }
       .menu {
       position: absolute;
@@ -125,6 +189,12 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       text-align: center;
       flex-basis: 0;
+      clip-path: polygon(
+    10% 0%, 30% 5%, 30% 0%, 40% 8%, 50% 2%, 60% 6%, 70% 0%, 80% 5%, 90% 0%, 100% 10%,
+    98% 20%, 100% 30%, 92% 40%, 110% 60%, 95% 60%, 100% 70%, 90% 80%, 100% 90%, 85% 100%,
+    70% 95%, 60% 100%, 50% 90%, 40% 100%, 30% 95%, 20% 100%, 10% 90%, 0% 80%,
+    5% 70%, 0% 60%, 8% 50%, 0% 40%, 5% 30%, 0% 20%
+  );
       }
       #profile-menu-content h2 {
       font-size: 35px;
@@ -133,29 +203,32 @@
       font-size: 25px;
       }
       #skins-menu {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 60%;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(10px);
-      display: none;
-      justify-content: center;
-      align-items: flex-end;
-      }
-      #skins-menu-content {
-      background-color: white;
-      width: 100%;
-      height: 100%;
-      border-top-left-radius: 15px;
-      border-top-right-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-      overflow-y: auto;
-      }
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; /* Теперь фон покрывает весь экран */
+    background: rgba(0, 0, 0, 0.5); /* Затемнение */
+    backdrop-filter: blur(10px); /* Размытие фона */
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+#skins-menu-content {
+    position: relative; /* Добавляем, чтобы контент не накрывал фон */
+    background-color: rgb(10, 10, 17);
+    width: 100%;
+    height: 60%; /* Оставляем 60%, чтобы он был внизу */
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+}
       .skin-row {
       margin-bottom: 20px;
+      color: rgb(255, 255, 255)
       }
       .skin-row h3 {
       font-size: 20px;
@@ -182,23 +255,40 @@
       width: 100%;
       padding: 10px;
       font-size: 18px;
-      background-color: #007bff;
+      background-color: #7a95a0;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
       }
       button:hover {
-      background-color: #0056b3;
+      background-color: #2e363f;
       }
       .hidden {
       display: none;
       }
     </style>
   </head>
+  <!-- Фоновые звезды -->
+<div class="stars">
+  <div class="star" style="width: 2px; height: 2px; top: 10%; left: 20%;"></div>
+  <div class="star" style="width: 3px; height: 3px; top: 30%; left: 60%;"></div>
+  <div class="star" style="width: 1px; height: 1px; top: 50%; left: 80%;"></div>
+  <div class="star" style="width: 2px; height: 2px; top: 70%; left: 10%;"></div>
+  <div class="star" style="width: 3px; height: 3px; top: 90%; left: 40%;"></div>
+</div>
+
+<!-- Движущиеся звезды -->
+<div class="flying-stars">
+  <div class="flying-star" style="width: 2px; height: 2px; left: 10%;"></div>
+  <div class="flying-star" style="width: 3px; height: 3px; left: 30%;"></div>
+  <div class="flying-star" style="width: 1px; height: 1px; left: 50%;"></div>
+  <div class="flying-star" style="width: 2px; height: 2px; left: 70%;"></div>
+  <div class="flying-star" style="width: 3px; height: 3px; left: 90%;"></div>
+</div>
   <body class="gray-gradient">
     <div id="coins">0 $LUCU</div>
-    <div id="bestLuck">Your Best MIN Luck: TAP TO HAVE LUCK</div>
+    <div id="bestLuck">Huh, you dont have luck</div>
     <div id="progressBar">
       <div></div>
     </div>
@@ -479,7 +569,7 @@
       setTimeout(() => {
         rollCube();
         isAnimating = false;
-      }, 2600);
+      }, 2650);
       };
       }
       rollCube();
@@ -508,6 +598,31 @@
         profileMenu.style.display = "none";
       }
       });
+      // Генерация фоновых звезд
+function createStars(containerClass, starClass, count) {
+  const container = document.querySelector(`.${containerClass}`);
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement("div");
+    star.classList.add(starClass);
+
+    // Случайный размер
+    const size = Math.random() * 3 + 1; // От 1 до 4 пикселей
+    star.style.width = `${size}px`;
+    star.style.height = `${size}px`;
+
+    // Случайное положение
+    star.style.top = `${Math.random() * 100}%`;
+    star.style.left = `${Math.random() * 100}%`;
+
+    container.appendChild(star);
+  }
+}
+
+// Создаем 50 фоновых звезд
+createStars("stars", "star", 50);
+
+// Создаем 10 движущихся звезд
+createStars("flying-stars", "flying-star", 10);
       tg.expand();
     </script>
     </script>
