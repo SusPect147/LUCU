@@ -564,13 +564,13 @@ body {
         else outcome = { src: '6-кубик.gif', coins: 6 };
       }
       cube.src = outcome.src;
-      await new Promise((resolve) => setTimeout(resolve, 550));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       updateBestLuck();
       updateCoins(outcome.coins);
       setTimeout(() => {
         rollCube();
         isAnimating = false;
-      }, 2650);
+      }, 1200);
       };
       }
       rollCube();
