@@ -9,81 +9,68 @@
     <link rel="icon" href="cubeee.png" type="image/x-icon">
     <title>LUCU game</title>
     <style>
-      /* Добавляем эффект звездного фона */
 body {
-  margin: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-family: Arial, sans-serif;
-  transition-duration: 1s ease-in-out;
-  position: relative; /* Для позиционирования звезд */
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
+                linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
+                linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
+    font-family: Arial, sans-serif;
+    transition-duration: 1s ease-in-out;
+    position: relative;
 }
 
-/* Фоновые звезды */
-.stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Чтобы не мешали взаимодействию с другими элементами */
-  z-index: -1; /* Помещаем их за основным контентом */
+.stars, .flying-stars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .star {
-  position: absolute;
-  background-color: white;
-  border-radius: 50%;
-  opacity: 0.2; /* Прозрачность 20% */
-  animation: twinkle 5s infinite alternate; /* Мерцание */
-}
-
-/* Анимация мерцания для звезд */
-@keyframes twinkle {
-  0% {
+    position: absolute;
+    background-color: rgb(255, 255, 255);
+    border-radius: 50%;
     opacity: 0.2;
-  }
-  100% {
-    opacity: 0.4;
-  }
+    animation: twinkle 5s infinite alternate;
 }
 
-/* Движущиеся точки, летящие вверх */
-.flying-stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Чтобы не мешали взаимодействию с другими элементами */
-  z-index: -1; /* Помещаем их за основным контентом */
+@keyframes twinkle {
+    0% { opacity: 0.2; }
+    100% { opacity: 0.4; }
 }
 
 .flying-star {
-  position: absolute;
-  background-color: white;
-  border-radius: 50%;
-  opacity: 0.8; /* Более яркие, чем фоновые звезды */
-  animation: flyUp 5s linear infinite; /* Летят вверх */
+    position: absolute;
+    background-color: rgb(255, 255, 255);
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: flyUp 5s linear infinite;
 }
 
-/* Анимация движения вверх */
 @keyframes flyUp {
-  0% {
-    transform: translateY(100vh);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-100vh);
-    opacity: 0;
-  }
+    0% { transform: translateY(100vh); opacity: 0.8; }
+    100% { transform: translateY(-100vh); opacity: 0; }
 }
+        /* Добавляем стили для canvas */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
 #coins {
-    font-size: 55px;
+    font-size: 3.438rem;
     font-weight: bold;
     position: absolute;
     top: 10%;
@@ -94,8 +81,8 @@ body {
 #bestLuck {
     font-weight: bold;
     position: absolute;
-    top: calc(10% + 65px); /* 55px (размер шрифта монет) + 10px отступ */
-    font-size: 20px;
+    top: calc(10% + 4.063rem);
+    font-size: 1.25rem;
     color: rgb(162, 175, 175);
     text-align: center;
     white-space: nowrap;
@@ -103,40 +90,42 @@ body {
     text-overflow: ellipsis;
 }
 
-      #cube {
-      width: 300px;
-      height: 300px;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.3s;
-      -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-      outline: none;
-      }
-      .gray-gradient {
-      background: linear-gradient(217deg, #161616 0%, rgba(0, 0, 0, 0.89) 70.71%),
-      linear-gradient(127deg, #05171b 0%, rgba(0, 0, 0, 0) 70.71%),
-      linear-gradient(336deg, #161618 0%, rgba(0, 0, 0, 0) 70.71%);
-      }
-      .pink-gradient {
+#bestLuck span {
+    color: rgb(76, 175, 80);
+}
+
+#cube {
+    width: 18.75rem;
+    height: 18.75rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+}
+
+.pink-gradient {
     background: linear-gradient(217deg, rgb(36, 3, 3), rgba(49, 4, 4, 0.493) 70.71%),
                 linear-gradient(127deg, rgb(3, 26, 3), rgba(6, 51, 6, 0.219) 70.71%),
                 linear-gradient(336deg, rgb(4, 4, 32), rgba(7, 7, 68, 0.288) 70.71%);
-    background-blend-mode: multiply; /* Добавляем смешивание для устранения белого пятна */
+    background-blend-mode: multiply;
 }
-      #progressBar {
-      position: absolute;
-      bottom: 25%;
-      width: 80%;
-      height: 10px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 5px;
-      overflow: hidden;
-      }
-      #progressBar div {
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg, #c2c5c9, #76777a);
-      }
+
+#progressBar {
+    position: absolute;
+    bottom: 25%;
+    width: 80%;
+    height: 0.625rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 0.313rem;
+    overflow: hidden;
+}
+
+#progressBar div {
+    height: 100%;
+    width: 0;
+    background: rgba(226, 39, 39, 0.705);;
+}
       .menu {
       position: absolute;
       bottom: 0;
@@ -148,9 +137,9 @@ body {
       padding: 10px 0;
       border-top-left-radius: 15px;
       border-top-right-radius: 15px;
-      backdrop-filter: blur(10px); /* Для эффекта размытия */
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
       flex-basis: 0;
+      
       }
       .menu-item {
       display: flex;
@@ -171,38 +160,41 @@ body {
       display: none;
       }
       #profile-menu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(10px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-basis: 0;
-      }
-      #profile-menu-content {
-      background-color: #dddddd;
-      padding: 15%;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      flex-basis: 0;
-      clip-path: polygon(
-    10% 0%, 30% 5%, 30% 0%, 40% 8%, 50% 2%, 60% 6%, 70% 0%, 80% 5%, 90% 0%, 100% 10%,
-    98% 20%, 100% 30%, 92% 40%, 110% 60%, 95% 60%, 100% 70%, 90% 80%, 100% 90%, 85% 100%,
-    70% 95%, 60% 100%, 50% 90%, 40% 100%, 30% 95%, 20% 100%, 10% 90%, 0% 80%,
-    5% 70%, 0% 60%, 8% 50%, 0% 40%, 5% 30%, 0% 20%
-  );
-      }
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  #profile-menu-content {
+    position: relative;
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(35, 35, 37);
+  }
       #profile-menu-content h2 {
       font-size: 35px;
       }
       #profile-menu-content p {
       font-size: 25px;
       }
+      
       #skins-menu {
     position: fixed;
     top: 0;
@@ -214,22 +206,34 @@ body {
     display: none;
     justify-content: center;
     align-items: flex-end;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
 }
 
 #skins-menu-content {
-    position: relative; /* Добавляем, чтобы контент не накрывал фон */
-    background-color: rgb(10, 10, 17);
+    position: relative; /* Убираем перекрытие фона */
+    background: #dbdbdb;
     width: 100%;
-    height: 60%; /* Оставляем 60%, чтобы он был внизу */
+    height: 60%;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
     padding: 20px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
     overflow-y: auto;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
 }
+
+
       .skin-row {
       margin-bottom: 20px;
-      color: rgb(255, 255, 255)
+      color: rgb(58, 56, 56)
       }
       .skin-row h3 {
       font-size: 20px;
@@ -242,12 +246,22 @@ body {
       overflow-x: scroll; /* Горизонтальный скролл */
       margin-bottom: 10px;
       gap: 10px; /* Расстояние между элементами */
+      cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
       }
       .skins img {
       width: 123px; /* Увеличено с 60px */
       height: 123px; /* Увеличено с 60px */
       border-radius: 10px;
       transition: transform 0.3s;
+      cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
       }
       .skins img:hover {
       transform: scale(1.1);
@@ -256,40 +270,164 @@ body {
       width: 100%;
       padding: 10px;
       font-size: 18px;
-      background-color: #7a95a0;
-      color: white;
+      background-color: #2e2d2d;
+      color: #cecece;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
       }
       button:hover {
-      background-color: #2e363f;
+      background-color: #212122;
+      cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
       }
       .hidden {
       display: none;
       }
+      #leaderboard-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  #leaderboard-menu-content {
+    position: relative;
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(35, 35, 37);
+  }
+  #quests-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  #quests-menu-content {
+    position: relative;
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(38, 38, 41);
+  }
+  #friend-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  #friend-menu-content {
+    position: relative;
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(38, 38, 41);
+  }
+/* Стили для блоков */
+#desktop-content {
+  background: black;
+    color: white;
+    padding: 50px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#desktop-content h1 {
+    margin-bottom: 10px; /* Добавляем отступ сверху для текста */
+    bottom: 50%;
+}
+
+#mobile-content {
+    padding: 20px;
+}
+
+/* Дополнительные стили для QR-кода */
+#desktop-content img {
+    margin-top: 10px; /* Отступ сверху для картинки, чтобы текст был чуть выше */
+    max-width: 100%;
+    height: auto;
+}
     </style>
   </head>
-  <!-- Фоновые звезды -->
-<div class="stars">
-  <div class="star" style="width: 2px; height: 2px; top: 10%; left: 20%;"></div>
-  <div class="star" style="width: 3px; height: 3px; top: 30%; left: 60%;"></div>
-  <div class="star" style="width: 1px; height: 1px; top: 50%; left: 80%;"></div>
-  <div class="star" style="width: 2px; height: 2px; top: 70%; left: 10%;"></div>
-  <div class="star" style="width: 3px; height: 3px; top: 90%; left: 40%;"></div>
+  <div id="desktop-content" class="hidden">
+    <div class="message-container">
+        <h1>"Dice can only be played on a phone"</h1>
+        <img src="https://raw.githubusercontent.com/SusPect147/LUCU/refs/heads/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B9%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.png" alt="QR Code">
+    </div>
 </div>
+<div id="mobile-content" class="hidden">
+    <!-- Canvas для системы частиц -->
+    <canvas id="particleCanvas"></canvas>
 
-<!-- Движущиеся звезды -->
-<div class="flying-stars">
-  <div class="flying-star" style="width: 2px; height: 2px; left: 10%;"></div>
-  <div class="flying-star" style="width: 3px; height: 3px; left: 30%;"></div>
-  <div class="flying-star" style="width: 1px; height: 1px; left: 50%;"></div>
-  <div class="flying-star" style="width: 2px; height: 2px; left: 70%;"></div>
-  <div class="flying-star" style="width: 3px; height: 3px; left: 90%;"></div>
-</div>
+    <!-- Контейнер для фоновых звезд -->
+    <div class="stars"></div>
+
   <body class="gray-gradient">
     <div id="coins">0 $LUCU</div>
-    <div id="bestLuck">Huh, you dont have luck</div>
+    <div id="bestLuck">Your Best MIN luck: <span style="color: rgba(226, 39, 39, 0.705);">1001</span></div>
     <div id="progressBar">
       <div></div>
     </div>
@@ -300,7 +438,7 @@ body {
         Profile
       </div>
       <div class="menu-item">
-        <img src="друзья.png" alt="Friends">
+        <img src="друзья.png" alt="Friend">
         Friends
       </div>
       <div class="menu-item">
@@ -325,9 +463,8 @@ body {
     </div>
     <div id="skins-menu" class="hidden">
       <div id="skins-menu-content">
-        <button id="close-skins-menu">Close</button>
         <div class="skin-row">
-          <h3>Classic CubeS</h3>
+          <h3>Classic Cubes</h3>
           <div class="skins">
             <img src="начальный кубик.gif" alt="Cube 11">
             <img src="супер начальный кубик.gif" alt="Cube 111">
@@ -355,7 +492,7 @@ body {
           <button id="buy-negative">Buy //599 $LUCU/</button>
         </div>
         <div class="skin-row">
-          <h3>Emerald CubeS</h3>
+          <h3>Emerald Cubes</h3>
           <div class="skins">
             <img src="ИЗУМРУДНЫЙ-КУБИК.gif" alt="Emerald Cube 11">
             <img src="ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif" alt="Emerald Cube 111">
@@ -370,7 +507,34 @@ body {
         </div>
       </div>
     </div>
+
+    <div id="leaderboard-menu" class="hidden">
+      <div id="leaderboard-menu-content">
+        <h2>/Coming/Soon/</h2>
+      </div>
+    </div>
+    <div id="quests-menu" class="hidden">
+      <div id="quests-menu-content">
+        <h2>Wait//</h2>
+      </div>
+    </div>
+    <div id="friend-menu" class="hidden">
+      <div id="friend-menu-content">
+        <h2>1 update please]</h2>
+      </div>
+    </div>
+  </div>
     <script>
+      window.onload = function() {
+    // Проверяем размер экрана
+    if (window.innerWidth <= 768) {
+        // Если мобильное устройство, показываем игру
+        document.getElementById("mobile-content").classList.remove("hidden");
+    } else {
+        // Если ПК, показываем QR код и сообщение
+        document.getElementById("desktop-content").classList.remove("hidden");
+    }
+}
       const cube = document.getElementById('cube');
       const coinsDisplay = document.getElementById('coins');
       const bestLuckDisplay = document.getElementById('bestLuck');
@@ -389,35 +553,22 @@ body {
           const min = 0.0000000000001;
           const max = 1000;
           let randomLuck = Math.random() * (max - min) + min;
-          if (randomLuck > 1) {
-              randomLuck = Math.round(randomLuck);
-          }
           if (bestLuck === null || randomLuck < bestLuck) {
               bestLuck = randomLuck;
               const formattedLuck = formatNumber(bestLuck);
-              bestLuckDisplay.textContent = `Your Best MIN Luck: ${formattedLuck}`;
+              bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: rgba(226, 39, 39, 0.705);">${formattedLuck}</span>`;
               adjustFontSizeToFit(bestLuckDisplay);
           }
       }
       function formatNumber(number) {
-          if (number >= 1) {
-              return Math.round(number);
-          }
-          const str = number.toString();
-          let significantDigits = '';
-          let count = 0;
-          for (let i = 0; i < str.length; i++) {
-              const char = str[i];
-              if (char === '0' || char === '.') {
-                  significantDigits += char;
-              } else {
-                  significantDigits += char;
-                  count++;
-                  if (count === 4) break;
-              }
-          }
-          return significantDigits;
-      }
+    if (number >= 1) {
+        return number.toFixed(4); // Форматируем с 4 знаками после запятой, если число >= 1
+    }
+    return number.toPrecision(4); // Форматируем с 4 значащими цифрами, если число < 1
+}
+
+
+
       const skinsMenu = document.getElementById('skins-menu');
       const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
       const buyNegativeButton = document.getElementById('buy-negative');
@@ -522,12 +673,12 @@ body {
       } 
         else if (equippedSkin === 'negative') {
         cube.src = 'нач-ezgif.com-effects.gif';  // Установим начальный скин
-        if (random < 40) outcome = { src: '1--ezgif.com-effects.gif', coins: 2 };
-        else if (random < 65) outcome = { src: '2--ezgif.com-effects.gif', coins: 4 };
-        else if (random < 80) outcome = { src: '3--ezgif.com-effects.gif', coins: 6 };
-        else if (random < 90) outcome = { src: '4--ezgif.com-effects.gif', coins: 8 };
-        else if (random < 97) outcome = { src: '5--ezgif.com-effects.gif', coins: 10 };
-        else outcome = { src: '6--ezgif.com-effects.gif', coins: 12 };
+        if (random < 40) outcome = { src: '1--ezgif.com-effects.gif', coins: 1 };
+        else if (random < 65) outcome = { src: '2--ezgif.com-effects.gif', coins: 2 };
+        else if (random < 80) outcome = { src: '3--ezgif.com-effects.gif', coins: 3 };
+        else if (random < 90) outcome = { src: '4--ezgif.com-effects.gif', coins: 4 };
+        else if (random < 97) outcome = { src: '5--ezgif.com-effects.gif', coins: 5 };
+        else outcome = { src: '6--ezgif.com-effects.gif', coins: 6 };
       } 
         else if (isRainbow && equippedSkin === 'Emerald'){
         cube.src = 'ИЗУМРУДНЫЙ-СУПЕР-КУБИК.gif.gif';  // Установим начальный скин
@@ -540,12 +691,12 @@ body {
       } 
         else if (equippedSkin === 'Emerald') {
         cube.src = 'ИЗУМРУДНЫЙ-КУБИК.gif';  // Установим начальный скин
-        if (random < 40) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-1.gif', coins: 2 };
-        else if (random < 65) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-2.gif', coins: 4 };
-        else if (random < 80) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-3.gif', coins: 6 };
-        else if (random < 90) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-4.gif', coins: 8 };
-        else if (random < 97) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-5.gif', coins: 10 };
-        else outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-6.gif', coins: 12 };
+        if (random < 40) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-1.gif', coins: 1 };
+        else if (random < 65) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-2.gif', coins: 2 };
+        else if (random < 80) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-3.gif', coins: 3 };
+        else if (random < 90) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-4.gif', coins: 4 };
+        else if (random < 97) outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-5.gif', coins: 5 };
+        else outcome = { src: 'ИЗУМРУДНЫЙ-КУБИК-6.gif', coins: 6 };
       } 
       else if (isRainbow)  {
         if (random < 40) outcome = { src: '1-кубик.gif', coins: 2 };
@@ -570,10 +721,47 @@ body {
       setTimeout(() => {
         rollCube();
         isAnimating = false;
-      }, 1200);
+      }, 1050);
       };
       }
       rollCube();
+      const leaderboardMenu = document.getElementById('leaderboard-menu');
+      const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
+  leaderboardButton.addEventListener('click', () => {
+      leaderboardMenu.style.display = 'flex';
+  });
+  leaderboardMenu.addEventListener('click', (e) => {
+      if (e.target === leaderboardMenu) {
+          leaderboardMenu.style.display = 'none';
+      }
+  });
+  const questsMenu = document.getElementById('quests-menu');
+  const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
+  questsButton.addEventListener('click', () => {
+    questsMenu.style.display = 'flex';
+  });
+  questsMenu.addEventListener('click', (e) => {
+      if (e.target === questsMenu) {
+        questsMenu.style.display = 'none';
+      }
+  });
+  document.addEventListener("DOMContentLoaded", () => {
+  const friendMenu = document.getElementById('friend-menu');
+  const friendButton = document.querySelector('.menu-item img[alt="Friend"]');
+
+  if (friendMenu && friendButton) {
+    friendButton.addEventListener('click', () => {
+      friendMenu.style.display = 'flex';
+    });
+
+    friendMenu.addEventListener('click', (e) => {
+      if (e.target === friendMenu) {
+        friendMenu.style.display = 'none';
+      }
+    });
+  }
+});
+
       const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
       manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
       buttonRootId: 'ton-connect'
@@ -584,10 +772,7 @@ body {
       const profileButton = document.getElementById("profile-button");
       const profileMenu = document.getElementById("profile-menu");
       const profileName = document.getElementById("profile-name");
-      const closeSkinsButton = document.getElementById('close-skins-menu');
-      closeSkinsButton.addEventListener('click', () => {
-      skinsMenu.style.display = 'none';
-      });
+
       const tg = window.Telegram.WebApp;
       const userName = tg.initDataUnsafe?.user?.username || "NoName";
       profileName.textContent = `Hello, ${userName}`;
@@ -599,31 +784,143 @@ body {
         profileMenu.style.display = "none";
       }
       });
-      // Генерация фоновых звезд
-function createStars(containerClass, starClass, count) {
-  const container = document.querySelector(`.${containerClass}`);
-  for (let i = 0; i < count; i++) {
-    const star = document.createElement("div");
-    star.classList.add(starClass);
+      window.onload = () => {
+            const canvas = document.getElementById("particleCanvas");
+            if (canvas) {
+                const particleSystem = new ParticleSystem(canvas, { x: window.innerWidth, y: window.innerHeight });
+                particleSystem.amount = 60; // Количество частиц
+                particleSystem.diameter = { min: 2, max: 5 }; // Размер частиц
+                particleSystem.life = { min: 3, max: 7 }; // Время жизни
+                particleSystem.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } }; // Скорость
+                particleSystem.init();
+            }
+        };
 
-    // Случайный размер
-    const size = Math.random() * 3 + 1; // От 1 до 4 пикселей
-    star.style.width = `${size}px`;
-    star.style.height = `${size}px`;
+        window.addEventListener("resize", () => {
+            const canvas = document.getElementById("particleCanvas");
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        });
 
-    // Случайное положение
-    star.style.top = `${Math.random() * 100}%`;
-    star.style.left = `${Math.random() * 100}%`;
+        window.onload = () => {
+    const canvas = document.getElementById("particleCanvas");
+    if (canvas) {
+        const particleSystem = new ParticleSystem(canvas, { x: window.innerWidth, y: window.innerHeight });
+        particleSystem.amount = 100;
+        particleSystem.diameter = { min: 1, max: 3 };
+        particleSystem.life = { min: 3, max: 7 };
+        particleSystem.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } };
+        particleSystem.init();
 
-    container.appendChild(star);
-  }
+        // Добавляем обработчик изменения размера экрана
+        window.addEventListener("resize", () => {
+            const oldSize = { x: particleSystem.size.x, y: particleSystem.size.y };
+            particleSystem.resize({ x: window.innerWidth, y: window.innerHeight }, oldSize);
+        });
+    }
+};
+
+class Particle {
+    constructor(id, parent) {
+        this.parent = parent;
+        this.id = id;
+        this.position = { x: 0, y: 0 };
+        this.diameter = 0;
+        this.life = 0;
+        this.speed = { x: 0, y: 0 };
+        this.init();
+    }
+
+    init() {
+        let interval = setInterval(() => {
+            this.position.x += (60 * this.speed.x) / 1000;
+            this.position.y -= (60 * this.speed.y) / 1000;
+            this.life -= 1 / 60;
+
+            if (this.life <= 0) {
+                clearInterval(interval);
+                this.parent.particles.delete(this.id);
+            }
+        }, 1000 / 60);
+    }
 }
 
-// Создаем 50 фоновых звезд
-createStars("stars", "star", 50);
+class ParticleSystem {
+    constructor(canvas, size) {
+        this.canvas = canvas;
+        this.size = size;
+        this.lastId = 0;
+        this.amount = 0;
+        this.particles = new Map();
+        this.diameter = { min: 0, max: 0 };
+        this.life = { min: 0, max: 0 };
+        this.speed = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 } };
 
-// Создаем 10 движущихся звезд
-createStars("flying-stars", "flying-star", 10);
+        canvas.width = size.x;
+        canvas.height = size.y;
+    }
+
+    static getRandomNumberInInterval(range) {
+        return Math.random() * (range.max - range.min) + range.min;
+    }
+
+    createParticle() {
+        let particle = new Particle(this.lastId.toString(), this);
+        particle.position.x = ParticleSystem.getRandomNumberInInterval({ min: 0, max: this.size.x });
+        particle.position.y = ParticleSystem.getRandomNumberInInterval({ min: 0, max: this.size.y });
+        particle.diameter = ParticleSystem.getRandomNumberInInterval(this.diameter);
+        particle.life = ParticleSystem.getRandomNumberInInterval(this.life);
+        particle.speed.x = ParticleSystem.getRandomNumberInInterval(this.speed.x);
+        particle.speed.y = ParticleSystem.getRandomNumberInInterval(this.speed.y);
+
+        this.particles.set(this.lastId.toString(), particle);
+        this.lastId++;
+    }
+
+    init() {
+        let ctx = this.canvas.getContext("2d");
+        ctx.fillStyle = "white";
+
+        for (let i = 0; i < this.amount; i++) {
+            this.createParticle();
+        }
+
+        setInterval(() => {
+            if (this.particles.size < this.amount) {
+                this.createParticle();
+            }
+        }, 1000 / 60);
+
+        setInterval(() => {
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.particles.forEach((particle) => {
+                ctx.beginPath();
+                ctx.arc(particle.position.x, particle.position.y, particle.diameter / 2, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }, 1000 / 60);
+    }
+
+    resize(newSize, oldSize) {
+        this.canvas.width = newSize.x;
+        this.canvas.height = newSize.y;
+        let ctx = this.canvas.getContext("2d");
+        ctx.fillStyle = "white";
+        this.particles.forEach((particle) => {
+            particle.position.x = (particle.position.x / oldSize.x) * newSize.x;
+            particle.position.y = (particle.position.y / oldSize.y) * newSize.y;
+        });
+
+        this.size = newSize;
+    }
+}
+
+window.particlex = { ParticleSystem, Particle };
+
+
       tg.expand();
     </script>
     </script>
@@ -631,7 +928,7 @@ createStars("flying-stars", "flying-star", 10);
       document.ondragstart = noselect; 
       document.onselectstart = noselect; 
       document.oncontextmenu = noselect; 
-      function noselect() { return false;} 
+      function noselect() {return false;} 
       </script>
   </body>
 </html>
