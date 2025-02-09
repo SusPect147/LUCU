@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<meta name="robots" content="noindex, nofollow">
+		<script src="https://telegram.org/js/telegram-web-app.js"></script>
+		<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+		<link rel="icon" href="cubeee.png" type="image/x-icon">
+		<title>LUCU game</title>
+		<!-- Link to the style.js file -->
+		<link rel="stylesheet" href="style.css">
+		<style></style>
+	</head>
+	<body class="gray-gradient">
+		<canvas id="particleCanvas"></canvas>
+		<!-- Контейнер для фоновых звезд -->
+		<div class="stars"></div>
+		<div id="coins">0 $LUCU</div>
+		<div id="bestLuck">Your Best MIN luck: <span style="color:#F80000;">1001</span></div>
+		<div id="progressBar">
+			<div></div>
+		</div>
+		<img id="cube" src="начальный кубик.gif" alt="Cube">
+		<div class="menu">
+			<div class="menu-item">
+				<img src="pictures/cubics/cubeee.png" alt="Profile" id="profile-button">
+				Profile
+			</div>
+			<div class="menu-item">
+				<img src="pictures/other png/друзья.png" alt="Friend">
+				Friends
+			</div>
+			<div class="menu-item">
+				<img src="pictures/other png/квесты.png" alt="Quests">
+				Quests
+			</div>
+			<div class="menu-item">
+				<img src="pictures/other png/таблица лидеров.png" alt="Leaderboard">
+				Leaders
+			</div>
+			<div class="menu-item">
+				<img src="pictures/other png/магазин.png" alt="Skins">
+				Skins
+			</div>
+		</div>
+		<div id="profile-menu">
+			<div id="profile-menu-content">
+				<p>Your TON wallet</p>
+				<div id="ton-connect"></div>
+				<h2 id="profile-name">Hello, NoName</h2>
+			</div>
+		</div>
+		<div id="skins-menu" class="hidden">
+			<div id="skins-menu-content">
+				<div class="skin-row">
+					<h3>Basic Cubes</h3>
+					<div class="skins">
+						<img src="pictures/cubics/начальный-кубик.gif" alt="Cube 11">
+						<img src="pictures/cubics/супер-начальный-кубик.gif" alt="Cube 111">
+						<img src="pictures/cubics/1-кубик.gif" alt="Cube 1">
+						<img src="pictures/cubics/2-кубик.gif" alt="Cube 2">
+						<img src="pictures/cubics/3-кубик.gif" alt="Cube 3">
+						<img src="pictures/cubics/4-кубик.gif" alt="Cube 4">
+						<img src="pictures/cubics/5-кубик.gif" alt="Cube 5">
+						<img src="pictures/cubics/6-кубик.gif" alt="Cube 6">
+					</div>
+					<button id="equip-classic">Equip</button>
+				</div>
+				<div class="skin-row">
+					<h3>Negative Cubes</h3>
+					<div class="skins">
+						<img src="pictures/cubics/начальный-кубик-негатив.gif" alt="Negative Cube 11">
+						<img src="pictures/cubics/супер-начальный-кубик-негатив.gif" alt="Negative Cube 111">
+						<img src="pictures/cubics/1-кубик-негатив.gif" alt="Negative Cube 1">
+						<img src="pictures/cubics/2-кубик-негатив.gif" alt="Negative Cube 2">
+						<img src="pictures/cubics/3-кубик-негатив.gif" alt="Negative Cube 3">
+						<img src="pictures/cubics/4-кубик-негатив.gif" alt="Negative Cube 4">
+						<img src="pictures/cubics/5-кубик-негатив.gif" alt="Negative Cube 5">
+						<img src="pictures/cubics/6-кубик-негатив.gif" alt="Negative Cube 6">
+					</div>
+					<button id="buy-negative">Buy //599 $LUCU/</button>
+				</div>
+				<div class="skin-row">
+					<h3>Reverse Cubes</h3>
+					<div class="skins">
+						<img src="pictures/cubics/начальный-кубик-перевернутый.gif" alt="Cube 11">
+						<img src="pictures/cubics/супер-начальный-кубик-перевернутый.gif" alt="Cube 111">
+						<img src="pictures/cubics/1-кубик-перевернутый.gif" alt="Cube 1">
+						<img src="pictures/cubics/2-кубик-перевернутый.gif" alt="Cube 2">
+						<img src="pictures/cubics/3-кубик-перевернутый.gif" alt="Cube 3">
+						<img src="pictures/cubics/4-кубик-перевернутый.gif" alt="Cube 4">
+						<img src="pictures/cubics/5-кубик-перевернутый.gif" alt="Cube 5">
+						<img src="pictures/cubics/6-кубик-перевернутый.gif" alt="Cube 6">
+					</div>
+					<button id="buy-Emerald">Buy //1.1k $LUCU/</button>
+				</div>
+			</div>
+		</div>
+		<div id="leaderboard-menu" class="hidden">
+			<div id="leaderboard-menu-content">
+				<img src="https://em-content.zobj.net/source/telegram/386/trophy_1f3c6.webp" alt="Trophy" class="trophy">
+				<div class="button-group">
+					<button id="most-lucu" class="active">Most $LUCU</button>
+					<button id="best-luck">Best LUCK</button>
+				</div>
+				<ul id="leaderboard-list" class="leaderboard-list">
+					<li class="coming-soon">Coming Soon</li>
+				</ul>
+			</div>
+		</div>
+		<div id="quests-menu" class="hidden">
+			<div id="quests-menu-content">
+				<h2>Wait//</h2>
+			</div>
+		</div>
+		<div id="friend-menu" class="hidden">
+			<div id="friend-menu-content">
+				<h2>1 update please]</h2>
+			</div>
+		</div>
+		<!-- Link to the game.js file -->
+		<script src="game.js"></script>
+	</body>
+</html>

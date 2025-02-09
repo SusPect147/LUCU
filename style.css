@@ -1,0 +1,507 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
+    linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
+    linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
+    font-family: Arial, sans-serif;
+    transition-duration: 1s ease-in-out;
+    position: relative;
+    }
+    
+    .stars, .flying-stars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    }
+    .star {
+    position: absolute;
+    background-color: rgb(255, 255, 255);
+    border-radius: 50%;
+    opacity: 0.2;
+    animation: twinkle 5s infinite alternate;
+    }
+    @keyframes twinkle {
+    0% { opacity: 0.2; }
+    100% { opacity: 0.4; }
+    }
+    .flying-star {
+    position: absolute;
+    background-color: rgb(255, 255, 255);
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: flyUp 5s linear infinite;
+    }
+    @keyframes flyUp {
+    0% { transform: translateY(100vh); opacity: 0.8; }
+    100% { transform: translateY(-100vh); opacity: 0; }
+    }
+    /* Добавляем стили для canvas */
+    #particleCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    }
+    #coins {
+    font-size: 3.438rem;
+    font-weight: bold;
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    color: rgb(162, 175, 175);
+    }
+    #bestLuck {
+    font-weight: bold;
+    position: absolute;
+    top: calc(10% + 4.063rem);
+    font-size: 1.25rem;
+    color: rgb(162, 175, 175);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    }
+    #cube {
+    width: 22rem;
+    height: 22rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    .pink-gradient {
+    background: linear-gradient(217deg, rgb(77, 7, 7), rgba(49, 4, 4, 0.493) 70.71%),
+    linear-gradient(127deg, rgb(7, 54, 7), rgba(6, 51, 6, 0.219) 70.71%),
+    linear-gradient(336deg, rgb(9, 9, 73), rgba(7, 7, 68, 0.288) 70.71%);
+    background-blend-mode: multiply;
+    }
+    #progressBar {
+    position: absolute;
+    bottom: 25%;
+    width: 80%;
+    height: 0.625rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 0.313rem;
+    overflow: hidden;
+    }
+    #progressBar div {
+    height: 100%;
+    width: 0;
+    background:#F80000;
+    }
+    .menu {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(200, 200, 200, 0.9), rgba(245, 245, 245, 0.9));
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    flex-basis: 0;
+    }
+    .menu-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 20px;
+    color: #555;
+    }
+    .menu-item img {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 5px;
+    }
+    .menu-item:hover {
+    color: #000;
+    }
+    .hidden {
+    display: none;
+    }
+    #profile-menu {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.5);
+backdrop-filter: blur(10px);
+display: none;
+justify-content: center;
+align-items: flex-end;
+}
+
+#profile-menu-content {
+position: relative;
+background: #dbdbdb;
+width: 100%;
+height: 35%;
+border-top-left-radius: 15px;
+border-top-right-radius: 15px;
+padding: 20px;
+box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center; /* Центрируем элементы по вертикали */
+text-align: center;
+font-size: 24px;
+font-weight: bold;
+color: rgb(35, 35, 37);
+}
+
+#profile-name {
+margin-top: auto; /* Оставляет "Hello, NoName" прижатым к низу */
+padding-bottom: 20px;
+}
+
+
+
+    #skins-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; /* Теперь фон покрывает весь экран */
+    background: rgba(0, 0, 0, 0.5); /* Затемнение */
+    backdrop-filter: blur(10px); /* Размытие фона */
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    #skins-menu-content {
+    position: relative; /* Убираем перекрытие фона */
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    .skin-row {
+    margin-bottom: 20px;
+    color: rgb(58, 56, 56)
+    }
+    .skin-row h3 {
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 10px;
+    }
+    .skins {
+    display: flex;
+    justify-content: flex-start; /* Начало ряда */
+    overflow-x: scroll; /* Горизонтальный скролл */
+    margin-bottom: 10px;
+    gap: 10px; /* Расстояние между элементами */
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    .skins img {
+    width: 123px; /* Увеличено с 60px */
+    height: 123px; /* Увеличено с 60px */
+    border-radius: 10px;
+    transition: transform 0.3s;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    .skins img:hover {
+    transform: scale(1.1);
+    }
+    button {
+    width: 100%;
+    padding: 10px;
+    font-size: 18px;
+    background-color: #2e2d2d;
+    color: #cecece;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    button:hover {
+    background-color: #212122;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    .hidden {
+    display: none;
+    }
+    #leaderboard-menu {
+ position: fixed;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background: rgba(0, 0, 0, 0.5);
+ backdrop-filter: blur(10px);
+ display: none;
+ justify-content: center;
+ align-items: flex-end;
+}
+#leaderboard-menu-content {
+ position: relative;
+ background: #dbdbdb;
+ width: 100%;
+ height: 60%;
+ border-top-left-radius: 15px;
+ border-top-right-radius: 15px;
+ padding: 20px;
+ box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+}
+.trophy {
+ width: 150px;
+ height: auto;
+ margin-bottom: 15px;
+}
+.button-group {
+display: flex;
+border-radius: 20px;
+overflow: hidden;
+margin-bottom: 5px;
+width: calc(100% - 20px); /* Сделал ширину кнопок с отступами по 10px с каждой стороны */
+margin-left: 10px; /* Добавил левый отступ */
+margin-right: 10px; /* Добавил правый отступ */
+}
+
+.button-group button {
+border: none;
+font-size: 16px; /* Уменьшил размер шрифта кнопок */
+font-weight: bold;
+cursor: pointer;
+transition: background 0.3s;
+background: rgb(22, 22, 22);
+color: white;
+flex: 1; /* Равномерное распределение ширины кнопок */
+}
+
+/* Первая кнопка - скругление только слева */
+.button-group button:first-child {
+border-radius: 20px 0 0 20px;
+}
+
+/* Последняя кнопка - скругление только справа */
+.button-group button:last-child {
+border-radius: 0 20px 20px 0;
+}
+
+/* Активная кнопка */
+.button-group button.active {
+background: rgb(39, 39, 39);
+}
+
+.leaderboard-list {
+ width: 100%;
+ max-height: calc(100% - 300px); /* Сделал так, чтобы зона была листаемой до нижнего края с отступом 10px */
+ overflow-y: auto;
+ padding: 10px;
+ margin-bottom: 10px; /* Добавил отступ снизу */
+}
+.leaderboard-item {
+ background: white;
+ padding: 10px;
+ margin-bottom: 20px;
+ border-radius: 10px;
+ display: flex;
+ justify-content: space-between;
+ font-size: 16px;
+ font-weight: bold;
+}
+    #quests-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+    }
+    #quests-menu-content {
+    position: relative;
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(38, 38, 41);
+    }
+    #friend-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+    }
+    #friend-menu-content {
+    position: relative;
+    background: #dbdbdb;
+    width: 100%;
+    height: 60%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(38, 38, 41);
+    }
+    /* Стили для блоков */
+    #desktop-content {
+    background: black;
+    color: white;
+    padding: 50px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    }
+    #desktop-content h1 {
+    margin-bottom: 10px; /* Добавляем отступ сверху для текста */
+    }
+    #mobile-content {
+    padding: 20px;
+    }
+    /* Дополнительные стили для QR-кода */
+    #desktop-content img {
+    margin-top: 10px; /* Отступ сверху для картинки, чтобы текст был чуть выше */
+    max-width: 100%;
+    height: auto;
+    }
+    @media screen and (max-height: 670px) {
+       #cube {
+    width: 18rem;
+    height: 18rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    #coins {
+    font-size: 3rem;
+    font-weight: bold;
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    color: rgb(162, 175, 175);
+    }
+    }
+    @media screen and (min-width: 634px) and (min-height: 872px) {
+       .skins img {
+    width: 200px; /* Увеличено с 60px */
+    height: 200px; /* Увеличено с 60px */
+    }
+    #bestLuck {
+    font-weight: bold;
+    position: absolute;
+    top: calc(10% + 4.063rem);
+    font-size: 1.25rem;
+    color: rgb(162, 175, 175);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    right: 10%;
+    }
+    }
+    @media screen and (min-width: 1000px) and (min-height: 1000px){
+       #cube {
+    width: 25rem;
+    height: 25rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+    }
+    #coins {
+    font-size: 3rem;
+    font-weight: bold;
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    color: rgb(162, 175, 175);
+    }
+    #progressBar {
+    position: absolute;
+    bottom: 25%;
+    width: 60%;
+    height: 0.625rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 0.313rem;
+    overflow: hidden;
+    }
+    }
+    .leaderboard-list {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: gray;
+}
