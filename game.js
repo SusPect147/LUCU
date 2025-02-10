@@ -33,9 +33,23 @@ const leaderboardList = document.getElementById('leaderboard-list');
     }
 }
 
+function sendCoinsToServer(amount) {
+  fetch("https://semga-production.up.railway.app/update_points", {  // Заменить на нужный маршрут
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ coins: amount }) // Отправляем данные
+  })
+  .then(response => response.json())
+  .then(data => console.log("Ответ от сервера:", data))
+  .catch(error => console.error("Ошибка:", error));
+}
+
 function updateCoins(amount) {
-    coins += amount;
-    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+  coins += amount;
+  coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+  sendCoinsToServer(amount);  // Отправляем данные на сервер
 }
 
          function updateBestLuck() {
