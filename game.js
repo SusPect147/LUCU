@@ -50,28 +50,36 @@ const leaderboardList = document.getElementById('leaderboard-list');
         return amount;
     }
 }
-function sendCoinsToServer(amount, action) {
-  fetch("https://semga-production.up.railway.app/update_points", {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-          user_id: localStorage.getItem("user_id"), // Получаем user_id
-          action: action // 'buy' или 'sell'
-      })
-  })
-  .then(response => response.json())
-  .then(data => console.log("Ответ от сервера:", data))
-  .catch(error => console.error("Ошибка:", error));
+function sendCoinsToServer(amount) {
+    fetch("https://semga-production.up.railway.app/update_points", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            user_id: localStorage.getItem("user_id"),
+            delta: amount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем локальные монеты на случай, если сервер вернул изменённое значение
+            coins = data.user_data.points;
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+        } else {
+            console.error("Ошибка обновления монет на сервере:", data.message);
+        }
+    })
+    .catch(error => console.error("Ошибка:", error));
 }
 
-
-function updateCoins(amount, action = 'buy') {
-  coins += amount;
-  coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-  sendCoinsToServer(amount, action);
+function updateCoins(amount) {
+    coins += amount;
+    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+    sendCoinsToServer(amount);
 }
+
 
 
 
