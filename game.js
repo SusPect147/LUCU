@@ -115,7 +115,7 @@ function updateCoins(amount, action = 'buy') {
              if (!hasBoughtNegative) {
                  if (coins >= 599) {
                      coins -= 599;
-                     updateCoins(-599, 'sell'); // Покупка Negative Skin
+                     updateCoins(0); // Покупка Negative Skin
                      hasBoughtNegative = true;
                      buyNegativeButton.textContent = 'Equip';
                  }
@@ -127,7 +127,7 @@ function updateCoins(amount, action = 'buy') {
              if (!hasBoughtEmerald) {
                  if (coins >= 1100) {
                      coins -= 1100;
-                     updateCoins(-1100, 'sell'); // Покупка Emerald Skin
+                     updateCoins(0); // Покупка Emerald Skin
                      hasBoughtEmerald = true;
                      buyEmeraldButton.textContent = 'Equip';
                  }
