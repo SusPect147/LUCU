@@ -1,3 +1,21 @@
+fetch("https://semga-production.up.railway.app/validate", {
+  method: "POST",
+  headers: {
+      "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
+})
+.then(response => response.json())
+.then(data => {
+  if (data.success) {
+      localStorage.setItem("user_id", data.user_data.id);
+      coins = data.user_data.points;
+      coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+  } else {
+      console.error("Ошибка валидации");
+  }
+});
+
 const leaderboardList = document.getElementById('leaderboard-list');
    const mostLucuBtn = document.getElementById('most-lucu');
    const bestLuckBtn = document.getElementById('best-luck');
@@ -32,25 +50,30 @@ const leaderboardList = document.getElementById('leaderboard-list');
         return amount;
     }
 }
-
-function sendCoinsToServer(amount) {
-  fetch("https://semga-production.up.railway.app/update_points", {  // Заменить на нужный маршрут
+function sendCoinsToServer(amount, action) {
+  fetch("https://semga-production.up.railway.app/update_points", {
       method: "POST",
       headers: {
           "Content-Type": "application/json"
       },
-      body: JSON.stringify({ coins: amount }) // Отправляем данные
+      body: JSON.stringify({
+          user_id: localStorage.getItem("user_id"), // Получаем user_id
+          action: action // 'buy' или 'sell'
+      })
   })
   .then(response => response.json())
   .then(data => console.log("Ответ от сервера:", data))
   .catch(error => console.error("Ошибка:", error));
 }
 
-function updateCoins(amount) {
+
+function updateCoins(amount, action = 'buy') {
   coins += amount;
   coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-  sendCoinsToServer(amount);  // Отправляем данные на сервер
+  sendCoinsToServer(amount, action);
 }
+
+
 
          function updateBestLuck() {
              const min = 0.0000000000001;
@@ -92,7 +115,7 @@ function updateCoins(amount) {
              if (!hasBoughtNegative) {
                  if (coins >= 599) {
                      coins -= 599;
-                     updateCoins(0); // Обновляем текст монет
+                     updateCoins(-599, 'sell'); // Покупка Negative Skin
                      hasBoughtNegative = true;
                      buyNegativeButton.textContent = 'Equip';
                  }
@@ -104,7 +127,7 @@ function updateCoins(amount) {
              if (!hasBoughtEmerald) {
                  if (coins >= 1100) {
                      coins -= 1100;
-                     updateCoins(0); // Обновляем текст монет
+                     updateCoins(-1100, 'sell'); // Покупка Emerald Skin
                      hasBoughtEmerald = true;
                      buyEmeraldButton.textContent = 'Equip';
                  }
