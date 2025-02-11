@@ -1,20 +1,25 @@
-fetch("https://semga-production.up.railway.app/validate", {
-  method: "POST",
-  headers: {
-      "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
-})
-.then(response => response.json())
-.then(data => {
-  if (data.success) {
-      localStorage.setItem("user_id", data.user_data.id);
-      coins = data.user_data.points;
-      coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-  } else {
-      console.error("Ошибка валидации");
-  }
+document.addEventListener("DOMContentLoaded", () => {
+    fetch("https://semga-production.up.railway.app/validate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem("user_id", data.user_data.id);
+            coins = data.user_data.points;
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+        } else {
+            console.error("Ошибка валидации");
+        }
+    });
+    
+    // Здесь могут идти другие ваши обработчики и функции.
 });
+
 
 const leaderboardList = document.getElementById('leaderboard-list');
    const mostLucuBtn = document.getElementById('most-lucu');
