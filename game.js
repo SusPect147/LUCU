@@ -465,6 +465,3 @@ function startProgress(duration) {
 
 // Настройка темы
 tg.expand(); // Открыть приложение на весь экран
-document.addEventListener('DOMContentLoaded', () => {
-    fetchDataFromServer();
-});
