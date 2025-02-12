@@ -259,18 +259,7 @@ function startProgress(duration) {
          };
          }
          rollCube();
-                 // Функция загрузки лучших результатов
-        function loadLeaderboard() {
-          fetch('https://backend12-production-1210.up.railway.app/leaderboard')
-              .then(response => response.json())
-              .then(data => {
-                  leaderboardList.innerHTML = data.map(entry => `<li>${entry.name}: ${entry.coins}</li>`).join('');
-              })
-              .catch(error => console.error("Error loading leaderboard:", error));
-      }
 
-      // Загрузить таблицу лидеров при старте
-      loadLeaderboard();
          const leaderboardMenu = document.getElementById('leaderboard-menu');
          const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
          leaderboardButton.addEventListener('click', () => {
