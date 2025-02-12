@@ -1,50 +1,34 @@
-document.addEventListener("DOMContentLoaded", () => {
-    fetch("https://semga-production.up.railway.app/validate", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            localStorage.setItem("user_id", data.user_data.id);
-            coins = data.user_data.points;
-            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-        } else {
-            console.error("Ошибка валидации");
-        }
-    });
-    
-    // Здесь могут идти другие ваши обработчики и функции.
+const leaderboardList = document.getElementById('leaderboard-list');
+const mostLucuBtn = document.getElementById('most-lucu');
+const bestLuckBtn = document.getElementById('best-luck');
+
+mostLucuBtn.addEventListener('click', () => {
+    mostLucuBtn.classList.add('active');
+    bestLuckBtn.classList.remove('active');
 });
 
+bestLuckBtn.addEventListener('click', () => {
+    bestLuckBtn.classList.add('active');
+    mostLucuBtn.classList.remove('active');
+});
 
-const leaderboardList = document.getElementById('leaderboard-list');
-   const mostLucuBtn = document.getElementById('most-lucu');
-   const bestLuckBtn = document.getElementById('best-luck');
-   mostLucuBtn.addEventListener('click', () => {
-      mostLucuBtn.classList.add('active');
-      bestLuckBtn.classList.remove('active');
-   });
-   
-   bestLuckBtn.addEventListener('click', () => {
-      bestLuckBtn.classList.add('active');
-      mostLucuBtn.classList.remove('active');
-   });
+const cube = document.getElementById('cube');
+const coinsDisplay = document.getElementById('coins');
+const bestLuckDisplay = document.getElementById('bestLuck');
+const progressBar = document.querySelector('#progressBar div');
+let coins = 0;
+let bestLuck = Infinity;
+let isAnimating = false;
 
-         const cube = document.getElementById('cube');
-         const coinsDisplay = document.getElementById('coins');
-         const bestLuckDisplay = document.getElementById('bestLuck');
-         const progressBar = document.querySelector('#progressBar div');
-         let coins = 0;
-         let bestLuck = Infinity;
-         let isAnimating = false;
-         function getRandomInt(min, max) {
-             return Math.floor(Math.random() * (max - min + 1)) + min;
-         }
-         function formatCoins(amount) {
+// Получаем user_id из URL
+const urlParams = new URLSearchParams(window.location.search);
+const userId = urlParams.get('user_id');
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function formatCoins(amount) {
     if (amount >= 1_000_000_000) {
         return (amount / 1_000_000_000).toFixed(1) + 'B';
     } else if (amount >= 1_000_000) {
@@ -55,136 +39,145 @@ const leaderboardList = document.getElementById('leaderboard-list');
         return amount;
     }
 }
-function sendCoinsToServer(amount) {
-    fetch("https://semga-production.up.railway.app/update_points", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            user_id: localStorage.getItem("user_id"),
-            delta: amount
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Обновляем локальные монеты на случай, если сервер вернул изменённое значение
-            coins = data.user_data.points;
-            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-        } else {
-            console.error("Ошибка обновления монет на сервере:", data.message);
-        }
-    })
-    .catch(error => console.error("Ошибка:", error));
-}
 
 function updateCoins(amount) {
     coins += amount;
     coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-    sendCoinsToServer(amount);
+    sendDataToServer();
+}
+
+function updateBestLuck() {
+    const min = 0.0000000000001;
+    const max = 1000;
+    let randomLuck = Math.random() * (max - min) + min;
+    if (bestLuck === null || randomLuck < bestLuck) {
+        bestLuck = randomLuck;
+        const formattedLuck = formatNumber(bestLuck);
+        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
+        adjustFontSizeToFit(bestLuckDisplay);
+        sendDataToServer();
+    }
+}
+
+function sendDataToServer() {
+    if (!userId) {
+        console.error("User ID не найден в URL");
+        return;
+    }
+
+    fetch('https://backend12-production-1210.up.railway.app/update-data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            coins: coins,
+            bestLuck: bestLuck
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Данные обновлены на сервере", data);
+    })
+    .catch(error => {
+        console.error("Ошибка при отправке данных на сервер:", error);
+    });
+}
+
+function formatNumber(number) {
+    if (number >= 1) {
+        return number.toFixed(4);
+    }
+    return number.toPrecision(4);
 }
 
 
+const skinsMenu = document.getElementById('skins-menu');
+const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
+const buyNegativeButton = document.getElementById('buy-negative');
+const buyEmeraldButton = document.getElementById('buy-Emerald');
+const equipClassicButton = document.getElementById('equip-classic');
+let hasBoughtNegative = false;
+let hasBoughtEmerald = false;
+let equippedSkin = 'classic';
 
+skinsButton.addEventListener('click', () => {
+    skinsMenu.style.display = 'flex';
+});
 
-         function updateBestLuck() {
-             const min = 0.0000000000001;
-             const max = 1000;
-             let randomLuck = Math.random() * (max - min) + min;
-             if (bestLuck === null || randomLuck < bestLuck) {
-                 bestLuck = randomLuck;
-                 const formattedLuck = formatNumber(bestLuck);
-                 bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
-                 adjustFontSizeToFit(bestLuckDisplay);
-             }
-         }
-         function formatNumber(number) {
-         if (number >= 1) {
-           return number.toFixed(4); // Форматируем с 4 знаками после запятой, если число >= 1
-         }
-         return number.toPrecision(4); // Форматируем с 4 значащими цифрами, если число < 1
-         }
-         
-         
-         
-         const skinsMenu = document.getElementById('skins-menu');
-         const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
-         const buyNegativeButton = document.getElementById('buy-negative');
-         const buyEmeraldButton = document.getElementById('buy-Emerald');
-         const equipClassicButton = document.getElementById('equip-classic');
-         let hasBoughtNegative = false;
-         let hasBoughtEmerald = false;
-         let equippedSkin = 'classic';
-         skinsButton.addEventListener('click', () => {
-             skinsMenu.style.display = 'flex';
-         });
-         skinsMenu.addEventListener('click', (e) => {
-             if (e.target === skinsMenu) {
-                 skinsMenu.style.display = 'none';
-             }
-         });
-         buyNegativeButton.addEventListener('click', () => {
-             if (!hasBoughtNegative) {
-                 if (coins >= 599) {
-                     coins -= 599;
-                     updateCoins(0); // Покупка Negative Skin
-                     hasBoughtNegative = true;
-                     buyNegativeButton.textContent = 'Equip';
-                 }
-             } else {
-                 equipSkin('negative');
-             }
-         });
-         buyEmeraldButton.addEventListener('click', () => {
-             if (!hasBoughtEmerald) {
-                 if (coins >= 1100) {
-                     coins -= 1100;
-                     updateCoins(0); // Покупка Emerald Skin
-                     hasBoughtEmerald = true;
-                     buyEmeraldButton.textContent = 'Equip';
-                 }
-             } else {
-                 equipSkin('Emerald');
-             }
-         });
-         equipClassicButton.addEventListener('click', () => {
-             equipSkin('classic');
-         });
-         function equipSkin(type) {
-             equippedSkin = type;
-             if (type === 'negative') {
-                 cube.src = 'pictures/cubics/негатив/начальный-кубик-негатив.gif';
-             } else if (type === 'Emerald') {
-                 cube.src = 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif';
-             } else {
-                 cube.src = 'pictures/cubics/классика/начальный-кубик.gif';
-             }
-             if (hasBoughtNegative) {
-                 buyNegativeButton.textContent = type === 'negative' ? 'Equipped' : 'Equip';
-             }
-             if (hasBoughtEmerald) {
-                 buyEmeraldButton.textContent = type === 'Emerald' ? 'Equipped' : 'Equip';
-             }
-             equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
-         }
-         function adjustFontSizeToFit(element) {
-             const parentWidth = element.parentElement.offsetWidth;
-             let fontSize = 35;
-             element.style.fontSize = `${fontSize}px`;
-             while (element.scrollWidth > parentWidth && fontSize > 5) {
-                 fontSize -= 1;
-                 element.style.fontSize = `${fontSize}px`;
-             }
-         }
-         function startProgress(duration) {
-             progressBar.style.transition = `width ${duration}s linear`;
-             progressBar.style.width = '100%';
-             setTimeout(() => {
-                 progressBar.style.transition = 'none';
-                 progressBar.style.width = '0%';
-             }, duration * 1000);
-         }
+skinsMenu.addEventListener('click', (e) => {
+    if (e.target === skinsMenu) {
+        skinsMenu.style.display = 'none';
+    }
+});
+
+buyNegativeButton.addEventListener('click', () => {
+    if (!hasBoughtNegative) {
+        if (coins >= 599) {
+            coins -= 599;
+            updateCoins(0); // Обновляем текст монет
+            hasBoughtNegative = true;
+            buyNegativeButton.textContent = 'Equip';
+        }
+    } else {
+        equipSkin('negative');
+    }
+});
+
+buyEmeraldButton.addEventListener('click', () => {
+    if (!hasBoughtEmerald) {
+        if (coins >= 1100) {
+            coins -= 1100;
+            updateCoins(0); // Обновляем текст монет
+            hasBoughtEmerald = true;
+            buyEmeraldButton.textContent = 'Equip';
+        }
+    } else {
+        equipSkin('Emerald');
+    }
+});
+
+equipClassicButton.addEventListener('click', () => {
+    equipSkin('classic');
+});
+
+function equipSkin(type) {
+    equippedSkin = type;
+    if (type === 'negative') {
+        cube.src = 'pictures/cubics/негатив/начальный-кубик-негатив.gif';
+    } else if (type === 'Emerald') {
+        cube.src = 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif';
+    } else {
+        cube.src = 'pictures/cubics/классика/начальный-кубик.gif';
+    }
+    if (hasBoughtNegative) {
+        buyNegativeButton.textContent = type === 'negative' ? 'Equipped' : 'Equip';
+    }
+    if (hasBoughtEmerald) {
+        buyEmeraldButton.textContent = type === 'Emerald' ? 'Equipped' : 'Equip';
+    }
+    equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
+}
+
+function adjustFontSizeToFit(element) {
+    const parentWidth = element.parentElement.offsetWidth;
+    let fontSize = 35;
+    element.style.fontSize = `${fontSize}px`;
+    while (element.scrollWidth > parentWidth && fontSize > 5) {
+        fontSize -= 1;
+        element.style.fontSize = `${fontSize}px`;
+    }
+}
+
+function startProgress(duration) {
+    progressBar.style.transition = `width ${duration}s linear`;
+    progressBar.style.width = '100%';
+    setTimeout(() => {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+    }, duration * 1000);
+}
          function rollCube() {
          let isRainbow = Math.random() < 0.2;
          document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
@@ -266,6 +259,18 @@ function updateCoins(amount) {
          };
          }
          rollCube();
+                 // Функция загрузки лучших результатов
+        function loadLeaderboard() {
+          fetch('https://backend12-production-1210.up.railway.app/leaderboard')
+              .then(response => response.json())
+              .then(data => {
+                  leaderboardList.innerHTML = data.map(entry => `<li>${entry.name}: ${entry.coins}</li>`).join('');
+              })
+              .catch(error => console.error("Error loading leaderboard:", error));
+      }
+
+      // Загрузить таблицу лидеров при старте
+      loadLeaderboard();
          const leaderboardMenu = document.getElementById('leaderboard-menu');
          const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
          leaderboardButton.addEventListener('click', () => {
