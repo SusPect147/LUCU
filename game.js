@@ -1,3 +1,13 @@
+const leaderboardList = document.getElementById("leaderboard-list");
+const mostLucuBtn = document.getElementById("most-lucu");
+const bestLuckBtn = document.getElementById("best-luck");
+
+mostLucuBtn.addEventListener("click", () => {
+    mostLucuBtn.classList.add("active");
+    bestLuckBtn.classList.remove("active");
+});
+
+
 bestLuckBtn.addEventListener("click", () => {
     bestLuckBtn.classList.add("active");
     mostLucuBtn.classList.remove("active");
