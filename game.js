@@ -61,7 +61,47 @@ function updateBestLuck() {
         sendLuckToServer(); // Теперь отправляем ТОЛЬКО удачу
     }
 }
-
+// Функция получения данных с сервера и обновления HTML
+function updateGameData() {
+    // Получаем userId из Telegram WebApp (убедитесь, что он инициализирован)
+    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    if (!userId) {
+        console.error("User ID не найден");
+        return;
+    }
+    
+    // Формируем URL запроса к серверу
+    fetch(`https://backend12-production-1210.up.railway.app/get_data?user_id=${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Ошибка сети: " + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Ожидаем, что сервер вернёт объект вида: { coins: число, min_luck: число }
+            const { coins, min_luck } = data;
+            
+            // Обновляем переменные, если они используются в игре (если нужно)
+            // coins = coins; // или другая логика, если переменные объявлены глобально
+            // bestLuck = min_luck;
+            
+            // Обновляем HTML-элементы
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+            
+            // Если min_luck равен Infinity, значит минимальная удача ещё не установлена
+            if (min_luck === Infinity) {
+                bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">N/A</span>`;
+            } else {
+                bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
+            }
+            
+            console.log("Данные игры обновлены:", data);
+        })
+        .catch(error => {
+            console.error("Ошибка при получении данных с сервера:", error);
+        });
+}
 function sendCoinsToServer(newCoins) {
     if (!userId) {
         console.error("User ID не найден");
