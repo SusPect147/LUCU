@@ -19,10 +19,14 @@ const progressBar = document.querySelector('#progressBar div');
 let coins = 0;
 let bestLuck = Infinity;
 let isAnimating = false;
+const tg = window.Telegram.WebApp;
+// Получаем user_id из Telegram Web App
+const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
 
-// Получаем user_id из URL
-const urlParams = new URLSearchParams(window.location.search);
-const userId = urlParams.get('user_id');
+if (!userId) {
+    console.error("User ID не найден в Telegram Web App");
+}
+
 
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -42,7 +46,7 @@ function formatCoins(amount) {
 
 function updateCoins(amount) {
     coins += amount;
-    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+    coinsDisplay.textContent = ${formatCoins(coins)} $LUCU;
     sendDataToServer();
 }
 
@@ -53,7 +57,7 @@ function updateBestLuck() {
     if (bestLuck === null || randomLuck < bestLuck) {
         bestLuck = randomLuck;
         const formattedLuck = formatNumber(bestLuck);
-        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
+        bestLuckDisplay.innerHTML = Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>;
         adjustFontSizeToFit(bestLuckDisplay);
         sendDataToServer();
     }
@@ -65,7 +69,7 @@ function sendDataToServer() {
         return;
     }
 
-    fetch('https://backend12-production-1210.up.railway.app/update-data', {
+    fetch('https://backend12-production-1210.up.railway.app/update_coins', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -163,15 +167,15 @@ function equipSkin(type) {
 function adjustFontSizeToFit(element) {
     const parentWidth = element.parentElement.offsetWidth;
     let fontSize = 35;
-    element.style.fontSize = `${fontSize}px`;
+    element.style.fontSize = ${fontSize}px;
     while (element.scrollWidth > parentWidth && fontSize > 5) {
         fontSize -= 1;
-        element.style.fontSize = `${fontSize}px`;
+        element.style.fontSize = ${fontSize}px;
     }
 }
 
 function startProgress(duration) {
-    progressBar.style.transition = `width ${duration}s linear`;
+    progressBar.style.transition = width ${duration}s linear;
     progressBar.style.width = '100%';
     setTimeout(() => {
         progressBar.style.transition = 'none';
