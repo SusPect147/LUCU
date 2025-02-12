@@ -108,28 +108,37 @@ function updateGameData() {
             console.error("Ошибка при получении данных с сервера:", error);
         });
 }
-function sendCoinsToServer(newCoins) {
+function sendCoinsToServer(amount) {
     if (!userId) {
         console.error("User ID не найден");
-        return;
+        return Promise.reject("User ID не найден");
     }
 
-    fetch("https://backend12-production-1210.up.railway.app/update_coins", {
+    return fetch("https://backend12-production-1210.up.railway.app/update_coins", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
+        // Если сервер ожидает накопительное значение, можно отправлять глобальную переменную coins,
+        // либо, если нужен прирост, отправьте amount.
         body: JSON.stringify({
             user_id: userId,
-            coins: newCoins  // отправляем именно приращение
+            coins: coins
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Ошибка сети: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         console.log("Монеты обновлены на сервере", data);
+        return data; // Возвращаем данные для дальнейшей цепочки .then()
     })
     .catch(error => {
         console.error("Ошибка при отправке монет на сервер:", error);
+        throw error;
     });
 }
 
