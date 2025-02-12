@@ -1,32 +1,30 @@
-const leaderboardList = document.getElementById('leaderboard-list');
-const mostLucuBtn = document.getElementById('most-lucu');
-const bestLuckBtn = document.getElementById('best-luck');
+const leaderboardList = document.getElementById("leaderboard-list");
+const mostLucuBtn = document.getElementById("most-lucu");
+const bestLuckBtn = document.getElementById("best-luck");
 
-mostLucuBtn.addEventListener('click', () => {
-    mostLucuBtn.classList.add('active');
-    bestLuckBtn.classList.remove('active');
+mostLucuBtn.addEventListener("click", () => {
+    mostLucuBtn.classList.add("active");
+    bestLuckBtn.classList.remove("active");
 });
 
-bestLuckBtn.addEventListener('click', () => {
-    bestLuckBtn.classList.add('active');
-    mostLucuBtn.classList.remove('active');
+bestLuckBtn.addEventListener("click", () => {
+    bestLuckBtn.classList.add("active");
+    mostLucuBtn.classList.remove("active");
 });
 
-const cube = document.getElementById('cube');
-const coinsDisplay = document.getElementById('coins');
-const bestLuckDisplay = document.getElementById('bestLuck');
-const progressBar = document.querySelector('#progressBar div');
+const cube = document.getElementById("cube");
+const coinsDisplay = document.getElementById("coins");
+const bestLuckDisplay = document.getElementById("bestLuck");
+const progressBar = document.querySelector("#progressBar div");
 let coins = 0;
 let bestLuck = Infinity;
 let isAnimating = false;
 const tg = window.Telegram.WebApp;
-// Получаем user_id из Telegram Web App
 const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
 
 if (!userId) {
     console.error("User ID не найден в Telegram Web App");
 }
-
 
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -34,11 +32,11 @@ function getRandomInt(min, max) {
 
 function formatCoins(amount) {
     if (amount >= 1_000_000_000) {
-        return (amount / 1_000_000_000).toFixed(1) + 'B';
+        return (amount / 1_000_000_000).toFixed(1) + "B";
     } else if (amount >= 1_000_000) {
-        return (amount / 1_000_000).toFixed(1) + 'M';
+        return (amount / 1_000_000).toFixed(1) + "M";
     } else if (amount >= 1_000) {
-        return (amount / 1_000).toFixed(1) + 'K';
+        return (amount / 1_000).toFixed(1) + "K";
     } else {
         return amount;
     }
@@ -46,7 +44,7 @@ function formatCoins(amount) {
 
 function updateCoins(amount) {
     coins += amount;
-    coinsDisplay.textContent = ${formatCoins(coins)} $LUCU;}
+    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
     sendDataToServer();
 }
 
@@ -57,7 +55,7 @@ function updateBestLuck() {
     if (bestLuck === null || randomLuck < bestLuck) {
         bestLuck = randomLuck;
         const formattedLuck = formatNumber(bestLuck);
-        bestLuckDisplay.innerHTML = Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>;
+        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
         adjustFontSizeToFit(bestLuckDisplay);
         sendDataToServer();
     }
@@ -69,10 +67,10 @@ function sendDataToServer() {
         return;
     }
 
-    fetch('https://backend12-production-1210.up.railway.app/update_coins', {
-        method: 'POST',
+    fetch("https://backend12-production-1210.up.railway.app/update_coins", {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         },
         body: JSON.stringify({
             user_id: userId,
@@ -96,7 +94,24 @@ function formatNumber(number) {
     return number.toPrecision(4);
 }
 
+function adjustFontSizeToFit(element) {
+    const parentWidth = element.parentElement.offsetWidth;
+    let fontSize = 35;
+    element.style.fontSize = `${fontSize}px`;
+    while (element.scrollWidth > parentWidth && fontSize > 5) {
+        fontSize -= 1;
+        element.style.fontSize = `${fontSize}px`;
+    }
+}
 
+function startProgress(duration) {
+    progressBar.style.transition = `width ${duration}s linear`;
+    progressBar.style.width = "100%";
+    setTimeout(() => {
+        progressBar.style.transition = "none";
+        progressBar.style.width = "0%";
+    }, duration * 1000);
+}
 const skinsMenu = document.getElementById('skins-menu');
 const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
 const buyNegativeButton = document.getElementById('buy-negative');
@@ -162,25 +177,6 @@ function equipSkin(type) {
         buyEmeraldButton.textContent = type === 'Emerald' ? 'Equipped' : 'Equip';
     }
     equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
-}
-
-function adjustFontSizeToFit(element) {
-    const parentWidth = element.parentElement.offsetWidth;
-    let fontSize = 35;
-    element.style.fontSize = ${fontSize}px;
-    while (element.scrollWidth > parentWidth && fontSize > 5) {
-        fontSize -= 1;
-        element.style.fontSize = ${fontSize}px;
-    }
-}
-
-function startProgress(duration) {
-    progressBar.style.transition = width ${duration}s linear;
-    progressBar.style.width = '100%';
-    setTimeout(() => {
-        progressBar.style.transition = 'none';
-        progressBar.style.width = '0%';
-    }, duration * 1000);
 }
          function rollCube() {
          let isRainbow = Math.random() < 0.2;
