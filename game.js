@@ -1,12 +1,3 @@
-const leaderboardList = document.getElementById("leaderboard-list");
-const mostLucuBtn = document.getElementById("most-lucu");
-const bestLuckBtn = document.getElementById("best-luck");
-
-mostLucuBtn.addEventListener("click", () => {
-    mostLucuBtn.classList.add("active");
-    bestLuckBtn.classList.remove("active");
-});
-
 bestLuckBtn.addEventListener("click", () => {
     bestLuckBtn.classList.add("active");
     mostLucuBtn.classList.remove("active");
@@ -45,7 +36,7 @@ function formatCoins(amount) {
 function updateCoins(amount) {
     coins += amount;
     coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-    sendDataToServer();
+    sendCoinsToServer(); // Теперь отправляем ТОЛЬКО монеты
 }
 
 function updateBestLuck() {
@@ -57,13 +48,14 @@ function updateBestLuck() {
         const formattedLuck = formatNumber(bestLuck);
         bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
         adjustFontSizeToFit(bestLuckDisplay);
-        sendDataToServer();
+        sendLuckToServer(); // Теперь отправляем ТОЛЬКО удачу
     }
 }
 
-function sendDataToServer() {
+// Функция для отправки монет на сервер
+function sendCoinsToServer() {
     if (!userId) {
-        console.error("User ID не найден в URL");
+        console.error("User ID не найден");
         return;
     }
 
@@ -74,18 +66,44 @@ function sendDataToServer() {
         },
         body: JSON.stringify({
             user_id: userId,
-            coins: coins,
-            bestLuck: bestLuck
+            coins: coins
         })
     })
     .then(response => response.json())
     .then(data => {
-        console.log("Данные обновлены на сервере", data);
+        console.log("Монеты обновлены на сервере", data);
     })
     .catch(error => {
-        console.error("Ошибка при отправке данных на сервер:", error);
+        console.error("Ошибка при отправке монет на сервер:", error);
     });
 }
+
+// Функция для отправки удачи на сервер
+function sendLuckToServer() {
+    if (!userId) {
+        console.error("User ID не найден");
+        return;
+    }
+
+    fetch("https://backend12-production-1210.up.railway.app/update_luck", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            luck: bestLuck
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Удача обновлена на сервере", data);
+    })
+    .catch(error => {
+        console.error("Ошибка при отправке удачи на сервер:", error);
+    });
+}
+
 
 function formatNumber(number) {
     if (number >= 1) {
