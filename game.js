@@ -134,14 +134,13 @@ function sendCoinsToServer(newCoins) {
 }
 
 
-// Функция для отправки удачи на сервер
 function sendLuckToServer() {
     if (!userId) {
         console.error("User ID не найден");
-        return;
+        return Promise.reject("User ID не найден");
     }
 
-    fetch("https://backend12-production-1210.up.railway.app/update_luck", {
+    return fetch("https://backend12-production-1210.up.railway.app/update_luck", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -154,11 +153,14 @@ function sendLuckToServer() {
     .then(response => response.json())
     .then(data => {
         console.log("Удача обновлена на сервере", data);
+        return data;
     })
     .catch(error => {
         console.error("Ошибка при отправке удачи на сервер:", error);
+        throw error;
     });
 }
+
 window.addEventListener("load", updateGameData);
 
 
