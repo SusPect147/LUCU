@@ -46,7 +46,7 @@ function formatCoins(amount) {
 
 function updateCoins(amount) {
     coins += amount;
-    coinsDisplay.textContent = ${formatCoins(coins)} $LUCU;
+    coinsDisplay.textContent = ${formatCoins(coins)} $LUCU;}
     sendDataToServer();
 }
 
