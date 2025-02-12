@@ -63,31 +63,34 @@ function updateBestLuck() {
     }
 }
 
-function sendDataToServer() {
+function fetchDataFromServer() {
     if (!userId) {
-        console.error("User ID не найден в URL");
+        console.error("User ID не найден в Telegram Web App");
         return;
     }
 
-    fetch('https://backend12-production-1210.up.railway.app/update_coins', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            user_id: userId,
-            coins: coins,
-            bestLuck: bestLuck
+    fetch(`https://backend12-production-1210.up.railway.app/get_coins/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Данные получены с сервера:", data);
+            
+            // Обновляем монеты
+            coins = data.coins || 0;
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+
+            // Обновляем Best Luck
+            if (data.bestLuck) {
+                bestLuck = data.bestLuck;
+                const formattedLuck = formatNumber(bestLuck);
+                bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
+                adjustFontSizeToFit(bestLuckDisplay);
+            }
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Данные обновлены на сервере", data);
-    })
-    .catch(error => {
-        console.error("Ошибка при отправке данных на сервер:", error);
-    });
+        .catch(error => {
+            console.error("Ошибка при получении данных с сервера:", error);
+        });
 }
+
 
 function formatNumber(number) {
     if (number >= 1) {
@@ -464,3 +467,6 @@ function startProgress(duration) {
 
 // Настройка темы
 tg.expand(); // Открыть приложение на весь экран
+document.addEventListener('DOMContentLoaded', () => {
+    fetchDataFromServer();
+});
