@@ -59,7 +59,6 @@ function updateBestLuck() {
         const formattedLuck = formatNumber(bestLuck);
         bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
         adjustFontSizeToFit(bestLuckDisplay);
-        sendDataToServer();
     }
 }
 
