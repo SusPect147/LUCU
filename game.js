@@ -153,6 +153,7 @@ function sendLuckToServer() {
         console.error("Ошибка при отправке удачи на сервер:", error);
     });
 }
+window.addEventListener("load", updateGameData);
 
 
 function formatNumber(number) {
