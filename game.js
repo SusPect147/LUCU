@@ -23,11 +23,6 @@ const tg = window.Telegram.WebApp;
 // Получаем user_id из Telegram Web App
 const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
 
-if (!userId) {
-    console.error("User ID не найден в Telegram Web App");
-}
-
-
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -47,6 +42,7 @@ function formatCoins(amount) {
 function updateCoins(amount) {
     coins += amount;
     coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+    sendDataToServer();
 }
 
 function updateBestLuck() {
@@ -58,35 +54,34 @@ function updateBestLuck() {
         const formattedLuck = formatNumber(bestLuck);
         bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
         adjustFontSizeToFit(bestLuckDisplay);
+        sendDataToServer();
     }
 }
 
-function fetchDataFromServer() {
+function sendDataToServer() {
     if (!userId) {
-        console.error("User ID не найден в Telegram Web App");
+        console.error("User ID не найден в URL");
         return;
     }
 
-    fetch(`https://backend12-production-1210.up.railway.app/get_coins/${userId}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log("Данные получены с сервера:", data);
-            
-            // Обновляем монеты
-            coins = data.coins || 0;
-            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-
-            // Обновляем Best Luck
-            if (data.bestLuck) {
-                bestLuck = data.bestLuck;
-                const formattedLuck = formatNumber(bestLuck);
-                bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
-                adjustFontSizeToFit(bestLuckDisplay);
-            }
+    fetch('https://backend12-production-1210.up.railway.app/update-data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            coins: coins,
+            bestLuck: bestLuck
         })
-        .catch(error => {
-            console.error("Ошибка при получении данных с сервера:", error);
-        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Данные обновлены на сервере", data);
+    })
+    .catch(error => {
+        console.error("Ошибка при отправке данных на сервер:", error);
+    });
 }
 
 
