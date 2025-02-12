@@ -1,7 +1,6 @@
 const leaderboardList = document.getElementById("leaderboard-list");
 const mostLucuBtn = document.getElementById("most-lucu");
 const bestLuckBtn = document.getElementById("best-luck");
-
 mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
     bestLuckBtn.classList.remove("active");
@@ -46,8 +45,9 @@ function formatCoins(amount) {
 function updateCoins(amount) {
     coins += amount;
     coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-    sendCoinsToServer(); // Теперь отправляем ТОЛЬКО монеты
+    sendCoinsToServer(amount); // передаём только новое количество
 }
+
 
 function updateBestLuck() {
     const min = 0.0000000000001;
@@ -62,8 +62,7 @@ function updateBestLuck() {
     }
 }
 
-// Функция для отправки монет на сервер
-function sendCoinsToServer() {
+function sendCoinsToServer(newCoins) {
     if (!userId) {
         console.error("User ID не найден");
         return;
@@ -76,7 +75,7 @@ function sendCoinsToServer() {
         },
         body: JSON.stringify({
             user_id: userId,
-            coins: coins
+            coins: newCoins  // отправляем именно приращение
         })
     })
     .then(response => response.json())
@@ -87,6 +86,7 @@ function sendCoinsToServer() {
         console.error("Ошибка при отправке монет на сервер:", error);
     });
 }
+
 
 // Функция для отправки удачи на сервер
 function sendLuckToServer() {
