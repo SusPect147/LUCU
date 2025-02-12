@@ -307,8 +307,6 @@ function equipSkin(type) {
          const profileButton = document.getElementById("profile-button");
          const profileMenu = document.getElementById("profile-menu");
          const profileName = document.getElementById("profile-name");
-         
-         const tg = window.Telegram.WebApp;
          const userName = tg.initDataUnsafe?.user?.username || "NoName";
          profileName.textContent = `Hello, ${userName}`;
          profileButton.addEventListener("click", () => {
