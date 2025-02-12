@@ -45,7 +45,10 @@ function formatCoins(amount) {
 function updateCoins(amount) {
     coins += amount;
     coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-    sendCoinsToServer(amount); // передаём только новое количество
+    sendCoinsToServer(amount).then(() => {
+        // После успешного обновления на сервере можно обновить UI, если нужно
+        updateGameData();
+    });
 }
 
 
@@ -58,7 +61,10 @@ function updateBestLuck() {
         const formattedLuck = formatNumber(bestLuck);
         bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
         adjustFontSizeToFit(bestLuckDisplay);
-        sendLuckToServer(); // Теперь отправляем ТОЛЬКО удачу
+        sendLuckToServer().then(() => {
+        // После успешного обновления на сервере можно обновить UI, если нужно
+        updateGameData();
+    });
     }
 }
 // Функция получения данных с сервера и обновления HTML
