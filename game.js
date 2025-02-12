@@ -19,10 +19,14 @@ const progressBar = document.querySelector('#progressBar div');
 let coins = 0;
 let bestLuck = Infinity;
 let isAnimating = false;
+const tg = window.Telegram.WebApp;
+// Получаем user_id из Telegram Web App
+const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
 
-// Получаем user_id из URL
-const urlParams = new URLSearchParams(window.location.search);
-const userId = urlParams.get('user_id');
+if (!userId) {
+    console.error("User ID не найден в Telegram Web App");
+}
+
 
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -65,7 +69,7 @@ function sendDataToServer() {
         return;
     }
 
-    fetch('https://backend12-production-1210.up.railway.app/update-data', {
+    fetch('https://backend12-production-1210.up.railway.app/update_coins', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -308,7 +312,6 @@ function startProgress(duration) {
          const profileMenu = document.getElementById("profile-menu");
          const profileName = document.getElementById("profile-name");
          
-         const tg = window.Telegram.WebApp;
          const userName = tg.initDataUnsafe?.user?.username || "NoName";
          profileName.textContent = `Hello, ${userName}`;
          profileButton.addEventListener("click", () => {
