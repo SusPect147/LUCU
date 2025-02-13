@@ -407,6 +407,50 @@ background: rgb(39, 39, 39);
     font-weight: bold;
     color: rgb(38, 38, 41);
     }
+.referral-box {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 350px;
+}
+
+.referral-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    padding: 5px;
+}
+
+.referral-box button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.referral-box button:hover {
+    background: #0056b3;
+}
+
+#copy-message {
+    color: green;
+    font-size: 14px;
+    margin-top: 5px;
+    display: none;
+}
+
+.hidden {
+    display: none;
+}
+
     /* Стили для блоков */
     #desktop-content {
     background: black;
