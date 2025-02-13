@@ -434,11 +434,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const copyButton = document.getElementById('copy-referral');
 
     if (friendMenu && friendButton && referralInput && copyButton) {
-        // Получаем username пользователя (предположим, он хранится в переменной username)
-        const username = window.username || "unknown"; // Заменить на реальную логику получения username
-
         // Генерируем реферальную ссылку
-        const referralLink = `https://t.me/LuckyCubesbot?start=${username}`;
+        const referralLink = `https://t.me/LuckyCubesbot?start=${userId}`;
         referralInput.value = referralLink;
 
         // Открытие меню
@@ -453,18 +450,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // Копирование ссылки
-        copyButton.addEventListener('click', () => {
-            referralInput.select();
-            navigator.clipboard.writeText(referralInput.value).then(() => {
-                copyButton.textContent = "Copied!";
-                setTimeout(() => copyButton.textContent = "Copy", 1500);
-            }).catch(err => {
-                console.error("Failed to copy: ", err);
-            });
-        });
+copyButton.addEventListener("click", () => {
+    referralInput.select();
+    try {
+        document.execCommand("copy"); // Копирование через устаревший, но рабочий метод
+        copyButton.textContent = "Copied!";
+        setTimeout(() => copyButton.textContent = "Copy", 1500);
+    } catch (err) {
+        console.error("Failed to copy: ", err);
     }
 });
+
 
          const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
          manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
