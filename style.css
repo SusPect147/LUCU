@@ -407,38 +407,39 @@ background: rgb(39, 39, 39);
     font-weight: bold;
     color: rgb(38, 38, 41);
     }
-.referral-box {
+.referral-container {
     display: flex;
     align-items: center;
+    gap: 10px;
     background: white;
     padding: 10px;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     width: 100%;
-    max-width: 350px;
+    max-width: 300px;
 }
 
-.referral-box input {
-    flex: 1;
+#referral-link {
+    flex-grow: 1;
     border: none;
-    outline: none;
+    background: none;
     font-size: 16px;
-    padding: 5px;
+    outline: none;
+    cursor: text;
 }
 
-.referral-box button {
+#copy-referral {
     background: #007bff;
     color: white;
     border: none;
-    padding: 8px 15px;
+    padding: 5px 10px;
     border-radius: 5px;
     cursor: pointer;
-    transition: background 0.3s;
 }
 
-.referral-box button:hover {
+#copy-referral:hover {
     background: #0056b3;
 }
+
 
 #copy-message {
     color: green;
