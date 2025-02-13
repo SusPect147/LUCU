@@ -453,7 +453,42 @@ function equipSkin(type) {
          });
          }
          });
-         
+         document.addEventListener("DOMContentLoaded", () => {
+    const referralInput = document.getElementById("referral-link");
+    const copyButton = document.getElementById("copy-referral");
+    const copyMessage = document.getElementById("copy-message");
+
+    // Получаем userId текущего пользователя
+    const userId = localStorage.getItem("userId") || "unknown_user"; // Заменить на реальный userId из Telegram
+
+    // Генерируем реферальную ссылку
+    const referralLink = `${window.location.origin}?ref=${userId}`;
+    referralInput.value = referralLink;
+
+    // Копирование ссылки
+    copyButton.addEventListener("click", () => {
+        referralInput.select();
+        document.execCommand("copy");
+        copyMessage.classList.remove("hidden");
+        setTimeout(() => copyMessage.classList.add("hidden"), 2000);
+    });
+
+    // Проверка, есть ли реферальный код в URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrerId = urlParams.get("ref");
+
+    if (referrerId && referrerId !== userId) {
+        fetch("https://backend12-production-1210.up.railway.app/refer_friend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ referrer_id: referrerId, new_user_id: userId }),
+        })
+        .then(response => response.json())
+        .then(data => console.log("Referral bonus:", data))
+        .catch(error => console.error("Error in referral system:", error));
+    }
+});
+
          const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
          manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
          buttonRootId: 'ton-connect'
