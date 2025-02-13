@@ -427,71 +427,42 @@ function equipSkin(type) {
          };
          }
          rollCube();
-        document.addEventListener("DOMContentLoaded", () => {
-    const questsMenu = document.getElementById('quests-menu');
-    const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
-
-    if (questsMenu && questsButton) {
-        questsButton.addEventListener('click', () => {
-            questsMenu.style.display = 'flex';
-        });
-
-        questsMenu.addEventListener('click', (e) => {
-            if (e.target === questsMenu) {
-                questsMenu.style.display = 'none';
-            }
-        });
-    }
-
+document.addEventListener("DOMContentLoaded", () => {
     const friendMenu = document.getElementById('friend-menu');
     const friendButton = document.querySelector('.menu-item img[alt="Friend"]');
+    const referralInput = document.getElementById('referral-link');
+    const copyButton = document.getElementById('copy-referral');
 
-    if (friendMenu && friendButton) {
+    if (friendMenu && friendButton && referralInput && copyButton) {
+        // Получаем username пользователя (предположим, он хранится в переменной username)
+        const username = window.username || "unknown"; // Заменить на реальную логику получения username
+
+        // Генерируем реферальную ссылку
+        const referralLink = `https://t.me/LuckyCubesbot?start=${username}`;
+        referralInput.value = referralLink;
+
+        // Открытие меню
         friendButton.addEventListener('click', () => {
             friendMenu.style.display = 'flex';
         });
 
+        // Закрытие меню
         friendMenu.addEventListener('click', (e) => {
             if (e.target === friendMenu) {
                 friendMenu.style.display = 'none';
             }
         });
-    }
-});
 
-         document.addEventListener("DOMContentLoaded", () => {
-    const referralInput = document.getElementById("referral-link");
-    const copyButton = document.getElementById("copy-referral");
-    const copyMessage = document.getElementById("copy-message");
-
-    // Получаем userId текущего пользователя
-    const userId = localStorage.getItem("userId") || "unknown_user"; // Заменить на реальный userId из Telegram
-
-    // Генерируем реферальную ссылку
-    const referralLink = `${window.location.origin}?ref=${userId}`;
-    referralInput.value = referralLink;
-
-    // Копирование ссылки
-    copyButton.addEventListener("click", () => {
-        referralInput.select();
-        document.execCommand("copy");
-        copyMessage.classList.remove("hidden");
-        setTimeout(() => copyMessage.classList.add("hidden"), 2000);
-    });
-
-    // Проверка, есть ли реферальный код в URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrerId = urlParams.get("ref");
-
-    if (referrerId && referrerId !== userId) {
-        fetch("https://backend12-production-1210.up.railway.app/refer_friend", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ referrer_id: referrerId, new_user_id: userId }),
-        })
-        .then(response => response.json())
-        .then(data => console.log("Referral bonus:", data))
-        .catch(error => console.error("Error in referral system:", error));
+        // Копирование ссылки
+        copyButton.addEventListener('click', () => {
+            referralInput.select();
+            navigator.clipboard.writeText(referralInput.value).then(() => {
+                copyButton.textContent = "Copied!";
+                setTimeout(() => copyButton.textContent = "Copy", 1500);
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+            });
+        });
     }
 });
 
