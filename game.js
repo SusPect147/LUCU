@@ -427,18 +427,6 @@ function equipSkin(type) {
          };
          }
          rollCube();
-
-         const leaderboardMenu = document.getElementById('leaderboard-menu');
-         const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
-         leaderboardButton.addEventListener('click', () => {
-         leaderboardMenu.style.display = 'flex';
-         });
-         leaderboardMenu.addEventListener('click', (e) => {
-         if (e.target === leaderboardMenu) {
-             leaderboardMenu.style.display = 'none';
-         }
-         });
-
          const questsMenu = document.getElementById('quests-menu');
          const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
          questsButton.addEventListener('click', () => {
