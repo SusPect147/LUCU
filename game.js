@@ -5,13 +5,84 @@ const bestLuckBtn = document.getElementById("best-luck");
 mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
     bestLuckBtn.classList.remove("active");
+    loadLeaderboardCoins(); // загружаем лидерборд по монетам
 });
 
 bestLuckBtn.addEventListener("click", () => {
     bestLuckBtn.classList.add("active");
     mostLucuBtn.classList.remove("active");
+    loadLeaderboardLuck(); // загружаем лидерборд по удаче
+});
+const leaderboardMenu = document.getElementById('leaderboard-menu');
+const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
+
+leaderboardButton.addEventListener('click', () => {
+    leaderboardMenu.style.display = 'flex';
+    // При открытии меню по умолчанию загружаем лидерборд по монетам
+    loadLeaderboardCoins();
 });
 
+leaderboardMenu.addEventListener('click', (e) => {
+    if (e.target === leaderboardMenu) {
+        leaderboardMenu.style.display = 'none';
+    }
+});
+
+// Загружаем лидерборд по монетам (от большего к меньшему)
+function loadLeaderboardCoins() {
+    fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Ошибка сети: " + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const leaderboardList = document.getElementById("leaderboard-list");
+        leaderboardList.innerHTML = ""; // очищаем список
+        if (data.length === 0) {
+            leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+            return;
+        }
+        data.forEach((player, index) => {
+            const li = document.createElement("li");
+            li.classList.add("leaderboard-item");
+            li.innerHTML = `${index + 1}. ${player.username} - ${formatCoins(player.coins)} $LUCU`;
+            leaderboardList.appendChild(li);
+        });
+    })
+    .catch(error => {
+        console.error("Ошибка загрузки лидерборда по монетам:", error);
+    });
+}
+
+// Загружаем лидерборд по удаче (от меньшей удачи к большей)
+function loadLeaderboardLuck() {
+    fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck")
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Ошибка сети: " + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const leaderboardList = document.getElementById("leaderboard-list");
+        leaderboardList.innerHTML = ""; // очищаем список
+        if (data.length === 0) {
+            leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+            return;
+        }
+        data.forEach((player, index) => {
+            const li = document.createElement("li");
+            li.classList.add("leaderboard-item");
+            li.innerHTML = `${index + 1}. ${player.username} - ${formatNumber(player.min_luck)}`;
+            leaderboardList.appendChild(li);
+        });
+    })
+    .catch(error => {
+        console.error("Ошибка загрузки лидерборда по удаче:", error);
+    });
+}
 const cube = document.getElementById("cube");
 const coinsDisplay = document.getElementById("coins");
 const bestLuckDisplay = document.getElementById("bestLuck");
@@ -367,6 +438,7 @@ function equipSkin(type) {
              leaderboardMenu.style.display = 'none';
          }
          });
+
          const questsMenu = document.getElementById('quests-menu');
          const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
          questsButton.addEventListener('click', () => {
