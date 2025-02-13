@@ -427,32 +427,38 @@ function equipSkin(type) {
          };
          }
          rollCube();
-         const questsMenu = document.getElementById('quests-menu');
-         const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
-         questsButton.addEventListener('click', () => {
-         questsMenu.style.display = 'flex';
-         });
-         questsMenu.addEventListener('click', (e) => {
-         if (e.target === questsMenu) {
-           questsMenu.style.display = 'none';
-         }
-         });
-         document.addEventListener("DOMContentLoaded", () => {
-         const friendMenu = document.getElementById('friend-menu');
-         const friendButton = document.querySelector('.menu-item img[alt="Friend"]');
-         
-         if (friendMenu && friendButton) {
-         friendButton.addEventListener('click', () => {
-         friendMenu.style.display = 'flex';
-         });
-         
-         friendMenu.addEventListener('click', (e) => {
-         if (e.target === friendMenu) {
-           friendMenu.style.display = 'none';
-         }
-         });
-         }
-         });
+        document.addEventListener("DOMContentLoaded", () => {
+    const questsMenu = document.getElementById('quests-menu');
+    const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
+
+    if (questsMenu && questsButton) {
+        questsButton.addEventListener('click', () => {
+            questsMenu.style.display = 'flex';
+        });
+
+        questsMenu.addEventListener('click', (e) => {
+            if (e.target === questsMenu) {
+                questsMenu.style.display = 'none';
+            }
+        });
+    }
+
+    const friendMenu = document.getElementById('friend-menu');
+    const friendButton = document.querySelector('.menu-item img[alt="Friend"]');
+
+    if (friendMenu && friendButton) {
+        friendButton.addEventListener('click', () => {
+            friendMenu.style.display = 'flex';
+        });
+
+        friendMenu.addEventListener('click', (e) => {
+            if (e.target === friendMenu) {
+                friendMenu.style.display = 'none';
+            }
+        });
+    }
+});
+
          document.addEventListener("DOMContentLoaded", () => {
     const referralInput = document.getElementById("referral-link");
     const copyButton = document.getElementById("copy-referral");
