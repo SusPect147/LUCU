@@ -60,15 +60,19 @@ function updateBestLuck() {
     let randomLuck = Math.random() * (max - min) + min;
     if (bestLuck === null || randomLuck < bestLuck) {
         bestLuck = randomLuck;
-        const formattedLuck = formatNumber(bestLuck);
-        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
-        adjustFontSizeToFit(bestLuckDisplay);
+        // Убираем мгновенное обновление отображения удачи:
+        // const formattedLuck = formatNumber(bestLuck);
+        // bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
+        // adjustFontSizeToFit(bestLuckDisplay);
+        
+        // Отправляем данные на сервер и после успешного ответа обновляем UI,
+        // который отобразит удачу согласно данным из базы.
         sendLuckToServer().then(() => {
-        // После успешного обновления на сервере можно обновить UI, если нужно
-        updateGameData();
-    });
+            updateGameData();
+        });
     }
 }
+
 // Функция получения данных с сервера и обновления HTML
 function updateGameData() {
     // Получаем userId из Telegram WebApp (убедитесь, что он инициализирован)
