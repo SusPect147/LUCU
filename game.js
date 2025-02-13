@@ -43,11 +43,13 @@ function formatCoins(amount) {
 }
 
 function updateCoins(amount) {
-    coins += amount;
-    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-    sendCoinsToServer(amount).then(() => {
-        // После успешного обновления на сервере можно обновить UI, если нужно
-        updateGameData();
+    // Отправляем на сервер только приращение, не изменяя локальную переменную coins сразу
+    sendCoinsToServer(amount).then(data => {
+         // Ожидаем, что сервер вернёт объект с полем new_coins
+         coins = data.new_coins;  // обновляем глобальную переменную coins согласно серверу
+         coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+         // Обновляем UI, если нужно (например, если на сервере произошли другие изменения)
+         updateGameData();
     });
 }
 
@@ -119,11 +121,10 @@ function sendCoinsToServer(amount) {
         headers: {
             "Content-Type": "application/json",
         },
-        // Если сервер ожидает накопительное значение, можно отправлять глобальную переменную coins,
-        // либо, если нужен прирост, отправьте amount.
+        // Отправляем только количество монет, которое игрок получил (приращение)
         body: JSON.stringify({
             user_id: userId,
-            coins: coins
+            coins: amount
         })
     })
     .then(response => {
@@ -134,13 +135,14 @@ function sendCoinsToServer(amount) {
     })
     .then(data => {
         console.log("Монеты обновлены на сервере", data);
-        return data; // Возвращаем данные для дальнейшей цепочки .then()
+        return data; // data должна содержать новое значение монет, например, data.new_coins
     })
     .catch(error => {
         console.error("Ошибка при отправке монет на сервер:", error);
         throw error;
     });
 }
+
 
 
 function sendLuckToServer() {
