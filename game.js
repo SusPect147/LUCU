@@ -118,13 +118,18 @@ function sendCoinsToServer(amount) {
         console.error("User ID не найден");
         return Promise.reject("User ID не найден");
     }
+    // Определяем username, если он ещё не объявлен в глобальной области
+    const username =
+        window.Telegram.WebApp.initDataUnsafe?.user?.username ||
+        window.Telegram.WebApp.initDataUnsafe?.user?.first_name ||
+        "Unknown"; // на случай, если ни одно из полей не задано
 
     return fetch("https://backend12-production-1210.up.railway.app/update_coins", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        // Отправляем только количество монет, которое игрок получил (приращение) и имя пользователя
+        // Отправляем приращение монет и имя пользователя
         body: JSON.stringify({
             user_id: userId,
             username: username,
@@ -146,6 +151,7 @@ function sendCoinsToServer(amount) {
         throw error;
     });
 }
+
 
 function sendLuckToServer() {
     if (!userId) {
