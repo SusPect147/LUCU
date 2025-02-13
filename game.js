@@ -429,7 +429,7 @@ function equipSkin(type) {
          rollCube();
 document.addEventListener("DOMContentLoaded", () => {
     const friendMenu = document.getElementById('friend-menu');
-    const friendButton = document.querySelector('.menu-item img[alt="Friend"]');
+    const friendButton = document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById('open-friend-menu');
     const referralInput = document.getElementById('referral-link');
     const copyButton = document.getElementById('copy-referral');
 
@@ -447,7 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
             friendMenu.style.display = 'flex';
         });
 
-        // Закрытие меню
+        // Закрытие меню при клике на затемненный фон
         friendMenu.addEventListener('click', (e) => {
             if (e.target === friendMenu) {
                 friendMenu.style.display = 'none';
@@ -458,15 +458,22 @@ document.addEventListener("DOMContentLoaded", () => {
         copyButton.addEventListener("click", () => {
             referralInput.select();
             try {
-                document.execCommand("copy");
-                copyButton.textContent = "Copied!";
-                setTimeout(() => copyButton.textContent = "Copy", 1500);
+                // Новый способ копирования ссылки с использованием Clipboard API
+                navigator.clipboard.writeText(referralInput.value)
+                    .then(() => {
+                        copyButton.textContent = "Copied!";
+                        setTimeout(() => copyButton.textContent = "Copy", 1500);
+                    })
+                    .catch((err) => {
+                        console.error("Failed to copy: ", err);
+                    });
             } catch (err) {
                 console.error("Failed to copy: ", err);
             }
         });
     }
 });
+
 
 
 
