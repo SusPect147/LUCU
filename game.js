@@ -1,11 +1,11 @@
 const leaderboardList = document.getElementById("leaderboard-list");
 const mostLucuBtn = document.getElementById("most-lucu");
 const bestLuckBtn = document.getElementById("best-luck");
+
 mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
     bestLuckBtn.classList.remove("active");
 });
-
 
 bestLuckBtn.addEventListener("click", () => {
     bestLuckBtn.classList.add("active");
@@ -20,7 +20,10 @@ let coins = 0;
 let bestLuck = Infinity;
 let isAnimating = false;
 const tg = window.Telegram.WebApp;
-const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+const userId = tg.initDataUnsafe?.user?.id;
+
+// Получаем никнейм: если username отсутствует, используем first_name
+const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
 
 if (!userId) {
     console.error("User ID не найден в Telegram Web App");
@@ -53,7 +56,6 @@ function updateCoins(amount) {
     });
 }
 
-
 function updateBestLuck() {
     const min = 0.0000000000001;
     const max = 1000;
@@ -76,7 +78,7 @@ function updateBestLuck() {
 // Функция получения данных с сервера и обновления HTML
 function updateGameData() {
     // Получаем userId из Telegram WebApp (убедитесь, что он инициализирован)
-    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    const userId = tg.initDataUnsafe?.user?.id;
     if (!userId) {
         console.error("User ID не найден");
         return;
@@ -94,10 +96,6 @@ function updateGameData() {
             // Ожидаем, что сервер вернёт объект вида: { coins: число, min_luck: число }
             const { coins, min_luck } = data;
             
-            // Обновляем переменные, если они используются в игре (если нужно)
-            // coins = coins; // или другая логика, если переменные объявлены глобально
-            // bestLuck = min_luck;
-            
             // Обновляем HTML-элементы
             coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
             
@@ -114,6 +112,7 @@ function updateGameData() {
             console.error("Ошибка при получении данных с сервера:", error);
         });
 }
+
 function sendCoinsToServer(amount) {
     if (!userId) {
         console.error("User ID не найден");
@@ -125,9 +124,10 @@ function sendCoinsToServer(amount) {
         headers: {
             "Content-Type": "application/json",
         },
-        // Отправляем только количество монет, которое игрок получил (приращение)
+        // Отправляем только количество монет, которое игрок получил (приращение) и имя пользователя
         body: JSON.stringify({
             user_id: userId,
+            username: username,
             coins: amount
         })
     })
@@ -147,8 +147,6 @@ function sendCoinsToServer(amount) {
     });
 }
 
-
-
 function sendLuckToServer() {
     if (!userId) {
         console.error("User ID не найден");
@@ -160,8 +158,10 @@ function sendLuckToServer() {
         headers: {
             "Content-Type": "application/json",
         },
+        // Отправляем удачу и имя пользователя
         body: JSON.stringify({
             user_id: userId,
+            username: username,
             luck: bestLuck
         })
     })
@@ -177,7 +177,6 @@ function sendLuckToServer() {
 }
 
 window.addEventListener("load", updateGameData);
-
 
 function formatNumber(number) {
     if (number >= 1) {
