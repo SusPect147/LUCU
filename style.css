@@ -379,7 +379,7 @@ background: rgb(39, 39, 39);
     font-weight: bold;
     color: rgb(38, 38, 41);
     }
-    #friend-menu {
+   #friend-menu {
     position: fixed;
     top: 0;
     left: 0;
@@ -390,8 +390,9 @@ background: rgb(39, 39, 39);
     display: none;
     justify-content: center;
     align-items: flex-end;
-    }
-    #friend-menu-content {
+}
+
+#friend-menu-content {
     position: relative;
     background: #dbdbdb;
     width: 100%;
@@ -401,14 +402,21 @@ background: rgb(39, 39, 39);
     padding: 20px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column; /* Элементы будут выстраиваться вертикально */
+    justify-content: flex-start; /* Выравнивание элементов по вертикали */
+    align-items: center; /* Выравнивание элементов по центру */
     font-size: 24px;
     font-weight: bold;
     color: rgb(38, 38, 41);
-    }
+}
+
+#friend-menu-content h2, #friend-menu-content p {
+    margin-bottom: 20px; /* Расстояние между текстом и ссылкой */
+}
+
 .referral-container {
     display: flex;
+    flex-direction: row; /* Ссылка и кнопка копирования будут рядом */
     align-items: center;
     gap: 10px;
     background: white;
@@ -416,6 +424,7 @@ background: rgb(39, 39, 39);
     border-radius: 10px;
     width: 100%;
     max-width: 300px;
+    margin-bottom: 20px; /* Расстояние между ссылкой и количеством друзей */
 }
 
 #referral-link {
@@ -439,6 +448,13 @@ background: rgb(39, 39, 39);
 #copy-referral:hover {
     background: #0056b3;
 }
+
+#invited-friends {
+    font-size: 18px;
+    font-weight: normal;
+    color: #333;
+}
+
 
 
 #copy-message {
