@@ -434,6 +434,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const copyButton = document.getElementById('copy-referral');
 
     if (friendMenu && friendButton && referralInput && copyButton) {
+        // Получаем Telegram User ID
+        const telegram = window.Telegram.WebApp;
+        const userId = telegram.initDataUnsafe?.user?.id || "unknown";
+
         // Генерируем реферальную ссылку
         const referralLink = `https://t.me/LuckyCubesbot?start=${userId}`;
         referralInput.value = referralLink;
@@ -450,16 +454,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-copyButton.addEventListener("click", () => {
-    referralInput.select();
-    try {
-        document.execCommand("copy"); // Копирование через устаревший, но рабочий метод
-        copyButton.textContent = "Copied!";
-        setTimeout(() => copyButton.textContent = "Copy", 1500);
-    } catch (err) {
-        console.error("Failed to copy: ", err);
+        // Копирование ссылки
+        copyButton.addEventListener("click", () => {
+            referralInput.select();
+            try {
+                document.execCommand("copy");
+                copyButton.textContent = "Copied!";
+                setTimeout(() => copyButton.textContent = "Copy", 1500);
+            } catch (err) {
+                console.error("Failed to copy: ", err);
+            }
+        });
     }
 });
+
 
 
          const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
