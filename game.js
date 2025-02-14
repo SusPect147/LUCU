@@ -427,66 +427,79 @@ function equipSkin(type) {
          };
          }
          rollCube();
-document.addEventListener("DOMContentLoaded", () => {
-    const friendMenu = document.getElementById('friend-menu');
-    const friendButton = document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById('open-friend-menu');
-    const referralInput = document.getElementById('referral-link');
-    const copyButton = document.getElementById('copy-referral');
-
-    if (friendMenu && friendButton && referralInput && copyButton) {
-        // Получаем Telegram User ID
-        const telegram = window.Telegram.WebApp;
-        const userId = telegram.initDataUnsafe?.user?.id || "unknown";
-
-        // Генерируем реферальную ссылку
-        const referralLink = `https://t.me/LuckyCubesbot?start=${userId}`;
-        referralInput.value = referralLink;
-
-        // Открытие меню
-        friendButton.addEventListener('click', () => {
-            friendMenu.style.display = 'flex';
-        });
-
-        // Закрытие меню при клике на затемненный фон
-        friendMenu.addEventListener('click', (e) => {
-            if (e.target === friendMenu) {
-                friendMenu.style.display = 'none';
+         document.addEventListener("DOMContentLoaded", () => {
+            const friendMenu = document.getElementById("friend-menu");
+            const friendButton = document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById("open-friend-menu");
+            const referralInput = document.getElementById("referral-link");
+            const copyButton = document.getElementById("copy-referral");
+        
+            if (friendMenu && friendButton && referralInput && copyButton) {
+                // Получаем Telegram User ID
+                const telegram = window.Telegram?.WebApp;
+                const userId = telegram?.initDataUnsafe?.user?.id || "unknown";
+        
+                // Генерируем реферальную ссылку
+                const referralLink = `https://t.me/LuckyCubesbot?start=${userId}`;
+                referralInput.value = referralLink;
+        
+                // Открытие меню
+                friendButton.addEventListener("click", () => {
+                    friendMenu.style.display = "flex";
+                });
+        
+                // Закрытие меню при клике на затемненный фон
+                friendMenu.addEventListener("click", (e) => {
+                    if (e.target === friendMenu) {
+                        friendMenu.style.display = "none";
+                    }
+                });
+        
+                // Копирование ссылки
+                copyButton.addEventListener("click", async () => {
+                    try {
+                        // Попытка использовать Clipboard API
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(referralInput.value);
+                            showCopySuccess();
+                        } else {
+                            fallbackCopy(referralInput.value);
+                        }
+                    } catch (err) {
+                        console.error("Clipboard API failed, trying fallback:", err);
+                        fallbackCopy(referralInput.value);
+                    }
+                });
+        
+                // Запасной метод для копирования
+                function fallbackCopy(text) {
+                    const tempTextArea = document.createElement("textarea");
+                    tempTextArea.value = text;
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.select();
+        
+                    try {
+                        if (document.execCommand("copy")) {
+                            showCopySuccess();
+                        } else {
+                            throw new Error("execCommand failed");
+                        }
+                    } catch (err) {
+                        console.error("Fallback copy failed:", err);
+                    }
+        
+                    document.body.removeChild(tempTextArea);
+                }
+        
+                // Функция для обновления кнопки после успешного копирования
+                function showCopySuccess() {
+                    copyButton.textContent = "Copied!";
+                    setTimeout(() => {
+                        copyButton.textContent = "Copy";
+                    }, 1500);
+                }
             }
         });
-
-copyButton.addEventListener("click", () => {
-    referralInput.select();
-    
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(referralInput.value)
-            .then(() => {
-                copyButton.textContent = "Copied!";
-                setTimeout(() => copyButton.textContent = "Copy", 1500);
-            })
-            .catch((err) => {
-                console.error("Failed to copy: ", err);
-                fallbackCopy(referralInput.value); // Используем запасной вариант
-            });
-    } else {
-        fallbackCopy(referralInput.value);
-    }
-});
-
-// Запасной метод
-function fallbackCopy(text) {
-    const tempTextArea = document.createElement("textarea");
-    tempTextArea.value = text;
-    document.body.appendChild(tempTextArea);
-    tempTextArea.select();
-    try {
-        document.execCommand("copy");
-        copyButton.textContent = "Copied!";
-        setTimeout(() => copyButton.textContent = "Copy", 1500);
-    } catch (err) {
-        console.error("Fallback copy failed:", err);
-    }
-    document.body.removeChild(tempTextArea);
-}
+        
 
 
 
