@@ -454,25 +454,39 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // Копирование ссылки
-        copyButton.addEventListener("click", () => {
-            referralInput.select();
-            try {
-                // Новый способ копирования ссылки с использованием Clipboard API
-                navigator.clipboard.writeText(referralInput.value)
-                    .then(() => {
-                        copyButton.textContent = "Copied!";
-                        setTimeout(() => copyButton.textContent = "Copy", 1500);
-                    })
-                    .catch((err) => {
-                        console.error("Failed to copy: ", err);
-                    });
-            } catch (err) {
+copyButton.addEventListener("click", () => {
+    referralInput.select();
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(referralInput.value)
+            .then(() => {
+                copyButton.textContent = "Copied!";
+                setTimeout(() => copyButton.textContent = "Copy", 1500);
+            })
+            .catch((err) => {
                 console.error("Failed to copy: ", err);
-            }
-        });
+                fallbackCopy(referralInput.value); // Используем запасной вариант
+            });
+    } else {
+        fallbackCopy(referralInput.value);
     }
 });
+
+// Запасной метод
+function fallbackCopy(text) {
+    const tempTextArea = document.createElement("textarea");
+    tempTextArea.value = text;
+    document.body.appendChild(tempTextArea);
+    tempTextArea.select();
+    try {
+        document.execCommand("copy");
+        copyButton.textContent = "Copied!";
+        setTimeout(() => copyButton.textContent = "Copy", 1500);
+    } catch (err) {
+        console.error("Fallback copy failed:", err);
+    }
+    document.body.removeChild(tempTextArea);
+}
 
 
 
