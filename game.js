@@ -73,9 +73,16 @@ function loadLeaderboardLuck() {
             return;
         }
         data.forEach((player, index) => {
+            let luckValue = parseFloat(player.min_luck);
+            if (!isFinite(luckValue) || isNaN(luckValue)) {
+                luckValue = "N/A"; // Заменяем некорректные значения
+            } else {
+                luckValue = formatNumber(luckValue); // Применяем форматирование
+            }
+
             const li = document.createElement("li");
             li.classList.add("leaderboard-item");
-            li.innerHTML = `${index + 1}. ${player.username} - ${formatNumber(player.min_luck)}`;
+            li.innerHTML = `${index + 1}. ${player.username} - ${luckValue}`;
             leaderboardList.appendChild(li);
         });
     })
@@ -83,6 +90,7 @@ function loadLeaderboardLuck() {
         console.error("Ошибка загрузки лидерборда по удаче:", error);
     });
 }
+
 const cube = document.getElementById("cube");
 const coinsDisplay = document.getElementById("coins");
 const bestLuckDisplay = document.getElementById("bestLuck");
