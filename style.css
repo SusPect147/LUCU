@@ -93,11 +93,12 @@ body {
     position: relative;
     overflow: hidden;
 }
-
 .progress-bar {
     position: absolute;
     height: 100%;
     width: 0%;
+}
+ 
 body {
     margin: 0;
     overflow: hidden;
@@ -690,4 +691,5 @@ background: rgb(39, 39, 39);
   font-size: 18px;
   font-weight: bold;
   color: gray;
+}
 }
