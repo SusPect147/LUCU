@@ -140,8 +140,30 @@ const userInfo = document.createElement("div");
 userInfo.classList.add("user-info");
 leaderboardList.parentElement.appendChild(userInfo);
 
-const tg = window.Telegram.WebApp;
-const currentUserId = tg.initDataUnsafe?.user?.id || null; // Получаем ID пользователя из Telegram
+let currentUserId = null;
+
+// Проверяем доступность Telegram WebApp API
+if (window.Telegram && window.Telegram.WebApp) {
+    const tg = window.Telegram.WebApp;
+    currentUserId = tg.initDataUnsafe?.user?.id || null;
+}
+
+// Открытие лидерборда
+const leaderboardMenu = document.getElementById('leaderboard-menu');
+const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
+
+leaderboardButton.addEventListener('click', () => {
+    leaderboardMenu.style.display = 'flex';
+    mostLucuBtn.classList.add("active");
+    bestLuckBtn.classList.remove("active");
+    loadLeaderboardCoins(); // Загружаем лидерборд по монетам по умолчанию
+});
+
+leaderboardMenu.addEventListener('click', (e) => {
+    if (e.target === leaderboardMenu) {
+        leaderboardMenu.style.display = 'none';
+    }
+});
 
 mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
@@ -155,6 +177,7 @@ bestLuckBtn.addEventListener("click", () => {
     loadLeaderboardLuck();
 });
 
+// Подсветка пользователя и отображение его ранга
 function highlightUser(data) {
     let userFound = false;
     data.forEach((player, index) => {
@@ -169,6 +192,7 @@ function highlightUser(data) {
     }
 }
 
+// Загружаем лидерборд по монетам
 function loadLeaderboardCoins() {
     fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
         .then(response => response.json())
@@ -188,9 +212,13 @@ function loadLeaderboardCoins() {
                 leaderboardList.appendChild(li);
             });
             highlightUser(data);
+        })
+        .catch(error => {
+            console.error("Ошибка загрузки лидерборда по монетам:", error);
         });
 }
 
+// Загружаем лидерборд по удаче
 function loadLeaderboardLuck() {
     fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck")
         .then(response => response.json())
@@ -211,8 +239,12 @@ function loadLeaderboardLuck() {
                 leaderboardList.appendChild(li);
             });
             highlightUser(data);
+        })
+        .catch(error => {
+            console.error("Ошибка загрузки лидерборда по удаче:", error);
         });
 }
+
 
 const cube = document.getElementById("cube");
 const coinsDisplay = document.getElementById("coins");
