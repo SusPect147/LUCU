@@ -1,5 +1,5 @@
         let progress = 0;
-        let progressBar = document.getElementById('progressBar');
+        let progressBar1 = document.getElementById('progressBar1');
         let loadingScreen = document.getElementById('loadingScreen');
         let content = document.getElementById('content');
         
@@ -13,7 +13,7 @@
                 }, 1000);
             } else {
                 progress += 2;
-                progressBar.style.width = progress + '%';
+                progressBar1.style.width = progress + '%';
             }
         }, 50);
 const leaderboardList = document.getElementById("leaderboard-list");
