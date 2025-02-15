@@ -139,14 +139,8 @@ const bestLuckBtn = document.getElementById("best-luck");
 const userInfo = document.createElement("div");
 userInfo.classList.add("user-info");
 leaderboardList.parentElement.appendChild(userInfo);
-
-let currentUserId = null;
-
-// Проверяем доступность Telegram WebApp API
-if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
-    currentUserId = tg.initDataUnsafe?.user?.id || null;
-}
+const tg = window.Telegram.WebApp;
+let currentUserId =  tg.initDataUnsafe?.user?.id;
 
 // Открытие лидерборда
 const leaderboardMenu = document.getElementById('leaderboard-menu');
