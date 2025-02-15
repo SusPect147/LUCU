@@ -289,6 +289,8 @@ let hasBoughtNegative = false;
 let hasBoughtEmerald = false;
 let equippedSkin = 'classic';
 
+// Предполагаем, что глобальные переменные userId, coins и функция updateCoins() уже определены
+
 skinsButton.addEventListener('click', () => {
     skinsMenu.style.display = 'flex';
 });
@@ -302,10 +304,35 @@ skinsMenu.addEventListener('click', (e) => {
 buyNegativeButton.addEventListener('click', () => {
     if (!hasBoughtNegative) {
         if (coins >= 599) {
-            coins -= 599;
-            updateCoins(0); // Обновляем текст монет
-            hasBoughtNegative = true;
-            buyNegativeButton.textContent = 'Equip';
+            // Отправляем запрос на сервер для покупки "negative" скина
+            fetch('/buy_skin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    skin_type: 'negative',
+                    cost: 599
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message && data.message.startsWith("✅")) {
+                    // Если покупка успешна, обновляем локальные данные
+                    coins -= 599;
+                    updateCoins(0); // Обновляем UI (например, текст с монетами)
+                    hasBoughtNegative = true;
+                    buyNegativeButton.textContent = 'Equip';
+                } else {
+                    alert("Purchase failed: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error("Error purchasing negative skin:", err);
+            });
+        } else {
+            alert("Not enough coins!");
         }
     } else {
         equipSkin('negative');
@@ -315,10 +342,34 @@ buyNegativeButton.addEventListener('click', () => {
 buyEmeraldButton.addEventListener('click', () => {
     if (!hasBoughtEmerald) {
         if (coins >= 1100) {
-            coins -= 1100;
-            updateCoins(0); // Обновляем текст монет
-            hasBoughtEmerald = true;
-            buyEmeraldButton.textContent = 'Equip';
+            // Отправляем запрос на сервер для покупки "Emerald" скина
+            fetch('/buy_skin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    skin_type: 'Emerald',
+                    cost: 1100
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message && data.message.startsWith("✅")) {
+                    coins -= 1100;
+                    updateCoins(0);
+                    hasBoughtEmerald = true;
+                    buyEmeraldButton.textContent = 'Equip';
+                } else {
+                    alert("Purchase failed: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error("Error purchasing Emerald skin:", err);
+            });
+        } else {
+            alert("Not enough coins!");
         }
     } else {
         equipSkin('Emerald');
@@ -346,6 +397,7 @@ function equipSkin(type) {
     }
     equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
 }
+
          function rollCube() {
          let isRainbow = Math.random() < 0.2;
          document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
