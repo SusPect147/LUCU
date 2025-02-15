@@ -1,4 +1,138 @@
-
+         window.onload = () => {
+               const canvas = document.getElementById("particleCanvas");
+               if (canvas) {
+                   const particleSystem = new ParticleSystem(canvas, { x: window.innerWidth, y: window.innerHeight });
+                   particleSystem.amount = 60; // Количество частиц
+                   particleSystem.diameter = { min: 2, max: 5 }; // Размер частиц
+                   particleSystem.life = { min: 3, max: 7 }; // Время жизни
+                   particleSystem.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } }; // Скорость
+                   particleSystem.init();
+               }
+           };
+         
+           window.addEventListener("resize", () => {
+               const canvas = document.getElementById("particleCanvas");
+               if (canvas) {
+                   canvas.width = window.innerWidth;
+                   canvas.height = window.innerHeight;
+               }
+           });
+         
+           window.onload = () => {
+         const canvas = document.getElementById("particleCanvas");
+         if (canvas) {
+           const particleSystem = new ParticleSystem(canvas, { x: window.innerWidth, y: window.innerHeight });
+           particleSystem.amount = 100;
+           particleSystem.diameter = { min: 1, max: 3 };
+           particleSystem.life = { min: 3, max: 7 };
+           particleSystem.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } };
+           particleSystem.init();
+         
+           // Добавляем обработчик изменения размера экрана
+           window.addEventListener("resize", () => {
+               const oldSize = { x: particleSystem.size.x, y: particleSystem.size.y };
+               particleSystem.resize({ x: window.innerWidth, y: window.innerHeight }, oldSize);
+           });
+         }
+         };
+         
+         class Particle {
+         constructor(id, parent) {
+           this.parent = parent;
+           this.id = id;
+           this.position = { x: 0, y: 0 };
+           this.diameter = 0;
+           this.life = 0;
+           this.speed = { x: 0, y: 0 };
+           this.init();
+         }
+         
+         init() {
+           let interval = setInterval(() => {
+               this.position.x += (60 * this.speed.x) / 1000;
+               this.position.y -= (60 * this.speed.y) / 1000;
+               this.life -= 1 / 60;
+         
+               if (this.life <= 0) {
+                   clearInterval(interval);
+                   this.parent.particles.delete(this.id);
+               }
+           }, 1000 / 60);
+         }
+         }
+         
+         class ParticleSystem {
+         constructor(canvas, size) {
+           this.canvas = canvas;
+           this.size = size;
+           this.lastId = 0;
+           this.amount = 0;
+           this.particles = new Map();
+           this.diameter = { min: 0, max: 0 };
+           this.life = { min: 0, max: 0 };
+           this.speed = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 } };
+         
+           canvas.width = size.x;
+           canvas.height = size.y;
+         }
+         
+         static getRandomNumberInInterval(range) {
+           return Math.random() * (range.max - range.min) + range.min;
+         }
+         
+         createParticle() {
+           let particle = new Particle(this.lastId.toString(), this);
+           particle.position.x = ParticleSystem.getRandomNumberInInterval({ min: 0, max: this.size.x });
+           particle.position.y = ParticleSystem.getRandomNumberInInterval({ min: 0, max: this.size.y });
+           particle.diameter = ParticleSystem.getRandomNumberInInterval(this.diameter);
+           particle.life = ParticleSystem.getRandomNumberInInterval(this.life);
+           particle.speed.x = ParticleSystem.getRandomNumberInInterval(this.speed.x);
+           particle.speed.y = ParticleSystem.getRandomNumberInInterval(this.speed.y);
+         
+           this.particles.set(this.lastId.toString(), particle);
+           this.lastId++;
+         }
+         
+         init() {
+           let ctx = this.canvas.getContext("2d");
+           ctx.fillStyle = "white";
+         
+           for (let i = 0; i < this.amount; i++) {
+               this.createParticle();
+           }
+         
+           setInterval(() => {
+               if (this.particles.size < this.amount) {
+                   this.createParticle();
+               }
+           }, 1000 / 60);
+         
+           setInterval(() => {
+               ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+               this.particles.forEach((particle) => {
+                   ctx.beginPath();
+                   ctx.arc(particle.position.x, particle.position.y, particle.diameter / 2, 0, 2 * Math.PI);
+                   ctx.closePath();
+                   ctx.fill();
+               });
+           }, 1000 / 60);
+         }
+         
+         resize(newSize, oldSize) {
+           this.canvas.width = newSize.x;
+           this.canvas.height = newSize.y;
+           let ctx = this.canvas.getContext("2d");
+           ctx.fillStyle = "white";
+           this.particles.forEach((particle) => {
+               particle.position.x = (particle.position.x / oldSize.x) * newSize.x;
+               particle.position.y = (particle.position.y / oldSize.y) * newSize.y;
+           });
+         
+           this.size = newSize;
+         }
+         }
+         
+         window.particlex = { ParticleSystem, Particle };
 const leaderboardList = document.getElementById("leaderboard-list");
 const mostLucuBtn = document.getElementById("most-lucu");
 const bestLuckBtn = document.getElementById("best-luck");
@@ -626,141 +760,7 @@ function sendSkinToServer(skinType) {
            profileMenu.style.display = "none";
          }
          });
-         window.onload = () => {
-               const canvas = document.getElementById("particleCanvas");
-               if (canvas) {
-                   const particleSystem = new ParticleSystem(canvas, { x: window.innerWidth, y: window.innerHeight });
-                   particleSystem.amount = 60; // Количество частиц
-                   particleSystem.diameter = { min: 2, max: 5 }; // Размер частиц
-                   particleSystem.life = { min: 3, max: 7 }; // Время жизни
-                   particleSystem.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } }; // Скорость
-                   particleSystem.init();
-               }
-           };
-         
-           window.addEventListener("resize", () => {
-               const canvas = document.getElementById("particleCanvas");
-               if (canvas) {
-                   canvas.width = window.innerWidth;
-                   canvas.height = window.innerHeight;
-               }
-           });
-         
-           window.onload = () => {
-         const canvas = document.getElementById("particleCanvas");
-         if (canvas) {
-           const particleSystem = new ParticleSystem(canvas, { x: window.innerWidth, y: window.innerHeight });
-           particleSystem.amount = 100;
-           particleSystem.diameter = { min: 1, max: 3 };
-           particleSystem.life = { min: 3, max: 7 };
-           particleSystem.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } };
-           particleSystem.init();
-         
-           // Добавляем обработчик изменения размера экрана
-           window.addEventListener("resize", () => {
-               const oldSize = { x: particleSystem.size.x, y: particleSystem.size.y };
-               particleSystem.resize({ x: window.innerWidth, y: window.innerHeight }, oldSize);
-           });
-         }
-         };
-         
-         class Particle {
-         constructor(id, parent) {
-           this.parent = parent;
-           this.id = id;
-           this.position = { x: 0, y: 0 };
-           this.diameter = 0;
-           this.life = 0;
-           this.speed = { x: 0, y: 0 };
-           this.init();
-         }
-         
-         init() {
-           let interval = setInterval(() => {
-               this.position.x += (60 * this.speed.x) / 1000;
-               this.position.y -= (60 * this.speed.y) / 1000;
-               this.life -= 1 / 60;
-         
-               if (this.life <= 0) {
-                   clearInterval(interval);
-                   this.parent.particles.delete(this.id);
-               }
-           }, 1000 / 60);
-         }
-         }
-         
-         class ParticleSystem {
-         constructor(canvas, size) {
-           this.canvas = canvas;
-           this.size = size;
-           this.lastId = 0;
-           this.amount = 0;
-           this.particles = new Map();
-           this.diameter = { min: 0, max: 0 };
-           this.life = { min: 0, max: 0 };
-           this.speed = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 } };
-         
-           canvas.width = size.x;
-           canvas.height = size.y;
-         }
-         
-         static getRandomNumberInInterval(range) {
-           return Math.random() * (range.max - range.min) + range.min;
-         }
-         
-         createParticle() {
-           let particle = new Particle(this.lastId.toString(), this);
-           particle.position.x = ParticleSystem.getRandomNumberInInterval({ min: 0, max: this.size.x });
-           particle.position.y = ParticleSystem.getRandomNumberInInterval({ min: 0, max: this.size.y });
-           particle.diameter = ParticleSystem.getRandomNumberInInterval(this.diameter);
-           particle.life = ParticleSystem.getRandomNumberInInterval(this.life);
-           particle.speed.x = ParticleSystem.getRandomNumberInInterval(this.speed.x);
-           particle.speed.y = ParticleSystem.getRandomNumberInInterval(this.speed.y);
-         
-           this.particles.set(this.lastId.toString(), particle);
-           this.lastId++;
-         }
-         
-         init() {
-           let ctx = this.canvas.getContext("2d");
-           ctx.fillStyle = "white";
-         
-           for (let i = 0; i < this.amount; i++) {
-               this.createParticle();
-           }
-         
-           setInterval(() => {
-               if (this.particles.size < this.amount) {
-                   this.createParticle();
-               }
-           }, 1000 / 60);
-         
-           setInterval(() => {
-               ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-               this.particles.forEach((particle) => {
-                   ctx.beginPath();
-                   ctx.arc(particle.position.x, particle.position.y, particle.diameter / 2, 0, 2 * Math.PI);
-                   ctx.closePath();
-                   ctx.fill();
-               });
-           }, 1000 / 60);
-         }
-         
-         resize(newSize, oldSize) {
-           this.canvas.width = newSize.x;
-           this.canvas.height = newSize.y;
-           let ctx = this.canvas.getContext("2d");
-           ctx.fillStyle = "white";
-           this.particles.forEach((particle) => {
-               particle.position.x = (particle.position.x / oldSize.x) * newSize.x;
-               particle.position.y = (particle.position.y / oldSize.y) * newSize.y;
-           });
-         
-           this.size = newSize;
-         }
-         }
-         
-         window.particlex = { ParticleSystem, Particle };
+
          
 // Применяем режим полного экрана для мини-приложения
     window.Telegram.WebApp.expand();
