@@ -142,14 +142,15 @@ const bestLuckBtn = document.getElementById("best-luck");
 mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
     bestLuckBtn.classList.remove("active");
-    loadLeaderboardCoins(); // загружаем лидерборд по монетам
+    loadLeaderboardCoins(); // Загружаем лидерборд по монетам
 });
 
 bestLuckBtn.addEventListener("click", () => {
     bestLuckBtn.classList.add("active");
     mostLucuBtn.classList.remove("active");
-    loadLeaderboardLuck(); // загружаем лидерборд по удаче
+    loadLeaderboardLuck(); // Загружаем лидерборд по удаче
 });
+
 const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
 
@@ -175,8 +176,7 @@ function loadLeaderboardCoins() {
         return response.json();
     })
     .then(data => {
-        const leaderboardList = document.getElementById("leaderboard-list");
-        leaderboardList.innerHTML = ""; // очищаем список
+        leaderboardList.innerHTML = ""; // Очищаем список
         if (data.length === 0) {
             leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
             return;
@@ -184,7 +184,7 @@ function loadLeaderboardCoins() {
         data.forEach((player, index) => {
             const li = document.createElement("li");
             li.classList.add("leaderboard-item");
-            li.innerHTML = ${index + 1}. ${player.username} - ${formatCoins(player.coins)} $LUCU;
+            li.innerHTML = `${index + 1}. ${player.username} - ${formatCoins(player.coins)} $LUCU`;
             leaderboardList.appendChild(li);
         });
     })
@@ -203,8 +203,7 @@ function loadLeaderboardLuck() {
         return response.json();
     })
     .then(data => {
-        const leaderboardList = document.getElementById("leaderboard-list");
-        leaderboardList.innerHTML = ""; // очищаем список
+        leaderboardList.innerHTML = ""; // Очищаем список
         if (data.length === 0) {
             leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
             return;
@@ -219,7 +218,7 @@ function loadLeaderboardLuck() {
 
             const li = document.createElement("li");
             li.classList.add("leaderboard-item");
-            li.innerHTML = ${index + 1}. ${player.username} - ${luckValue};
+            li.innerHTML = `${index + 1}. ${player.username} - ${luckValue}`;
             leaderboardList.appendChild(li);
         });
     })
