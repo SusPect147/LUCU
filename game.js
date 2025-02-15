@@ -146,16 +146,13 @@ function updateBestLuck() {
     }
 }
 
-// Функция получения данных с сервера и обновления HTML
 function updateGameData() {
-    // Получаем userId из Telegram WebApp
     const userId = tg.initDataUnsafe?.user?.id;
     if (!userId) {
         console.error("User ID не найден");
         return;
     }
 
-    // Запрос к серверу
     fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
         .then(response => {
             if (!response.ok) {
@@ -163,28 +160,24 @@ function updateGameData() {
             }
             return response.json();
         })
-.then(data => {
-    // Ожидаем, что сервер вернёт { coins: число, min_luck: число, owned_skins: [], equipped_skin: строка }
-    const { coins, min_luck, owned_skins = [], equipped_skin = "classic" } = data;
+        .then(data => {
+            const { coins, min_luck, owned_skins = [], equipped_skin = "classic" } = data;
 
-    // Обновляем HTML-элементы
-    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
 
-    if (min_luck === Infinity) {
-        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">N/A</span>`;
-    } else {
-        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
-    }
+            bestLuckDisplay.innerHTML = min_luck === Infinity 
+                ? `Your Best MIN Luck: <span style="color: #F80000;">N/A</span>` 
+                : `Your Best MIN Luck: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
 
-    console.log("Данные игры обновлены:", data);
+            console.log("Данные игры обновлены:", data);
 
-    // Обновляем глобальные переменные и кнопки скинов
-    updateSkinsUI(owned_skins, equipped_skin);  // Передаем equipped_skin
+            updateSkinsUI(owned_skins, equipped_skin);
 
-    // Устанавливаем последний выбранный скин
-    equipSkin(equipped_skin);
-})
-
+            // Только если загруженный скин отличается от текущего — меняем его
+            if (equippedSkin !== equipped_skin) {
+                equipSkin(equipped_skin, false); // false = не отправлять сразу на сервер
+            }
+        })
         .catch(error => {
             console.error("Ошибка при получении данных с сервера:", error);
         });
@@ -405,27 +398,23 @@ equipClassicButton.addEventListener('click', () => {
     equipSkin('classic');
 });
 
-function equipSkin(type) {
+function equipSkin(type, sendToServer = true) {
+    if (equippedSkin === type) return; // Предотвращаем лишние запросы
+
     equippedSkin = type;
-    if (type === 'negative') {
-        cube.src = 'pictures/cubics/негатив/начальный-кубик-негатив.gif';
-    } else if (type === 'Emerald') {
-        cube.src = 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif';
-    } else {
-        cube.src = 'pictures/cubics/классика/начальный-кубик.gif';
-    }
+    cube.src = type === "negative" 
+        ? "pictures/cubics/негатив/начальный-кубик-негатив.gif" 
+        : type === "Emerald" 
+            ? "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif" 
+            : "pictures/cubics/классика/начальный-кубик.gif";
 
-    // Обновляем текст кнопок для каждого скина
-    if (hasBoughtNegative) {
-        buyNegativeButton.textContent = type === 'negative' ? 'Equipped' : 'Equip';
-    }
-    if (hasBoughtEmerald) {
-        buyEmeraldButton.textContent = type === 'Emerald' ? 'Equipped' : 'Equip';
-    }
-    equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
+    buyNegativeButton.textContent = hasBoughtNegative ? (type === "negative" ? "Equipped" : "Equip") : "Buy (599)";
+    buyEmeraldButton.textContent = hasBoughtEmerald ? (type === "Emerald" ? "Equipped" : "Equip") : "Buy (1100)";
+    equipClassicButton.textContent = type === "classic" ? "Equipped" : "Equip";
 
-    // Отправляем на сервер информацию о выбранном скине
-    sendSkinToServer(type);  // Эта функция должна отправлять скин на сервер
+    if (sendToServer) {
+        sendSkinToServer(type);
+    }
 }
 
 function sendSkinToServer(skinType) {
