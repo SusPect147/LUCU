@@ -163,32 +163,32 @@ function updateGameData() {
             }
             return response.json();
         })
-        .then(data => {
-            // Ожидаем, что сервер вернёт { coins: число, min_luck: число, owned_skins: [], equipped_skin: строка }
-            const { coins, min_luck, owned_skins = [], equipped_skin = "classic" } = data;
+.then(data => {
+    // Ожидаем, что сервер вернёт { coins: число, min_luck: число, owned_skins: [], equipped_skin: строка }
+    const { coins, min_luck, owned_skins = [], equipped_skin = "classic" } = data;
 
-            // Обновляем HTML-элементы
-            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+    // Обновляем HTML-элементы
+    coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
 
-            if (min_luck === Infinity) {
-                bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">N/A</span>`;
-            } else {
-                bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
-            }
+    if (min_luck === Infinity) {
+        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">N/A</span>`;
+    } else {
+        bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
+    }
 
-            console.log("Данные игры обновлены:", data);
+    console.log("Данные игры обновлены:", data);
 
-            // Обновляем глобальные переменные и кнопки скинов
-            updateSkinsUI(owned_skins);
+    // Обновляем глобальные переменные и кнопки скинов
+    updateSkinsUI(owned_skins, equipped_skin);  // Передаем equipped_skin
 
-            // Устанавливаем последний выбранный скин
-            equipSkin(equipped_skin);
-        })
+    // Устанавливаем последний выбранный скин
+    equipSkin(equipped_skin);
+})
+
         .catch(error => {
             console.error("Ошибка при получении данных с сервера:", error);
         });
 }
-// Функция обновления интерфейса скинов
 function updateSkinsUI(ownedSkins, equippedSkin) {
     hasBoughtNegative = ownedSkins.includes("negative");
     hasBoughtEmerald = ownedSkins.includes("Emerald");
@@ -414,6 +414,8 @@ function equipSkin(type) {
     } else {
         cube.src = 'pictures/cubics/классика/начальный-кубик.gif';
     }
+
+    // Обновляем текст кнопок для каждого скина
     if (hasBoughtNegative) {
         buyNegativeButton.textContent = type === 'negative' ? 'Equipped' : 'Equip';
     }
@@ -421,7 +423,31 @@ function equipSkin(type) {
         buyEmeraldButton.textContent = type === 'Emerald' ? 'Equipped' : 'Equip';
     }
     equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
+
+    // Отправляем на сервер информацию о выбранном скине
+    sendSkinToServer(type);  // Эта функция должна отправлять скин на сервер
 }
+
+function sendSkinToServer(skinType) {
+    fetch('https://backend12-production-1210.up.railway.app/update_skin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            skin_type: skinType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Skin updated on server:", data);
+    })
+    .catch(error => {
+        console.error("Error updating skin on server:", error);
+    });
+}
+
 
 
          function rollCube() {
