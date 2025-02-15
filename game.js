@@ -154,9 +154,9 @@ function updateGameData() {
         console.error("User ID не найден");
         return;
     }
-    
+
     // Запрос к серверу
-    fetch(`https://backend12-production-1210.up.railway.app/get_data?user_id=${userId}`)
+    fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error("Ошибка сети: " + response.status);
@@ -164,8 +164,8 @@ function updateGameData() {
             return response.json();
         })
         .then(data => {
-            // Ожидаем, что сервер вернёт { coins: число, min_luck: число, owned_skins: [] }
-            const { coins, min_luck, owned_skins = [] } = data;
+            // Ожидаем, что сервер вернёт { coins: число, min_luck: число, owned_skins: [], equipped_skin: строка }
+            const { coins, min_luck, owned_skins = [], equipped_skin = "classic" } = data;
 
             // Обновляем HTML-элементы
             coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
@@ -178,36 +178,36 @@ function updateGameData() {
 
             console.log("Данные игры обновлены:", data);
 
-            // Обновляем глобальные переменные и кнопки
+            // Обновляем глобальные переменные и кнопки скинов
             updateSkinsUI(owned_skins);
+
+            // Устанавливаем последний выбранный скин
+            equipSkin(equipped_skin);
         })
         .catch(error => {
             console.error("Ошибка при получении данных с сервера:", error);
         });
 }
 // Функция обновления интерфейса скинов
-function updateSkinsUI(ownedSkins) {
+function updateSkinsUI(ownedSkins, equippedSkin) {
     hasBoughtNegative = ownedSkins.includes("negative");
     hasBoughtEmerald = ownedSkins.includes("Emerald");
 
-    // Обновляем кнопки в зависимости от того, куплены скины или нет
-    if (hasBoughtNegative) {
-        buyNegativeButton.textContent = equippedSkin === "negative" ? "Equipped" : "Equip";
-    } else {
-        buyNegativeButton.textContent = "Buy (599)";
-    }
+    // Обновляем кнопки в зависимости от купленных скинов
+    buyNegativeButton.textContent = hasBoughtNegative 
+        ? (equippedSkin === "negative" ? "Equipped" : "Equip") 
+        : "Buy (599)";
 
-    if (hasBoughtEmerald) {
-        buyEmeraldButton.textContent = equippedSkin === "Emerald" ? "Equipped" : "Equip";
-    } else {
-        buyEmeraldButton.textContent = "Buy (1100)";
-    }
+    buyEmeraldButton.textContent = hasBoughtEmerald 
+        ? (equippedSkin === "Emerald" ? "Equipped" : "Equip") 
+        : "Buy (1100)";
 
     equipClassicButton.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
 }
 
 // Вызываем обновление данных при загрузке страницы
 updateGameData();
+
 function sendCoinsToServer(amount) {
     if (!userId) {
         console.error("User ID не найден");
