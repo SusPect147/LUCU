@@ -305,7 +305,7 @@ buyNegativeButton.addEventListener('click', () => {
     if (!hasBoughtNegative) {
         if (coins >= 599) {
             // Отправляем запрос на сервер для покупки "negative" скина
-            fetch('/buy_skin', {
+            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -343,7 +343,7 @@ buyEmeraldButton.addEventListener('click', () => {
     if (!hasBoughtEmerald) {
         if (coins >= 1100) {
             // Отправляем запрос на сервер для покупки "Emerald" скина
-            fetch('/buy_skin', {
+            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
