@@ -136,94 +136,82 @@
 const leaderboardList = document.getElementById("leaderboard-list");
 const mostLucuBtn = document.getElementById("most-lucu");
 const bestLuckBtn = document.getElementById("best-luck");
+const userInfo = document.createElement("div");
+userInfo.classList.add("user-info");
+leaderboardList.parentElement.appendChild(userInfo);
+
+const tg = window.Telegram.WebApp;
+const currentUserId = tg.initDataUnsafe?.user?.id || null; // Получаем ID пользователя из Telegram
 
 mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
     bestLuckBtn.classList.remove("active");
-    loadLeaderboardCoins(); // загружаем лидерборд по монетам
+    loadLeaderboardCoins();
 });
 
 bestLuckBtn.addEventListener("click", () => {
     bestLuckBtn.classList.add("active");
     mostLucuBtn.classList.remove("active");
-    loadLeaderboardLuck(); // загружаем лидерборд по удаче
-});
-const leaderboardMenu = document.getElementById('leaderboard-menu');
-const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
-
-leaderboardButton.addEventListener('click', () => {
-    leaderboardMenu.style.display = 'flex';
-    // При открытии меню по умолчанию загружаем лидерборд по монетам
-    loadLeaderboardCoins();
+    loadLeaderboardLuck();
 });
 
-leaderboardMenu.addEventListener('click', (e) => {
-    if (e.target === leaderboardMenu) {
-        leaderboardMenu.style.display = 'none';
-    }
-});
-
-// Загружаем лидерборд по монетам (от большего к меньшему)
-function loadLeaderboardCoins() {
-    fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Ошибка сети: " + response.status);
+function highlightUser(data) {
+    let userFound = false;
+    data.forEach((player, index) => {
+        if (player.user_id === currentUserId) {
+            userFound = true;
+            userInfo.innerHTML = `<strong>Your Rank:</strong> ${index + 1}. ${player.username} - ${player.coins || player.min_luck}`;
         }
-        return response.json();
-    })
-    .then(data => {
-        const leaderboardList = document.getElementById("leaderboard-list");
-        leaderboardList.innerHTML = ""; // очищаем список
-        if (data.length === 0) {
-            leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-            return;
-        }
-        data.forEach((player, index) => {
-            const li = document.createElement("li");
-            li.classList.add("leaderboard-item");
-            li.innerHTML = `${index + 1}. ${player.username} - ${formatCoins(player.coins)} $LUCU`;
-            leaderboardList.appendChild(li);
-        });
-    })
-    .catch(error => {
-        console.error("Ошибка загрузки лидерборда по монетам:", error);
     });
+
+    if (!userFound) {
+        userInfo.innerHTML = "<strong>Your Rank:</strong> Not in Top 25";
+    }
 }
 
-// Загружаем лидерборд по удаче (от меньшей удачи к большей)
+function loadLeaderboardCoins() {
+    fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
+        .then(response => response.json())
+        .then(data => {
+            leaderboardList.innerHTML = "";
+            if (data.length === 0) {
+                leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+                return;
+            }
+            data.forEach((player, index) => {
+                const li = document.createElement("li");
+                li.classList.add("leaderboard-item");
+                if (player.user_id === currentUserId) {
+                    li.classList.add("current-user");
+                }
+                li.innerHTML = `${index + 1}. ${player.username} - ${player.coins} $LUCU`;
+                leaderboardList.appendChild(li);
+            });
+            highlightUser(data);
+        });
+}
+
 function loadLeaderboardLuck() {
     fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck")
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Ошибка сети: " + response.status);
-        }
-        return response.json();
-    })
-    .then(data => {
-        const leaderboardList = document.getElementById("leaderboard-list");
-        leaderboardList.innerHTML = ""; // очищаем список
-        if (data.length === 0) {
-            leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-            return;
-        }
-        data.forEach((player, index) => {
-            let luckValue = parseFloat(player.min_luck);
-            if (!isFinite(luckValue) || isNaN(luckValue)) {
-                luckValue = "N/A"; // Заменяем некорректные значения
-            } else {
-                luckValue = formatNumber(luckValue); // Применяем форматирование
+        .then(response => response.json())
+        .then(data => {
+            leaderboardList.innerHTML = "";
+            if (data.length === 0) {
+                leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+                return;
             }
-
-            const li = document.createElement("li");
-            li.classList.add("leaderboard-item");
-            li.innerHTML = `${index + 1}. ${player.username} - ${luckValue}`;
-            leaderboardList.appendChild(li);
+            data.forEach((player, index) => {
+                let luckValue = isFinite(player.min_luck) ? player.min_luck : "N/A";
+                const li = document.createElement("li");
+                li.classList.add("leaderboard-item");
+                if (player.user_id === currentUserId) {
+                    li.classList.add("current-user");
+                }
+                li.innerHTML = `${index + 1}. ${player.username} - ${luckValue}`;
+                leaderboardList.appendChild(li);
+            });
+            highlightUser(data);
         });
-    })
-    .catch(error => {
-        console.error("Ошибка загрузки лидерборда по удаче:", error);
-    });
 }
 
 const cube = document.getElementById("cube");
@@ -233,7 +221,7 @@ const progressBar = document.querySelector("#progressBar div");
 let coins = 0;
 let bestLuck = Infinity;
 let isAnimating = false;
-const tg = window.Telegram.WebApp;
+
 const userId = tg.initDataUnsafe?.user?.id;
 
 // Получаем никнейм: если username отсутствует, используем first_name
