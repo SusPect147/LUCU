@@ -319,9 +319,9 @@ buyNegativeButton.addEventListener('click', () => {
             .then(response => response.json())
             .then(data => {
                 if (data.message && data.message.startsWith("✅")) {
-                    // Если покупка успешна, обновляем локальные данные
-                    coins -= 599;
-                    updateCoins(0); // Обновляем UI (например, текст с монетами)
+                    // Обновляем локальное значение монет на основе ответа сервера
+                    coins = data.new_coins;
+                    updateCoins(0); // Обновляем UI
                     hasBoughtNegative = true;
                     buyNegativeButton.textContent = 'Equip';
                 } else {
@@ -357,7 +357,8 @@ buyEmeraldButton.addEventListener('click', () => {
             .then(response => response.json())
             .then(data => {
                 if (data.message && data.message.startsWith("✅")) {
-                    coins -= 1100;
+                    // Обновляем локальное значение монет на основе ответа сервера
+                    coins = data.new_coins;
                     updateCoins(0);
                     hasBoughtEmerald = true;
                     buyEmeraldButton.textContent = 'Equip';
@@ -397,6 +398,7 @@ function equipSkin(type) {
     }
     equipClassicButton.textContent = type === 'classic' ? 'Equipped' : 'Equip';
 }
+
 
          function rollCube() {
          let isRainbow = Math.random() < 0.2;
