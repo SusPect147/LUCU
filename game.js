@@ -1,21 +1,4 @@
-        let progress = 0;
-        let progressBar1 = document.getElementById('progressBar1');
-        let loadingScreen = document.getElementById('loadingScreen');
-        let content = document.getElementById('content');
-        
-        let interval = setInterval(() => {
-            if (progress >= 100) {
-                clearInterval(interval);
-                loadingScreen.style.opacity = '0';
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    content.style.display = 'block';
-                }, 1000);
-            } else {
-                progress += 2;
-                progressBar1.style.width = progress + '%';
-            }
-        }, 50);
+
 const leaderboardList = document.getElementById("leaderboard-list");
 const mostLucuBtn = document.getElementById("most-lucu");
 const bestLuckBtn = document.getElementById("best-luck");
