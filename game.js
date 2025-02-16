@@ -698,46 +698,36 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         function copyToClipboard(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text)
-                    .then(() => showCopySuccess())
-                    .catch(err => {
-                        console.warn("Clipboard API failed, using fallback:", err);
-                        fallbackCopy(text);
-                    });
-            } else {
-                fallbackCopy(text);
-            }
+    fallbackCopy(text); // Используем только execCommand
+}
+
+function fallbackCopy(text) {
+    const tempTextArea = document.createElement("textarea");
+    tempTextArea.value = text;
+    tempTextArea.style.position = "absolute";
+    tempTextArea.style.left = "-9999px";
+    document.body.appendChild(tempTextArea);
+    tempTextArea.select();
+
+    try {
+        if (document.execCommand("copy")) {
+            showCopySuccess();
+        } else {
+            throw new Error("execCommand failed");
         }
-
-        function fallbackCopy(text) {
-            const tempTextArea = document.createElement("textarea");
-            tempTextArea.value = text;
-            tempTextArea.style.position = "absolute";
-            tempTextArea.style.left = "-9999px";
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-
-            try {
-                if (document.execCommand("copy")) {
-                    showCopySuccess();
-                } else {
-                    throw new Error("execCommand failed");
-                }
-            } catch (err) {
-                console.error("Fallback copy failed:", err);
-            }
-
-            document.body.removeChild(tempTextArea);
-        }
-
-        function showCopySuccess() {
-            copyButton.textContent = "Copied!";
-            setTimeout(() => {
-                copyButton.textContent = "Copy";
-            }, 1500);
-        }
+    } catch (err) {
+        console.error("Fallback copy failed:", err);
     }
+
+    document.body.removeChild(tempTextArea);
+}
+
+function showCopySuccess() {
+    copyButton.textContent = "Copied!";
+    setTimeout(() => {
+        copyButton.textContent = "Copy";
+    }, 1500);
+}
 });
     // Подключение TON Connect
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
