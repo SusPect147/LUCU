@@ -700,40 +700,52 @@ window.Telegram.WebApp.requestFullscreen(); // Используем requestFulls
 // Настройка темы
 tg.expand(); // Открыть приложение на весь экран
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const friendMenu = document.getElementById("friend-menu");
     const friendButton = document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById("open-friend-menu");
     const referralInput = document.getElementById("referral-link");
     const copyButton = document.getElementById("copy-referral");
+    
+    const telegram = window.Telegram?.WebApp;
+    const userId = telegram?.initDataUnsafe?.user?.id || "unknown";
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrerId = urlParams.get("start");
 
+    // Проверяем, есть ли реферальный ID и не является ли он ID текущего пользователя
+    if (referrerId && referrerId !== userId) {
+        try {
+            const response = await fetch("https://backend12-production-1210.up.railway.app/update_coins", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId, coins: 100 })
+            });
+            const result = await response.json();
+            console.log("Referral bonus added:", result);
+        } catch (error) {
+            console.error("Failed to update coins:", error);
+        }
+    }
+    
     if (friendMenu && friendButton && referralInput && copyButton) {
-        // Получаем Telegram User ID
-        const telegram = window.Telegram?.WebApp;
-        const userId = telegram?.initDataUnsafe?.user?.id || "unknown";
-
-        // Генерируем реферальную ссылку
         const referralLink = `https://t.me/LuckyCubesbot?start=${userId}`;
         referralInput.value = referralLink;
 
-        // Открытие меню
         friendButton.addEventListener("click", () => {
             friendMenu.style.display = "flex";
         });
 
-        // Закрытие меню при клике на затемненный фон
         friendMenu.addEventListener("click", (e) => {
             if (e.target === friendMenu) {
                 friendMenu.style.display = "none";
             }
         });
 
-        // Копирование ссылки
         copyButton.addEventListener("click", () => {
             copyToClipboard(referralInput.value);
         });
 
         function copyToClipboard(text) {
-            fallbackCopy(text); // Используем только execCommand
+            fallbackCopy(text);
         }
 
         function fallbackCopy(text) {
@@ -765,4 +777,5 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
+
 
