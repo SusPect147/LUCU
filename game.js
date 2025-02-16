@@ -665,6 +665,41 @@ isAnimating = false;
 };
 }
 rollCube();
+// Подключение TON Connect
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
+    buttonRootId: 'ton-connect'
+});
+
+tonConnectUI.uiOptions = {
+    twaReturnUrl: 'https://t.me/LuckyCubesbot'
+};
+
+// Работа с профилем
+const profileButton = document.getElementById("profile-button");
+const profileMenu = document.getElementById("profile-menu");
+const profileName = document.getElementById("profile-name");
+
+const userName = tg.initDataUnsafe?.user?.username || "NoName"; // Используем tg
+profileName.textContent = `Hello, ${userName}`;
+
+profileButton.addEventListener("click", () => {
+    profileMenu.style.display = "flex";
+});
+
+profileMenu.addEventListener("click", (e) => {
+    if (e.target === profileMenu) {
+        profileMenu.style.display = "none";
+    }
+});
+
+// Применяем режим полного экрана для мини-приложения
+window.Telegram.WebApp.expand();
+window.Telegram.WebApp.requestFullscreen(); // Используем requestFullscreen()
+
+// Настройка темы
+tg.expand(); // Открыть приложение на весь экран
+
 document.addEventListener("DOMContentLoaded", () => {
     const friendMenu = document.getElementById("friend-menu");
     const friendButton = document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById("open-friend-menu");
@@ -698,68 +733,36 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         function copyToClipboard(text) {
-    fallbackCopy(text); // Используем только execCommand
-}
-
-function fallbackCopy(text) {
-    const tempTextArea = document.createElement("textarea");
-    tempTextArea.value = text;
-    tempTextArea.style.position = "absolute";
-    tempTextArea.style.left = "-9999px";
-    document.body.appendChild(tempTextArea);
-    tempTextArea.select();
-
-    try {
-        if (document.execCommand("copy")) {
-            showCopySuccess();
-        } else {
-            throw new Error("execCommand failed");
+            fallbackCopy(text); // Используем только execCommand
         }
-    } catch (err) {
-        console.error("Fallback copy failed:", err);
+
+        function fallbackCopy(text) {
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = text;
+            tempTextArea.style.position = "absolute";
+            tempTextArea.style.left = "-9999px";
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+
+            try {
+                if (document.execCommand("copy")) {
+                    showCopySuccess();
+                } else {
+                    throw new Error("execCommand failed");
+                }
+            } catch (err) {
+                console.error("Fallback copy failed:", err);
+            }
+
+            document.body.removeChild(tempTextArea);
+        }
+
+        function showCopySuccess() {
+            copyButton.textContent = "Copied!";
+            setTimeout(() => {
+                copyButton.textContent = "Copy";
+            }, 1500);
+        }
     }
-
-    document.body.removeChild(tempTextArea);
-}
-
-function showCopySuccess() {
-    copyButton.textContent = "Copied!";
-    setTimeout(() => {
-        copyButton.textContent = "Copy";
-    }, 1500);
-}
 });
-    // Подключение TON Connect
-    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
-        buttonRootId: 'ton-connect'
-    });
 
-    tonConnectUI.uiOptions = {
-        twaReturnUrl: 'https://t.me/LuckyCubesbot'
-    };
-
-    // Работа с профилем
-    const profileButton = document.getElementById("profile-button");
-    const profileMenu = document.getElementById("profile-menu");
-    const profileName = document.getElementById("profile-name");
-
-    const userName = tg.initDataUnsafe?.user?.username || "NoName"; // Используем tg
-    profileName.textContent = `Hello, ${userName}`;
-
-    profileButton.addEventListener("click", () => {
-        profileMenu.style.display = "flex";
-    });
-
-    profileMenu.addEventListener("click", (e) => {
-        if (e.target === profileMenu) {
-            profileMenu.style.display = "none";
-        }
-    });
-
-    // Применяем режим полного экрана для мини-приложения
-    window.Telegram.WebApp.expand();
-    window.Telegram.WebApp.requestFullscreen(); // Используем requestFullscreen()
-    
-    // Настройка темы
-    tg.expand(); // Открыть приложение на весь экран
