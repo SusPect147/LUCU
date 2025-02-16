@@ -692,51 +692,56 @@ function sendSkinToServer(skinType) {
                     }
                 });
         
-                // Копирование ссылки
-                copyButton.addEventListener("click", async () => {
-                    try {
-                        // Попытка использовать Clipboard API
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                            await navigator.clipboard.writeText(referralInput.value);
-                            showCopySuccess();
-                        } else {
-                            fallbackCopy(referralInput.value);
-                        }
-                    } catch (err) {
-                        console.error("Clipboard API failed, trying fallback:", err);
-                        fallbackCopy(referralInput.value);
-                    }
-                });
-        
-                // Запасной метод для копирования
-                function fallbackCopy(text) {
-                    const tempTextArea = document.createElement("textarea");
-                    tempTextArea.value = text;
-                    document.body.appendChild(tempTextArea);
-                    tempTextArea.select();
-        
-                    try {
-                        if (document.execCommand("copy")) {
-                            showCopySuccess();
-                        } else {
-                            throw new Error("execCommand failed");
-                        }
-                    } catch (err) {
-                        console.error("Fallback copy failed:", err);
-                    }
-        
-                    document.body.removeChild(tempTextArea);
-                }
-        
-                // Функция для обновления кнопки после успешного копирования
-                function showCopySuccess() {
-                    copyButton.textContent = "Copied!";
-                    setTimeout(() => {
-                        copyButton.textContent = "Copy";
-                    }, 1500);
-                }
-            }
-        });
+                document.addEventListener("DOMContentLoaded", () => {
+    const copyButton = document.getElementById("copyButton");
+    const referralInput = document.getElementById("referralInput");
+
+    copyButton.addEventListener("click", () => {
+        copyToClipboard(referralInput.value);
+    });
+
+    function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            // Попытка использовать Clipboard API (работает только в HTTPS)
+            navigator.clipboard.writeText(text).then(() => {
+                showCopySuccess();
+            }).catch(err => {
+                console.warn("Clipboard API failed, using fallback:", err);
+                fallbackCopy(text);
+            });
+        } else {
+            // Запасной метод для копирования
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = text;
+        tempTextArea.style.position = "absolute";
+        tempTextArea.style.left = "-9999px";
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+
+        try {
+            const success = document.execCommand("copy");
+            if (!success) throw new Error("execCommand failed");
+            showCopySuccess();
+        } catch (err) {
+            console.error("Fallback copy failed:", err);
+        }
+
+        document.body.removeChild(tempTextArea);
+    }
+
+    function showCopySuccess() {
+        copyButton.textContent = "Copied!";
+        setTimeout(() => {
+            copyButton.textContent = "Copy";
+        }, 1500);
+    }
+});
+
         
 
 
