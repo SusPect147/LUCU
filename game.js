@@ -544,15 +544,14 @@ skinsButton.addEventListener('click', () => {
     skinsMenu.classList.add('show'); // Добавляем плавное появление
 });
 
-// Функция закрытия меню с зеркальной анимацией
+// Функция закрытия меню с плавной анимацией
 skinsMenu.addEventListener('click', (e) => {
     if (e.target === skinsMenu) {
         skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
-        skinsMenu.classList.remove('show'); // Убираем класс show
+        skinsMenu.classList.remove('show'); // Убираем show
         setTimeout(() => {
             skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
-            skinsMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
-        }, 400); // Время совпадает с CSS (0.4s)
+        }, 400); // Совпадает с transition в CSS
     }
 });
 
