@@ -959,12 +959,11 @@ profileMenu.addEventListener('click', (e) => {
 friendButton.addEventListener('click', () => {
     friendMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
     friendMenu.classList.add('show'); // Добавляем плавное появление
-    loadLeaderboardCoins();
 });
 
 // Функция закрытия меню с зеркальной анимацией
-profileMenu.addEventListener('click', (e) => {
-    if (e.target === profileMenu) {
+friendMenu.addEventListener('click', (e) => {
+    if (e.target === friendMenu) {
         friendMenu.classList.add('hide'); // Запускаем анимацию вниз
         friendMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
