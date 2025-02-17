@@ -222,26 +222,27 @@ window.onload = () => {
     mostLucuBtn.classList.remove("active");
     loadLeaderboardLuck(); // Загружаем лидерборд по удаче
  });
- 
 const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
 
+// Функция открытия меню
 leaderboardButton.addEventListener('click', () => {
-    leaderboardMenu.classList.add('show'); // Добавляем класс show для показа меню
-    // При открытии меню по умолчанию загружаем лидерборд по монетам
+    leaderboardMenu.classList.add('show');
+    leaderboardMenu.classList.remove('hide'); // Убираем класс hide, если он был
     loadLeaderboardCoins();
 });
 
-// Закрытие меню, когда кликаем за пределами окна
+// Функция закрытия меню с анимацией
 leaderboardMenu.addEventListener('click', (e) => {
     if (e.target === leaderboardMenu) {
-        leaderboardMenu.classList.add('hide'); // Добавляем класс hide для анимации исчезновения
-        // Через 0.3 секунды (по завершении анимации) убираем класс show, чтобы скрыть меню
+        leaderboardMenu.classList.add('hide'); // Запускаем анимацию исчезновения
+        leaderboardMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            leaderboardMenu.classList.remove('show', 'hide');
-        }, 300); // Время задержки должно совпадать с длительностью анимации
+            leaderboardMenu.classList.remove('hide'); // Полностью скрываем меню после анимации
+        }, 400); // Время совпадает с анимацией в CSS (0.4s)
     }
 });
+
 
  
  // Загружаем лидерборд по монетам (от большего к меньшему)
