@@ -940,12 +940,13 @@ window.onload = () => {
             copyToClipboard(referralInput.value);
         });
 shareButton.addEventListener("click", () => {
-    const shareText = `Hello! Try your luck with me at this link: ${referralLink}`;
+    const shareText = "Want to try your luck? Check out this game and join me!";
     const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
     
     // Открытие ссылки в Telegram
     telegram?.openTelegramLink(telegramLink);
 });
+
 
 
 
