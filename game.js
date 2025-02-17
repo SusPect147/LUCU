@@ -902,6 +902,7 @@ profileMenu.addEventListener('click', (e) => {
     }
 });
 
+
  
  // Применяем режим полного экрана для мини-приложения
  window.Telegram.WebApp.expand();
