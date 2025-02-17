@@ -245,12 +245,13 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
-  visibility: hidden; /* Меню скрыто по умолчанию */
-  opacity: 0; /* Меню не видно */
-  justify-content: center;
-  align-items: flex-end;
-  transition: opacity 0.4s ease, visibility 0s 0.4s; /* Плавное изменение прозрачности */
+  visibility: hidden;
+  opacity: 0;
+  display: flex;
+  align-items: flex-end; /* Исправлено: теперь меню внизу */
+  transition: opacity 0.4s ease, visibility 0s 0.4s;
 }
+
 
 /* Контент модального окна */
 #profile-menu-content {
