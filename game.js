@@ -542,19 +542,21 @@ const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
 skinsButton.addEventListener('click', () => {
     skinsMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
     skinsMenu.classList.add('show'); // Добавляем плавное появление
+    loadLeaderboardCoins();
 });
 
-// Функция закрытия меню с плавной анимацией
+// Функция закрытия меню с зеркальной анимацией
 skinsMenu.addEventListener('click', (e) => {
-    if (e.target === skinsMenu) {  // Проверка, чтобы клик был именно по фону
-        skinsMenu.classList.add('hide'); // Запускаем анимацию скрытия
+    if (e.target === skinsMenu) {
+        skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
         skinsMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            skinsMenu.classList.add('hidden'); // Полностью скрываем меню
-            skinsMenu.classList.remove('hide'); // Убираем hide, чтобы при следующем открытии меню не было проблем
-        }, 400); // Задержка на время анимации скрытия (0.4s)
+            skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
+            skinsMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
+        }, 400); // Время совпадает с CSS (0.4s)
     }
 });
+
 
 
  
@@ -880,24 +882,24 @@ const profileName = document.getElementById("profile-name");
 const userName = tg.initDataUnsafe?.user?.username || "NoName";
 profileName.textContent = `Hello, ${userName}`;
 
-// Открытие меню
-profileButton.addEventListener("click", () => {
+// Функция открытия меню
+profileButton.addEventListener('click', () => {
     profileMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
-    profileMenu.classList.add('show'); // Добавляем анимацию появления
+    profileMenu.classList.add('show'); // Добавляем плавное появление
+    loadLeaderboardCoins();
 });
 
-// Закрытие меню с плавной анимацией
-profileMenu.addEventListener("click", (e) => {
+// Функция закрытия меню с зеркальной анимацией
+profileMenu.addEventListener('click', (e) => {
     if (e.target === profileMenu) {
         profileMenu.classList.add('hide'); // Запускаем анимацию вниз
-        profileMenu.classList.remove('show'); // Убираем show
+        profileMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            profileMenu.classList.add('hidden'); // Полностью скрываем
-            profileMenu.classList.remove('hide'); // Убираем hide для следующего открытия
+            profileMenu.classList.add('hidden'); // Полностью скрываем после анимации
+            profileMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
         }, 400); // Время совпадает с CSS (0.4s)
     }
 });
-
  
  // Применяем режим полного экрана для мини-приложения
  window.Telegram.WebApp.expand();
@@ -953,21 +955,21 @@ profileMenu.addEventListener("click", (e) => {
         const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
         referralInput.value = referralLink;
 
-// Открытие меню
-friendButton.addEventListener("click", () => {
+// Функция открытия меню
+friendButton.addEventListener('click', () => {
     friendMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
-    friendMenu.classList.add('show'); // Добавляем анимацию появления
-    updateFriendsCount(); // Обновляем счетчик друзей
+    friendMenu.classList.add('show'); // Добавляем плавное появление
+    loadLeaderboardCoins();
 });
 
-// Закрытие меню с плавной анимацией
-friendMenu.addEventListener('click', (e) => {
-    if (e.target === friendMenu) {
+// Функция закрытия меню с зеркальной анимацией
+profileMenu.addEventListener('click', (e) => {
+    if (e.target === profileMenu) {
         friendMenu.classList.add('hide'); // Запускаем анимацию вниз
-        friendMenu.classList.remove('show'); // Убираем show
+        friendMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            friendMenu.classList.add('hidden'); // Полностью скрываем
-            friendMenu.classList.remove('hide'); // Убираем hide для следующего открытия
+            friendMenu.classList.add('hidden'); // Полностью скрываем после анимации
+            friendMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
         }, 400); // Время совпадает с CSS (0.4s)
     }
 });
