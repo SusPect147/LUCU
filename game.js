@@ -546,15 +546,16 @@ skinsButton.addEventListener('click', () => {
 
 // Функция закрытия меню с плавной анимацией
 skinsMenu.addEventListener('click', (e) => {
-    if (e.target === skinsMenu) {
-        skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
+    if (e.target === skinsMenu) {  // Проверка, чтобы клик был именно по фону
+        skinsMenu.classList.add('hide'); // Запускаем анимацию скрытия
         skinsMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
-            skinsMenu.classList.remove('hide'); // Убираем hide, чтобы при следующем открытии не было проблем
-        }, 400); // Время совпадает с CSS (0.4s)
+            skinsMenu.classList.add('hidden'); // Полностью скрываем меню
+            skinsMenu.classList.remove('hide'); // Убираем hide, чтобы при следующем открытии меню не было проблем
+        }, 400); // Задержка на время анимации скрытия (0.4s)
     }
 });
+
 
  
  buyNegativeButton.addEventListener('click', () => {
