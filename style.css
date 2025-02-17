@@ -404,12 +404,21 @@
   flex-direction: column;
   align-items: center;
   transform: translateY(100%); /* Начальная позиция снизу */
-  transition: transform 0.3s ease; /* Плавное перемещение */
+  transition: transform 0.3s ease, opacity 0.3s ease; /* Плавное перемещение и исчезновение */
+  opacity: 0; /* Элемент невидим по умолчанию */
 }
 
 #leaderboard-menu.show #leaderboard-menu-content {
   transform: translateY(0); /* Перемещаем вверх, когда класс show добавлен */
+  opacity: 1; /* Делаем элемент видимым */
 }
+
+/* Для плавного исчезновения вниз */
+#leaderboard-menu.hide #leaderboard-menu-content {
+  transform: translateY(100%); /* Перемещаем вниз */
+  opacity: 0; /* Делаем элемент невидимым */
+}
+
 
  
  .trophy {
