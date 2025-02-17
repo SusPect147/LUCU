@@ -314,12 +314,12 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
-  visibility: hidden;
-  opacity: 0;
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  transition: opacity 0.4s ease, visibility 0s 0.4s;
+  visibility: hidden; /* Скрываем, но элемент остаётся на месте */
+  opacity: 0;
+  transition: visibility 0s 0.4s, opacity 0.4s ease;
 }
 
 /* Контент модального окна */
@@ -335,12 +335,14 @@
   overflow-y: auto;
   transform: translateY(100%);
   opacity: 0;
-  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+  transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
-/* Открытое состояние */
+/* Открытие */
 #skins-menu.show {
   visibility: visible;
+  opacity: 1;
+  transition: opacity 0.4s ease;
 }
 
 #skins-menu.show #skins-menu-content {
@@ -358,10 +360,12 @@
   opacity: 0;
 }
 
-/* Полностью скрываем после завершения анимации */
+/* Полное скрытие после анимации */
 #skins-menu.hidden {
   visibility: hidden;
+  transition: visibility 0s 0.4s;
 }
+
 
 
  
