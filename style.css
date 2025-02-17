@@ -319,7 +319,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  transition: opacity 0.4s ease, visibility 0s 0.4s; /* visibility скрывается после анимации */
+  transition: opacity 0.4s ease, visibility 0s 0.4s;
 }
 
 /* Контент модального окна */
@@ -338,10 +338,9 @@
   transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 
-/* Открытие */
+/* Открытое состояние */
 #skins-menu.show {
   visibility: visible;
-  opacity: 1;
 }
 
 #skins-menu.show #skins-menu-content {
@@ -349,7 +348,7 @@
   opacity: 1;
 }
 
-/* Закрытие - теперь плавное */
+/* Закрытие */
 #skins-menu.hide {
   opacity: 0;
 }
@@ -359,7 +358,7 @@
   opacity: 0;
 }
 
-/* Полное скрытие после завершения анимации */
+/* Полностью скрываем после завершения анимации */
 #skins-menu.hidden {
   visibility: hidden;
 }
