@@ -1,733 +1,761 @@
 /* Сброс стилей */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Основные стили для body */
-body {
-  margin: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
-              linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
-              linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
-  font-family: Arial, sans-serif;
-  transition: 1s ease-in-out;
-  position: relative;
-}
-
-/* Звёзды и анимации */
-.stars,
-.flying-stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.star {
-  position: absolute;
-  background-color: rgb(255, 255, 255);
-  border-radius: 50%;
-  opacity: 0.2;
-  animation: twinkle 5s infinite alternate;
-}
-
-@keyframes twinkle {
-  0% {
-    opacity: 0.2;
-  }
-  100% {
-    opacity: 0.4;
-  }
-}
-
-.flying-star {
-  position: absolute;
-  background-color: rgb(255, 255, 255);
-  border-radius: 50%;
-  opacity: 0.8;
-  animation: flyUp 5s linear infinite;
-}
-
-@keyframes flyUp {
-  0% {
-    transform: translateY(100vh);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-100vh);
-    opacity: 0;
-  }
-}
-
-/* Экран загрузки */
-.loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #000428, #004e92);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 1s ease-in-out;
-}
-
-.loading-gif {
-  width: 120px;
-  height: 120px;
-  animation: pulse 1.5s infinite alternate;
-}
-
-@keyframes pulse {
-  from {
-    transform: scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-}
-
-.loading-text {
-  margin-top: 20px;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.progress {
-  margin-top: 10px;
-  font-size: 20px;
-  background: rgba(255, 255, 255, 0.2);
-  width: 80%;
-  max-width: 300px;
-  height: 8px;
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
-}
-
-.progress-bar {
-  position: absolute;
-  height: 100%;
-  width: 0%;
-  background: #00c6ff;
-  border-radius: 4px;
-  transition: width 0.1s ease-in-out;
-}
-
-/* Стили для canvas */
-#particleCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-}
-
-/* Счетчики и текст */
-#coins {
-  font-size: 3rem;
-  font-weight: bold;
-  position: absolute;
-  top: 10%;
-  right: 10%;
-  color: rgb(162, 175, 175);
-}
-
-#bestLuck {
-  font-weight: bold;
-  position: absolute;
-  top: calc(10% + 4.063rem);
-  font-size: 1.25rem;
-  color: rgb(162, 175, 175);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Изображение куба */
-#cube {
-  width: 22rem;
-  height: 22rem;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.3s;
-  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-  outline: none;
-}
-
-/* Пример градиента */
-.pink-gradient {
-  background: linear-gradient(217deg, rgb(77, 7, 7), rgba(49, 4, 4, 0.493) 70.71%),
-              linear-gradient(127deg, rgb(7, 54, 7), rgba(6, 51, 6, 0.219) 70.71%),
-              linear-gradient(336deg, rgb(9, 9, 73), rgba(7, 7, 68, 0.288) 70.71%);
-  background-blend-mode: multiply;
-}
-
-/* Прогресс-бар внизу экрана */
-#progressBar {
-  position: absolute;
-  bottom: 25%;
-  width: 80%;
-  height: 0.625rem;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 0.313rem;
-  overflow: hidden;
-}
-
-#progressBar div {
-  height: 100%;
-  width: 0;
-  background: #F80000;
-}
-
-/* Меню */
-.menu {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background: linear-gradient(to top, rgba(200, 200, 200, 0.9), rgba(245, 245, 245, 0.9));
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 10px 0;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  flex-basis: 0;
-}
-
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 20px;
-  color: #555;
-}
-
-.menu-item img {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 5px;
-}
-
-.menu-item:hover {
-  color: #000;
-}
-
-/* Класс для скрытия элементов */
-.hidden {
-  display: none;
-}
-
-/* Модальное окно профиля */
-#profile-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-#profile-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 35%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: rgb(35, 35, 37);
-}
-
-#profile-name {
-  margin-top: auto;
-  padding-bottom: 20px;
-}
-
-/* Модальное окно скинов */
-#skins-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.3s;
-  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-  outline: none;
-}
-
-#skins-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  overflow-y: auto;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.3s;
-  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-  outline: none;
-}
-
-.skin-row {
-  margin-bottom: 20px;
-  color: rgb(58, 56, 56);
-}
-
-.skin-row h3 {
-  font-size: 20px;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.skins {
-  display: flex;
-  justify-content: flex-start;
-  overflow-x: scroll;
-  margin-bottom: 10px;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.3s;
-  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-  outline: none;
-}
-
-.skins img {
-  width: 123px;
-  height: 123px;
-  border-radius: 10px;
-  transition: transform 0.3s;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-  outline: none;
-}
-
-.skins img:hover {
-  transform: scale(1.1);
-}
-
-/* Стили для кнопок */
-button {
-  width: 100%;
-  padding: 10px;
-  font-size: 18px;
-  background-color: #2e2d2d;
-  color: #cecece;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.3s;
-  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-  outline: none;
-}
-
-button:hover {
-  background-color: #212122;
-}
-
-/* Модальное окно таблицы лидеров */
-#leaderboard-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-#leaderboard-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.trophy {
-  width: 150px;
-  height: auto;
-  margin-bottom: 15px;
-}
-
-.button-group {
-  display: flex;
-  border-radius: 20px;
-  overflow: hidden;
-  margin-bottom: 5px;
-  width: calc(100% - 20px);
-  margin: 0 10px;
-}
-
-.button-group button {
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-  background: rgb(22, 22, 22);
-  color: white;
-  flex: 1;
-}
-
-.button-group button:first-child {
-  border-radius: 20px 0 0 20px;
-}
-
-.button-group button:last-child {
-  border-radius: 0 20px 20px 0;
-}
-
-.button-group button.active {
-  background: rgb(39, 39, 39);
-}
-
-/* Модальное окно таблицы лидеров */
-#leaderboard-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-#leaderboard-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.trophy {
-  width: 150px;
-  height: auto;
-  margin-bottom: 15px;
-}
-
-.button-group {
-  display: flex;
-  border-radius: 20px;
-  overflow: hidden;
-  margin-bottom: 5px;
-  width: calc(100% - 20px);
-  margin: 0 10px;
-}
-
-.button-group button {
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-  background: rgb(22, 22, 22);
-  color: white;
-  flex: 1;
-}
-
-.button-group button:first-child {
-  border-radius: 20px 0 0 20px;
-}
-
-.button-group button:last-child {
-  border-radius: 0 20px 20px 0;
-}
-
-.button-group button.active {
-  background: rgb(39, 39, 39);
-}
-
-.leaderboard-list {
-  width: 100%;
-  max-height: calc(100% - 300px);
-  overflow-y: auto;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-.leaderboard-item {
-  background: white;
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* Модальное окно квестов */
-#quests-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-#quests-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: rgb(38, 38, 41);
-}
-
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+ }
+ 
+ /* Основные стили для body */
+ body {
+   margin: 0;
+   overflow: hidden;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+   height: 100vh;
+   background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
+               linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
+               linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
+   font-family: Arial, sans-serif;
+   transition: 1s ease-in-out;
+   position: relative;
+ }
+ 
+ /* Звёзды и анимации */
+ .stars,
+ .flying-stars {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   pointer-events: none;
+   z-index: -1;
+ }
+ 
+ .star {
+   position: absolute;
+   background-color: rgb(255, 255, 255);
+   border-radius: 50%;
+   opacity: 0.2;
+   animation: twinkle 5s infinite alternate;
+ }
+ 
+ @keyframes twinkle {
+   0% {
+     opacity: 0.2;
+   }
+   100% {
+     opacity: 0.4;
+   }
+ }
+ 
+ .flying-star {
+   position: absolute;
+   background-color: rgb(255, 255, 255);
+   border-radius: 50%;
+   opacity: 0.8;
+   animation: flyUp 5s linear infinite;
+ }
+ 
+ @keyframes flyUp {
+   0% {
+     transform: translateY(100vh);
+     opacity: 0.8;
+   }
+   100% {
+     transform: translateY(-100vh);
+     opacity: 0;
+   }
+ }
+ 
+ /* Экран загрузки */
+ .loading-screen {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: linear-gradient(135deg, #000428, #004e92);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   transition: opacity 1s ease-in-out;
+ }
+ 
+ .loading-gif {
+   width: 120px;
+   height: 120px;
+   animation: pulse 1.5s infinite alternate;
+ }
+ 
+ @keyframes pulse {
+   from {
+     transform: scale(1);
+     opacity: 1;
+   }
+   to {
+     transform: scale(1.1);
+     opacity: 0.8;
+   }
+ }
+ 
+ .loading-text {
+   margin-top: 20px;
+   font-size: 18px;
+   font-weight: bold;
+ }
+ 
+ .progress {
+   margin-top: 10px;
+   font-size: 20px;
+   background: rgba(255, 255, 255, 0.2);
+   width: 80%;
+   max-width: 300px;
+   height: 8px;
+   border-radius: 4px;
+   position: relative;
+   overflow: hidden;
+ }
+ 
+ .progress-bar {
+   position: absolute;
+   height: 100%;
+   width: 0%;
+   background: #00c6ff;
+   border-radius: 4px;
+   transition: width 0.1s ease-in-out;
+ }
+ 
+ /* Стили для canvas */
+ #particleCanvas {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   z-index: -1;
+ }
+ 
+ /* Счетчики и текст */
+ #coins {
+   font-size: 3rem;
+   font-weight: bold;
+   position: absolute;
+   top: 10%;
+   right: 10%;
+   color: rgb(162, 175, 175);
+ }
+ 
+ #bestLuck {
+   font-weight: bold;
+   position: absolute;
+   top: calc(10% + 4.063rem);
+   font-size: 1.25rem;
+   color: rgb(162, 175, 175);
+   text-align: center;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+ }
+ 
+ /* Изображение куба */
+ #cube {
+   width: 22rem;
+   height: 22rem;
+   cursor: pointer;
+   user-select: none;
+   transition: transform 0.3s;
+   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+   outline: none;
+ }
+ 
+ /* Пример градиента */
+ .pink-gradient {
+   background: linear-gradient(217deg, rgb(77, 7, 7), rgba(49, 4, 4, 0.493) 70.71%),
+               linear-gradient(127deg, rgb(7, 54, 7), rgba(6, 51, 6, 0.219) 70.71%),
+               linear-gradient(336deg, rgb(9, 9, 73), rgba(7, 7, 68, 0.288) 70.71%);
+   background-blend-mode: multiply;
+ }
+ 
+ /* Прогресс-бар внизу экрана */
+ #progressBar {
+   position: absolute;
+   bottom: 25%;
+   width: 80%;
+   height: 0.625rem;
+   background: rgba(255, 255, 255, 0.2);
+   border-radius: 0.313rem;
+   overflow: hidden;
+ }
+ 
+ #progressBar div {
+   height: 100%;
+   width: 0;
+   background: #F80000;
+ }
+ 
+ /* Меню */
+ .menu {
+   position: absolute;
+   bottom: 0;
+   width: 100%;
+   background: linear-gradient(to top, rgba(200, 200, 200, 0.9), rgba(245, 245, 245, 0.9));
+   display: flex;
+   justify-content: space-around;
+   align-items: center;
+   padding: 10px 0;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+   flex-basis: 0;
+ }
+ 
+ .menu-item {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   font-size: 20px;
+   color: #555;
+ }
+ 
+ .menu-item img {
+   width: 40px;
+   height: 40px;
+   margin-bottom: 5px;
+ }
+ 
+ .menu-item:hover {
+   color: #000;
+ }
+ 
+ /* Класс для скрытия элементов */
+ .hidden {
+   display: none;
+ }
+ 
+ /* Модальное окно профиля */
+ #profile-menu {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   display: none;
+   justify-content: center;
+   align-items: flex-end;
+ }
+ 
+ #profile-menu-content {
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 35%;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   font-size: 24px;
+   font-weight: bold;
+   color: rgb(35, 35, 37);
+ }
+ 
+ #profile-name {
+   margin-top: auto;
+   padding-bottom: 20px;
+ }
+ 
+ /* Модальное окно скинов */
+ #skins-menu {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   display: none;
+   justify-content: center;
+   align-items: flex-end;
+   cursor: pointer;
+   user-select: none;
+   transition: transform 0.3s;
+   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+   outline: none;
+ }
+ 
+ #skins-menu-content {
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 60%;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   overflow-y: auto;
+   cursor: pointer;
+   user-select: none;
+   transition: transform 0.3s;
+   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+   outline: none;
+ }
+ 
+ .skin-row {
+   margin-bottom: 20px;
+   color: rgb(58, 56, 56);
+ }
+ 
+ .skin-row h3 {
+   font-size: 20px;
+   text-align: center;
+   margin-bottom: 10px;
+ }
+ 
+ .skins {
+   display: flex;
+   justify-content: flex-start;
+   overflow-x: scroll;
+   margin-bottom: 10px;
+   gap: 10px;
+   cursor: pointer;
+   user-select: none;
+   transition: transform 0.3s;
+   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+   outline: none;
+ }
+ 
+ .skins img {
+   width: 123px;
+   height: 123px;
+   border-radius: 10px;
+   transition: transform 0.3s;
+   cursor: pointer;
+   user-select: none;
+   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+   outline: none;
+ }
+ 
+ .skins img:hover {
+   transform: scale(1.1);
+ }
+ 
+ /* Стили для кнопок */
+ button {
+   width: 100%;
+   padding: 10px;
+   font-size: 18px;
+   background-color: #2e2d2d;
+   color: #cecece;
+   border: none;
+   border-radius: 5px;
+   cursor: pointer;
+   user-select: none;
+   transition: transform 0.3s;
+   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+   outline: none;
+ }
+ 
+ button:hover {
+   background-color: #212122;
+ }
+ 
+ /* Модальное окно таблицы лидеров */
+ #leaderboard-menu {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   display: none;
+   justify-content: center;
+   align-items: flex-end;
+ }
+ 
+ #leaderboard-menu-content {
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 60%;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+ }
+ 
+ .trophy {
+   width: 150px;
+   height: auto;
+   margin-bottom: 15px;
+ }
+ 
+ .button-group {
+   display: flex;
+   border-radius: 20px;
+   overflow: hidden;
+   margin-bottom: 5px;
+   width: calc(100% - 20px);
+   margin: 0 10px;
+ }
+ 
+ .button-group button {
+   border: none;
+   font-size: 16px;
+   font-weight: bold;
+   cursor: pointer;
+   transition: background 0.3s;
+   background: rgb(22, 22, 22);
+   color: white;
+   flex: 1;
+ }
+ 
+ .button-group button:first-child {
+   border-radius: 20px 0 0 20px;
+ }
+ 
+ .button-group button:last-child {
+   border-radius: 0 20px 20px 0;
+ }
+ 
+ .button-group button.active {
+   background: rgb(39, 39, 39);
+ }
+ 
+ /* Модальное окно таблицы лидеров */
+ #leaderboard-menu {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   display: none;
+   justify-content: center;
+   align-items: flex-end;
+ }
+ 
+ #leaderboard-menu-content {
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 60%;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+ }
+ 
+ .trophy {
+   width: 150px;
+   height: auto;
+   margin-bottom: 15px;
+ }
+ 
+ .button-group {
+   display: flex;
+   border-radius: 20px;
+   overflow: hidden;
+   margin-bottom: 5px;
+   width: calc(100% - 20px);
+   margin: 0 10px;
+ }
+ 
+ .button-group button {
+   border: none;
+   font-size: 16px;
+   font-weight: bold;
+   cursor: pointer;
+   transition: background 0.3s;
+   background: rgb(22, 22, 22);
+   color: white;
+   flex: 1;
+ }
+ 
+ .button-group button:first-child {
+   border-radius: 20px 0 0 20px;
+ }
+ 
+ .button-group button:last-child {
+   border-radius: 0 20px 20px 0;
+ }
+ 
+ .button-group button.active {
+   background: rgb(39, 39, 39);
+ }
+ 
+ .leaderboard-list {
+   width: 100%;
+   max-height: calc(100% - 300px);
+   overflow-y: auto;
+   padding: 10px;
+   margin-bottom: 10px;
+ }
+ 
+ .leaderboard-item {
+   background: white;
+   padding: 10px;
+   margin-bottom: 20px;
+   border-radius: 10px;
+   display: flex;
+   justify-content: space-between;
+   font-size: 16px;
+   font-weight: bold;
+ }
+ 
+ /* Модальное окно квестов */
+ #quests-menu {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   display: none;
+   justify-content: center;
+   align-items: flex-end;
+ }
+ 
+ #quests-menu-content {
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 60%;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   font-size: 24px;
+   font-weight: bold;
+   color: rgb(38, 38, 41);
+ }
+ 
 /* Модальное окно приглашения друзей */
 #friend-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: flex-end;
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   display: none;
+   justify-content: center;
+   align-items: flex-end;
 }
-
+ 
 #friend-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: rgb(38, 38, 41);
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 60%;
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   display: flex;
+   flex-direction: column;
+   justify-content: space-between; /* Элементы распределены по высоте */
+   align-items: center;
+   font-size: 24px;
+   font-weight: bold;
+   color: rgb(38, 38, 41);
 }
 
-#friend-menu-content h2,
-#friend-menu-content p {
-  margin-bottom: 20px;
+.avatar-icon img {
+   width: 150px;
+   height: 150px;
+   margin-bottom: 15px;
+}
+
+#friend-menu-content h2,  
+#friend-menu-content p {  
+    align-self: flex-start;  
+    text-align: left;  
+    width: 100%;  
+    padding-left: 20px; 
 }
 
 .referral-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  background: white;
-  padding: 10px;
-  border-radius: 10px;
-  width: 100%;
-  max-width: 300px;
-  margin-bottom: 20px;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   background: #2a2a2a;
+   padding: 10px;
+   border-radius: 20px;
+   width: 100%;
 }
 
 #referral-link {
-  flex-grow: 1;
-  border: none;
-  background: none;
-  font-size: 16px;
-  outline: none;
-  cursor: text;
+   flex-grow: 1;
+   border: none;
+   background: none;
+   font-size: 16px;
+   color: white;
+   outline: none;
 }
 
 #copy-referral {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
+   background: #b10a0a;
+   color: white;
+   border: none;
+   padding: 10px 10px;
+   border-radius: 10px;
+   cursor: pointer;
+   width: auto; /* Кнопка теперь имеет адаптивную ширину */
+   max-width: 120px; /* Можно регулировать максимальную ширину */
+   text-align: center;
+   flex-shrink: 0; /* Не дает кнопке сжиматься */
 }
 
 #copy-referral:hover {
-  background: #0056b3;
+   background: #8c0808;
 }
 
-#invited-friends {
-  font-size: 18px;
-  font-weight: normal;
-  color: #333;
+.bottom-container {
+   width: 100%;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   margin-top: auto; /* Прижимает к нижней части */
+   padding-bottom: 2px; /* Добавляем отступ снизу */
 }
 
-#copy-message {
-  color: green;
-  font-size: 14px;
-  margin-top: 5px;
-  display: none;
+#share-link {
+   background: #b10a0a;
+   color: white;
+   border: none;
+   padding: 20px 20px;
+   border-radius: 20px;
+   font-size: 20px;
+   cursor: pointer;
+   width: 100%;
 }
 
-/* Стили для десктопного и мобильного контента */
-#desktop-content {
-  background: black;
-  color: white;
-  padding: 50px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+#share-link:hover {
+   background: #8c0808;
 }
 
-#desktop-content h1 {
-  margin-bottom: 10px;
+.friends-count {
+   font-size: 16px;
+   color: #aaa;
+   margin-bottom: 10px;
 }
 
-#mobile-content {
-  padding: 20px;
-}
-
-#desktop-content img {
-  margin-top: 10px;
-  max-width: 100%;
-  height: auto;
-}
-
-/* Адаптивные стили */
-@media screen and (max-height: 670px) {
-  #cube {
-    width: 18rem;
-    height: 18rem;
-    cursor: pointer;
-    user-select: none;
-    transition: transform 0.3s;
-    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-    outline: none;
-  }
-  #coins {
-    font-size: 3rem;
-    font-weight: bold;
-    position: absolute;
-    top: 10%;
-    right: 10%;
-    color: rgb(162, 175, 175);
-  }
-}
-
-@media screen and (min-width: 634px) and (min-height: 872px) {
-  .skins img {
-    width: 200px;
-    height: 200px;
-  }
-  #bestLuck {
-    font-weight: bold;
-    position: absolute;
-    top: calc(10% + 4.063rem);
-    font-size: 1.25rem;
-    color: rgb(162, 175, 175);
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    right: 10%;
-  }
-}
-
-@media screen and (min-width: 1000px) and (min-height: 1000px) {
-  #cube {
-    width: 25rem;
-    height: 25rem;
-    cursor: pointer;
-    user-select: none;
-    transition: transform 0.3s;
-    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-    outline: none;
-  }
-  #coins {
-    font-size: 3rem;
-    font-weight: bold;
-    position: absolute;
-    top: 10%;
-    right: 10%;
-    color: rgb(162, 175, 175);
-  }
-  .leaderboard-list {
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    color: gray;
-  }
-}
+ 
+ /* Стили для десктопного и мобильного контента */
+ #desktop-content {
+   background: black;
+   color: white;
+   padding: 50px;
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+ }
+ 
+ #desktop-content h1 {
+   margin-bottom: 10px;
+ }
+ 
+ #mobile-content {
+   padding: 20px;
+ }
+ 
+ #desktop-content img {
+   margin-top: 10px;
+   max-width: 100%;
+   height: auto;
+ }
+ 
+ /* Адаптивные стили */
+ @media screen and (max-height: 670px) {
+   #cube {
+     width: 18rem;
+     height: 18rem;
+     cursor: pointer;
+     user-select: none;
+     transition: transform 0.3s;
+     -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+     outline: none;
+   }
+   #coins {
+     font-size: 3rem;
+     font-weight: bold;
+     position: absolute;
+     top: 10%;
+     right: 10%;
+     color: rgb(162, 175, 175);
+   }
+ }
+ 
+ @media screen and (min-width: 634px) and (min-height: 872px) {
+   .skins img {
+     width: 200px;
+     height: 200px;
+   }
+   #bestLuck {
+     font-weight: bold;
+     position: absolute;
+     top: calc(10% + 4.063rem);
+     font-size: 1.25rem;
+     color: rgb(162, 175, 175);
+     text-align: center;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     right: 10%;
+   }
+ }
+ 
+ @media screen and (min-width: 1000px) and (min-height: 1000px) {
+   #cube {
+     width: 25rem;
+     height: 25rem;
+     cursor: pointer;
+     user-select: none;
+     transition: transform 0.3s;
+     -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+     outline: none;
+   }
+   #coins {
+     font-size: 3rem;
+     font-weight: bold;
+     position: absolute;
+     top: 10%;
+     right: 10%;
+     color: rgb(162, 175, 175);
+   }
+   .leaderboard-list {
+     text-align: center;
+     font-size: 18px;
+     font-weight: bold;
+     color: gray;
+   }
+ }
