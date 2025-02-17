@@ -369,7 +369,7 @@
    background-color: #212122;
  }
  
- /* Модальное окно таблицы лидеров */
+/* Фон модального окна */
 #leaderboard-menu {
   position: fixed;
   top: 0;
@@ -378,19 +378,15 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
-  visibility: hidden; /* Элемент скрыт по умолчанию */
-  opacity: 0; /* Начальная непрозрачность для анимации */
-  transition: opacity 0.3s ease, visibility 0s 0.3s; /* Плавное изменение opacity и задержка для visibility */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0s 0.3s;
+  display: flex;
   justify-content: center;
   align-items: flex-end;
 }
 
-#leaderboard-menu.show {
-  visibility: visible; /* Видимость включена при добавлении класса */
-  opacity: 1; /* Плавное появление */
-  transition: opacity 0.3s ease, visibility 0s 0s; /* Убираем задержку для visibility */
-}
-
+/* Контент модального окна */
 #leaderboard-menu-content {
   position: relative;
   background: #dbdbdb;
@@ -403,21 +399,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  transform: translateY(100%); /* Начальная позиция снизу */
-  transition: transform 0.3s ease, opacity 0.3s ease; /* Плавное перемещение и исчезновение */
-  opacity: 0; /* Элемент невидим по умолчанию */
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Когда меню открыто */
+#leaderboard-menu.show {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.4s ease, visibility 0s 0s;
 }
 
 #leaderboard-menu.show #leaderboard-menu-content {
-  transform: translateY(0); /* Перемещаем вверх, когда класс show добавлен */
-  opacity: 1; /* Делаем элемент видимым */
+  transform: translateY(0);
+  opacity: 1;
 }
 
-/* Для плавного исчезновения вниз */
+/* Когда меню закрывается */
 #leaderboard-menu.hide #leaderboard-menu-content {
-  transform: translateY(100%); /* Перемещаем вниз */
-  opacity: 0; /* Делаем элемент невидимым */
+  transform: translateY(100%);
+  opacity: 0;
 }
+
+#leaderboard-menu.hide {
+  opacity: 0;
+  transition: opacity 0.4s ease, visibility 0s 0.4s;
+}
+
 
 
  
