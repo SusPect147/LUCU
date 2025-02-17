@@ -224,20 +224,21 @@ window.onload = () => {
  });
  
  const leaderboardMenu = document.getElementById('leaderboard-menu');
- const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
- 
- leaderboardButton.addEventListener('click', () => {
-     leaderboardMenu.classList.add('show'); // Добавляем класс show для показа меню
-     // При открытии меню по умолчанию загружаем лидерборд по монетам
-     loadLeaderboardCoins();
- });
- 
- // Закрытие меню, когда кликаем за пределами окна
- leaderboardMenu.addEventListener('click', (e) => {
-     if (e.target === leaderboardMenu) {
-        leaderboardMenu.classList.remove('show'); // Убираем класс show для скрытия
-     }
- });
+const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
+
+leaderboardButton.addEventListener('click', () => {
+    leaderboardMenu.classList.add('show'); // Добавляем класс show для показа меню
+    // При открытии меню по умолчанию загружаем лидерборд по монетам
+    loadLeaderboardCoins();
+});
+
+// Закрытие меню, когда кликаем за пределами окна
+leaderboardMenu.addEventListener('click', (e) => {
+    if (e.target === leaderboardMenu) {
+       leaderboardMenu.classList.remove('show'); // Убираем класс show для скрытия
+    }
+});
+
  
  
  // Загружаем лидерборд по монетам (от большего к меньшему)
