@@ -316,10 +316,10 @@
   backdrop-filter: blur(10px);
   visibility: hidden;
   opacity: 0;
-  transition: opacity 0.4s ease;
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  transition: opacity 0.4s ease, visibility 0s 0.4s; /* visibility скрывается после анимации */
 }
 
 /* Контент модального окна */
@@ -335,10 +335,10 @@
   overflow-y: auto;
   transform: translateY(100%);
   opacity: 0;
-  transition: transform 0.4s ease, opacity 0.4s ease;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 
-/* Открытое состояние */
+/* Открытие */
 #skins-menu.show {
   visibility: visible;
   opacity: 1;
@@ -349,7 +349,7 @@
   opacity: 1;
 }
 
-/* Закрытие с плавной анимацией */
+/* Закрытие - теперь плавное */
 #skins-menu.hide {
   opacity: 0;
 }
@@ -359,10 +359,11 @@
   opacity: 0;
 }
 
-/* Полностью скрываем после анимации */
+/* Полное скрытие после завершения анимации */
 #skins-menu.hidden {
   visibility: hidden;
 }
+
 
  
  .skin-row {
