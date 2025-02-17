@@ -223,7 +223,7 @@ window.onload = () => {
     loadLeaderboardLuck(); // Загружаем лидерборд по удаче
  });
  
- const leaderboardMenu = document.getElementById('leaderboard-menu');
+const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
 
 leaderboardButton.addEventListener('click', () => {
@@ -235,11 +235,14 @@ leaderboardButton.addEventListener('click', () => {
 // Закрытие меню, когда кликаем за пределами окна
 leaderboardMenu.addEventListener('click', (e) => {
     if (e.target === leaderboardMenu) {
-       leaderboardMenu.classList.remove('show'); // Убираем класс show для скрытия
+        leaderboardMenu.classList.add('hide'); // Добавляем класс hide для анимации исчезновения
+        // Через 0.3 секунды (по завершении анимации) убираем класс show, чтобы скрыть меню
+        setTimeout(() => {
+            leaderboardMenu.classList.remove('show', 'hide');
+        }, 300); // Время задержки должно совпадать с длительностью анимации
     }
 });
 
- 
  
  // Загружаем лидерборд по монетам (от большего к меньшему)
  function loadLeaderboardCoins() {
