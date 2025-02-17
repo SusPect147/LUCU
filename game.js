@@ -924,7 +924,7 @@ window.onload = () => {
     }
 
     if (friendMenu && friendButton && referralInput && copyButton && friendsCountElement && shareButton) {
-        const referralLink = `https://t.me/LuckyCubesbot?start=${userId}`;
+        const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
         referralInput.value = referralLink;
 
         friendButton.addEventListener("click", () => {
@@ -938,7 +938,7 @@ window.onload = () => {
 
         shareButton.addEventListener("click", () => {
             const shareText = `Hello! Try your luck with me at this link: ${referralLink}`;
-            telegram?.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`);
+            telegram?.openTelegramLink(`${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`);
         });
 
         function copyToClipboard(text) {
