@@ -874,7 +874,7 @@ skinsMenu.addEventListener('click', (e) => {
     twaReturnUrl: 'https://t.me/LuckyCubesbot'
  };
  
- const profileButton = document.getElementById("profile-button");
+const profileButton = document.getElementById("profile-button");
 const profileMenu = document.getElementById("profile-menu");
 const profileName = document.getElementById("profile-name");
 
@@ -885,7 +885,9 @@ profileName.textContent = `Hello, ${userName}`;
 // Функция открытия меню
 profileButton.addEventListener('click', () => {
     profileMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
-    profileMenu.classList.add('show'); // Добавляем плавное появление
+    requestAnimationFrame(() => {
+        profileMenu.classList.add('show'); // Добавляем плавное появление
+    });
 });
 
 // Функция закрытия меню с зеркальной анимацией
@@ -895,10 +897,11 @@ profileMenu.addEventListener('click', (e) => {
         profileMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
             profileMenu.classList.add('hidden'); // Полностью скрываем после анимации
-            profileMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
+            profileMenu.classList.remove('hide'); // Сбрасываем hide
         }, 400); // Время совпадает с CSS (0.4s)
     }
 });
+
  
  // Применяем режим полного экрана для мини-приложения
  window.Telegram.WebApp.expand();
