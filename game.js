@@ -941,9 +941,14 @@ window.onload = () => {
         });
 shareButton.addEventListener("click", () => {
     const shareText = `Hello! Try your luck with me at this link: ${referralLink}`;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
-    window.open(shareUrl, "_blank");
+    
+    telegram?.showPopup({
+        title: "Share Link",
+        message: shareText,
+        buttons: [{ id: "ok", type: "ok", text: "OK" }]
+    });
 });
+
 
 
         function copyToClipboard(text) {
