@@ -245,11 +245,11 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
-  visibility: hidden; /* Скрыто по умолчанию */
-  opacity: 0; /* Скрыто по умолчанию */
-  transition: opacity 0.4s ease, visibility 0s 0s; /* Плавное исчезновение */
+  display: none; /* Начально скрыто */
   justify-content: center;
   align-items: flex-end;
+  opacity: 0; /* Меню скрыто по умолчанию */
+  transition: opacity 0.4s ease; /* Плавное изменение прозрачности */
 }
 
 /* Контент модального окна */
@@ -270,35 +270,35 @@
   font-size: 24px;
   font-weight: bold;
   color: rgb(35, 35, 37);
-  transform: translateY(100%); /* Начальная позиция ниже экрана */
-  opacity: 0; /* Контент скрыт */
+  transform: translateY(100%); /* Начальная позиция снизу */
+  opacity: 0; /* Скрытый контент */
   transition: transform 0.4s ease, opacity 0.4s ease; /* Плавная анимация */
 }
 
 /* Когда меню открыто */
 #profile-menu.show {
-  visibility: visible; /* Делает меню видимым */
-  opacity: 1; /* Меню становится полностью видимым */
+  display: flex; /* Меню отображается */
+  opacity: 1; /* Меню становится видимым */
 }
 
 #profile-menu.show #profile-menu-content {
-  transform: translateY(0); /* Контент плавно поднимается */
+  transform: translateY(0); /* Меню плавно появляется */
   opacity: 1; /* Контент становится видимым */
 }
 
 /* Когда меню закрывается */
 #profile-menu.hide {
-  opacity: 0; /* Скрытие меню */
+  opacity: 0; /* Меню становится прозрачным */
 }
 
 #profile-menu.hide #profile-menu-content {
-  transform: translateY(100%); /* Контент уходит вниз */
+  transform: translateY(100%); /* Контент плавно уходит вниз */
   opacity: 0; /* Контент исчезает */
 }
 
 /* Полностью скрываем после анимации */
 #profile-menu.hidden {
-  visibility: hidden; /* Полностью скрыть меню */
+  display: none; /* Меню скрыто после анимации */
 }
 
 
