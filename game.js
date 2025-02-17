@@ -931,7 +931,11 @@ window.onload = () => {
             friendMenu.style.display = "flex";
             updateFriendsCount();
         });
-
+        friendButton.addEventListener('click', (e) => {
+            if (e.target === friendButton) {
+                friendButton.style.display = 'none';
+            }
+         });
         copyButton.addEventListener("click", () => {
             copyToClipboard(referralInput.value);
         });
