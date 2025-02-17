@@ -886,21 +886,22 @@ profileName.textContent = `Hello, ${userName}`;
 profileButton.addEventListener('click', () => {
     profileMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
     requestAnimationFrame(() => {
-        profileMenu.classList.add('show'); // Добавляем плавное появление
+        profileMenu.classList.add('show'); // Добавляем класс show для плавного появления
     });
 });
 
 // Функция закрытия меню с зеркальной анимацией
 profileMenu.addEventListener('click', (e) => {
     if (e.target === profileMenu) {
-        profileMenu.classList.add('hide'); // Запускаем анимацию вниз
+        profileMenu.classList.add('hide'); // Запускаем анимацию закрытия
         profileMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            profileMenu.classList.add('hidden'); // Полностью скрываем после анимации
-            profileMenu.classList.remove('hide'); // Сбрасываем hide
+            profileMenu.classList.add('hidden'); // Полностью скрываем меню после анимации
+            profileMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
         }, 400); // Время совпадает с CSS (0.4s)
     }
 });
+
 
 
  
