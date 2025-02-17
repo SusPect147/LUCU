@@ -529,26 +529,33 @@ leaderboardMenu.addEventListener('click', (e) => {
        progressBar.style.width = "0%";
     }, duration * 1000);
  }
- const skinsMenu = document.getElementById('skins-menu');
- const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
  const buyNegativeButton = document.getElementById('buy-negative');
  const buyEmeraldButton = document.getElementById('buy-Emerald');
  const equipClassicButton = document.getElementById('equip-classic');
  let hasBoughtNegative = false;
  let hasBoughtEmerald = false;
  let equippedSkin = 'classic';
- 
- // Предполагаем, что глобальные переменные userId, coins и функция updateCoins() уже определены
- 
- skinsButton.addEventListener('click', () => {
-    skinsMenu.style.display = 'flex';
- });
- 
- skinsMenu.addEventListener('click', (e) => {
+const skinsMenu = document.getElementById('skins-menu');
+const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
+
+// Функция открытия меню
+skinsButton.addEventListener('click', () => {
+    skinsMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
+    skinsMenu.classList.add('show'); // Добавляем плавное появление
+});
+
+// Функция закрытия меню с плавной анимацией
+skinsMenu.addEventListener('click', (e) => {
     if (e.target === skinsMenu) {
-       skinsMenu.style.display = 'none';
+        skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
+        skinsMenu.classList.remove('show'); // Убираем класс show
+        setTimeout(() => {
+            skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
+            skinsMenu.classList.remove('hide'); // Убираем hide, чтобы при следующем открытии не было проблем
+        }, 400); // Время совпадает с CSS (0.4s)
     }
- });
+});
+
  
  buyNegativeButton.addEventListener('click', () => {
     if (!hasBoughtNegative) {
@@ -864,23 +871,32 @@ leaderboardMenu.addEventListener('click', (e) => {
     twaReturnUrl: 'https://t.me/LuckyCubesbot'
  };
  
- // Работа с профилем
  const profileButton = document.getElementById("profile-button");
- const profileMenu = document.getElementById("profile-menu");
- const profileName = document.getElementById("profile-name");
- 
- const userName = tg.initDataUnsafe?.user?.username || "NoName"; // Используем tg
- profileName.textContent = `Hello, ${userName}`;
- 
- profileButton.addEventListener("click", () => {
-    profileMenu.style.display = "flex";
- });
- 
- profileMenu.addEventListener("click", (e) => {
+const profileMenu = document.getElementById("profile-menu");
+const profileName = document.getElementById("profile-name");
+
+// Получаем имя пользователя из Telegram API
+const userName = tg.initDataUnsafe?.user?.username || "NoName";
+profileName.textContent = `Hello, ${userName}`;
+
+// Открытие меню
+profileButton.addEventListener("click", () => {
+    profileMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
+    profileMenu.classList.add('show'); // Добавляем анимацию появления
+});
+
+// Закрытие меню с плавной анимацией
+profileMenu.addEventListener("click", (e) => {
     if (e.target === profileMenu) {
-       profileMenu.style.display = "none";
+        profileMenu.classList.add('hide'); // Запускаем анимацию вниз
+        profileMenu.classList.remove('show'); // Убираем show
+        setTimeout(() => {
+            profileMenu.classList.add('hidden'); // Полностью скрываем
+            profileMenu.classList.remove('hide'); // Убираем hide для следующего открытия
+        }, 400); // Время совпадает с CSS (0.4s)
     }
- });
+});
+
  
  // Применяем режим полного экрана для мини-приложения
  window.Telegram.WebApp.expand();
@@ -936,15 +952,24 @@ leaderboardMenu.addEventListener('click', (e) => {
         const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
         referralInput.value = referralLink;
 
-        friendButton.addEventListener("click", () => {
-            friendMenu.style.display = "flex";
-            updateFriendsCount();
-        });
-        friendMenu.addEventListener('click', (e) => {
-            if (e.target === friendMenu) {
-                friendMenu.style.display = 'none';
-            }
-         });
+// Открытие меню
+friendButton.addEventListener("click", () => {
+    friendMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
+    friendMenu.classList.add('show'); // Добавляем анимацию появления
+    updateFriendsCount(); // Обновляем счетчик друзей
+});
+
+// Закрытие меню с плавной анимацией
+friendMenu.addEventListener('click', (e) => {
+    if (e.target === friendMenu) {
+        friendMenu.classList.add('hide'); // Запускаем анимацию вниз
+        friendMenu.classList.remove('show'); // Убираем show
+        setTimeout(() => {
+            friendMenu.classList.add('hidden'); // Полностью скрываем
+            friendMenu.classList.remove('hide'); // Убираем hide для следующего открытия
+        }, 400); // Время совпадает с CSS (0.4s)
+    }
+});
         copyButton.addEventListener("click", () => {
             copyToClipboard(referralInput.value);
         });
