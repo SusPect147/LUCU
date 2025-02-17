@@ -931,19 +931,20 @@ window.onload = () => {
             friendMenu.style.display = "flex";
             updateFriendsCount();
         });
-        friendButton.addEventListener('click', (e) => {
-            if (e.target === friendButton) {
-                friendButton.style.display = 'none';
+        friendMenu.addEventListener('click', (e) => {
+            if (e.target === friendMenu) {
+                friendMenu.style.display = 'none';
             }
          });
         copyButton.addEventListener("click", () => {
             copyToClipboard(referralInput.value);
         });
+shareButton.addEventListener("click", () => {
+    const shareText = `Hello! Try your luck with me at this link: ${referralLink}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
+    window.open(shareUrl, "_blank");
+});
 
-        shareButton.addEventListener("click", () => {
-            const shareText = `Hello! Try your luck with me at this link: ${referralLink}`;
-            telegram?.openTelegramLink(`${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`);
-        });
 
         function copyToClipboard(text) {
             fallbackCopy(text);
