@@ -227,21 +227,23 @@ const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboar
 
 // Функция открытия меню
 leaderboardButton.addEventListener('click', () => {
-    leaderboardMenu.classList.add('show');
-    leaderboardMenu.classList.remove('hide'); // Убираем класс hide, если он был
+    leaderboardMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
+    leaderboardMenu.classList.add('show'); // Добавляем плавное появление
     loadLeaderboardCoins();
 });
 
-// Функция закрытия меню с анимацией
+// Функция закрытия меню с зеркальной анимацией
 leaderboardMenu.addEventListener('click', (e) => {
     if (e.target === leaderboardMenu) {
-        leaderboardMenu.classList.add('hide'); // Запускаем анимацию исчезновения
+        leaderboardMenu.classList.add('hide'); // Запускаем анимацию вниз
         leaderboardMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
-            leaderboardMenu.classList.remove('hide'); // Полностью скрываем меню после анимации
-        }, 400); // Время совпадает с анимацией в CSS (0.4s)
+            leaderboardMenu.classList.add('hidden'); // Полностью скрываем после анимации
+            leaderboardMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
+        }, 400); // Время совпадает с CSS (0.4s)
     }
 });
+
 
 
  
