@@ -435,8 +435,8 @@
    background: rgb(39, 39, 39);
  }
  
- /* Модальное окно таблицы лидеров */
- #leaderboard-menu {
+  /* Модальное окно таблицы лидеров */
+#leaderboard-menu {
    position: fixed;
    top: 0;
    left: 0;
@@ -444,9 +444,15 @@
    height: 100%;
    background: rgba(0, 0, 0, 0.5);
    backdrop-filter: blur(10px);
-   display: none;
+   display: flex; /* Меняем на flex, чтобы использовать анимацию */
    justify-content: center;
    align-items: flex-end;
+   opacity: 0; /* Начальная непрозрачность для анимации */
+   transition: opacity 0.3s ease; /* Плавное изменение прозрачности */
+ }
+ 
+ #leaderboard-menu.show {
+   opacity: 1; /* Когда класс show добавлен, делаем видимым */
  }
  
  #leaderboard-menu-content {
@@ -461,7 +467,14 @@
    display: flex;
    flex-direction: column;
    align-items: center;
+   transform: translateY(100%); /* Начальная позиция снизу */
+   transition: transform 0.3s ease; /* Плавное перемещение */
  }
+ 
+ #leaderboard-menu.show #leaderboard-menu-content {
+   transform: translateY(0); /* Перемещаем вверх, когда класс show добавлен */
+ }
+ 
  
  .trophy {
    width: 120px;
