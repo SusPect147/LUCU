@@ -538,26 +538,25 @@ leaderboardMenu.addEventListener('click', (e) => {
 const skinsMenu = document.getElementById('skins-menu');
 const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
 
-// Функция открытия меню с плавным появлением
+// Открытие меню
 skinsButton.addEventListener('click', () => {
-    skinsMenu.classList.remove('hidden'); // Делаем видимым
-    setTimeout(() => {
-        skinsMenu.classList.add('show'); // Запускаем анимацию
-    }, 10); // Короткая задержка для плавности
+    skinsMenu.classList.remove('hidden'); // Делаем меню видимым
+    requestAnimationFrame(() => {
+        skinsMenu.classList.add('show'); // Запускаем анимацию появления
+    });
 });
 
-// Функция закрытия меню с плавной анимацией
+// Закрытие меню
 skinsMenu.addEventListener('click', (e) => {
     if (e.target === skinsMenu) {
         skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
-        skinsMenu.classList.remove('show'); // Убираем класс show
+        skinsMenu.classList.remove('show'); // Убираем show
         setTimeout(() => {
             skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
             skinsMenu.classList.remove('hide'); // Сбрасываем hide
-        }, 400); // Время совпадает с CSS
+        }, 400); // Ждём завершения CSS-анимации
     }
 });
-
 
 
  
