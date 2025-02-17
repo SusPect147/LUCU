@@ -941,12 +941,10 @@ window.onload = () => {
         });
 shareButton.addEventListener("click", () => {
     const shareText = `Hello! Try your luck with me at this link: ${referralLink}`;
+    const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
     
-    telegram?.showPopup({
-        title: "Share Link",
-        message: shareText,
-        buttons: [{ id: "ok", type: "ok", text: "OK" }]
-    });
+    // Открытие ссылки в Telegram
+    telegram?.openTelegramLink(telegramLink);
 });
 
 
