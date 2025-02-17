@@ -542,7 +542,6 @@ const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
 skinsButton.addEventListener('click', () => {
     skinsMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
     skinsMenu.classList.add('show'); // Добавляем плавное появление
-    loadLeaderboardCoins();
 });
 
 // Функция закрытия меню с зеркальной анимацией
@@ -886,7 +885,6 @@ profileName.textContent = `Hello, ${userName}`;
 profileButton.addEventListener('click', () => {
     profileMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
     profileMenu.classList.add('show'); // Добавляем плавное появление
-    loadLeaderboardCoins();
 });
 
 // Функция закрытия меню с зеркальной анимацией
@@ -959,6 +957,7 @@ profileMenu.addEventListener('click', (e) => {
 friendButton.addEventListener('click', () => {
     friendMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
     friendMenu.classList.add('show'); // Добавляем плавное появление
+    updateFriendsCount();
 });
 
 // Функция закрытия меню с зеркальной анимацией
