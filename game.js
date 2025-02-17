@@ -227,16 +227,18 @@ window.onload = () => {
  const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
  
  leaderboardButton.addEventListener('click', () => {
-    leaderboardMenu.style.display = 'flex';
-    // При открытии меню по умолчанию загружаем лидерборд по монетам
-    loadLeaderboardCoins();
+     leaderboardMenu.classList.add('show'); // Добавляем класс show для показа меню
+     // При открытии меню по умолчанию загружаем лидерборд по монетам
+     loadLeaderboardCoins();
  });
  
+ // Закрытие меню, когда кликаем за пределами окна
  leaderboardMenu.addEventListener('click', (e) => {
-    if (e.target === leaderboardMenu) {
-       leaderboardMenu.style.display = 'none';
-    }
+     if (e.target === leaderboardMenu) {
+        leaderboardMenu.classList.remove('show'); // Убираем класс show для скрытия
+     }
  });
+ 
  
  // Загружаем лидерборд по монетам (от большего к меньшему)
  function loadLeaderboardCoins() {
