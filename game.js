@@ -897,7 +897,7 @@ profileMenu.addEventListener('click', (e) => {
         profileMenu.classList.remove('show'); // Убираем класс show
         setTimeout(() => {
             profileMenu.classList.add('hidden'); // Полностью скрываем меню после анимации
-            profileMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
+            profileMenu.classList.remove('hide'); // Сбрасываем hide
         }, 400); // Время совпадает с CSS (0.4s)
     }
 });
