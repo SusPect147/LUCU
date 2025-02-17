@@ -236,79 +236,129 @@
    display: none;
  }
  
- /* Модальное окно профиля */
- #profile-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   backdrop-filter: blur(10px);
-   display: none;
-   justify-content: center;
-   align-items: flex-end;
- }
- 
- #profile-menu-content {
-   position: relative;
-   background: #dbdbdb;
-   width: 100%;
-   height: 35%;
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
-   padding: 20px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   text-align: center;
-   font-size: 24px;
-   font-weight: bold;
-   color: rgb(35, 35, 37);
- }
+ /* Фон модального окна профиля */
+#profile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* Контент модального окна */
+#profile-menu-content {
+  position: relative;
+  background: #dbdbdb;
+  width: 100%;
+  height: 35%;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Открытое состояние */
+#profile-menu.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+#profile-menu.show #profile-menu-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Закрытие (обратная анимация) */
+#profile-menu.hide {
+  opacity: 0;
+}
+
+#profile-menu.hide #profile-menu-content {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* Полностью скрываем после анимации */
+#profile-menu.hidden {
+  visibility: hidden;
+}
+
  
  #profile-name {
    margin-top: auto;
    padding-bottom: 20px;
  }
  
- /* Модальное окно скинов */
- #skins-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   backdrop-filter: blur(10px);
-   display: none;
-   justify-content: center;
-   align-items: flex-end;
-   cursor: pointer;
-   user-select: none;
-   transition: transform 0.3s;
-   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-   outline: none;
- }
- 
- #skins-menu-content {
-   position: relative;
-   background: #dbdbdb;
-   width: 100%;
-   height: 60%;
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
-   padding: 20px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-   overflow-y: auto;
-   cursor: pointer;
-   user-select: none;
-   transition: transform 0.3s;
-   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-   outline: none;
- }
+/* Фон модального окна */
+#skins-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* Контент модального окна */
+#skins-menu-content {
+  position: relative;
+  background: #dbdbdb;
+  width: 100%;
+  height: 60%;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Открытое состояние */
+#skins-menu.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+#skins-menu.show #skins-menu-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Закрытие (зеркальная анимация) */
+#skins-menu.hide {
+  opacity: 0;
+}
+
+#skins-menu.hide #skins-menu-content {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* Полностью скрываем после анимации */
+#skins-menu.hidden {
+  visibility: hidden;
+}
+
  
  .skin-row {
    margin-bottom: 20px;
@@ -619,36 +669,62 @@
    color: rgb(38, 38, 41);
  }
  
-/* Модальное окно приглашения друзей */
+/* Фон модального окна */
 #friend-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   backdrop-filter: blur(10px);
-   display: none;
-   justify-content: center;
-   align-items: flex-end;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
 }
- 
+
+/* Контент модального окна */
 #friend-menu-content {
-   position: relative;
-   background: #dbdbdb;
-   width: 100%;
-   height: 60%;
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
-   padding: 20px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-   display: flex;
-   flex-direction: column;
-   justify-content: space-between; /* Элементы распределены по высоте */
-   align-items: center;
-   font-size: 24px;
-   font-weight: bold;
-   color: rgb(38, 38, 41);
+  position: relative;
+  background: #dbdbdb;
+  width: 100%;
+  height: 60%;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Открытое состояние */
+#friend-menu.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+#friend-menu.show #friend-menu-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Закрытие (обратная анимация) */
+#friend-menu.hide {
+  opacity: 0;
+}
+
+#friend-menu.hide #friend-menu-content {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* Полностью скрываем после анимации */
+#friend-menu.hidden {
+  visibility: hidden;
 }
 
 .avatar-icon img {
