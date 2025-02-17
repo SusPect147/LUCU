@@ -465,7 +465,7 @@ skinsMenu.style.display = 'none';
 
 buyNegativeButton.addEventListener('click', () => {
 if (!hasBoughtNegative) {
-if (coins >= 599) {
+if (coins >= 5000) {
  // Отправляем запрос на сервер для покупки "negative" скина
  fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
      method: 'POST',
@@ -475,7 +475,7 @@ if (coins >= 599) {
      body: JSON.stringify({
          user_id: userId,
          skin_type: 'negative',
-         cost: 599
+         cost: 5000
      })
  })
  .then(response => response.json())
@@ -503,7 +503,7 @@ equipSkin('negative');
 
 buyEmeraldButton.addEventListener('click', () => {
 if (!hasBoughtEmerald) {
-if (coins >= 1100) {
+if (coins >= 10000) {
  // Отправляем запрос на сервер для покупки "Emerald" скина
  fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
      method: 'POST',
@@ -513,7 +513,7 @@ if (coins >= 1100) {
      body: JSON.stringify({
          user_id: userId,
          skin_type: 'Emerald',
-         cost: 1100
+         cost: 10000
      })
  })
  .then(response => response.json())
@@ -602,39 +602,39 @@ let random = Math.random() * 100;
 let outcome;
 if (isRainbow && equippedSkin === 'negative'){
 cube.src = 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif';  // Установим начальный скин
-if (random < 15) outcome = { src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 2 };
-else if (random < 45) outcome = { src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 4 };
-else if (random < 70) outcome = { src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 6 };
-else if (random < 85) outcome = { src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 8 };
-else if (random < 94) outcome = { src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 10 };
-else outcome = { src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 12 };
+if (random < 15) outcome = { src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 4 };
+else if (random < 45) outcome = { src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 6 };
+else if (random < 70) outcome = { src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 8 };
+else if (random < 85) outcome = { src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 10 };
+else if (random < 94) outcome = { src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 12 };
+else outcome = { src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 14 };
 } 
 else if (equippedSkin === 'negative') {
 cube.src = 'pictures/cubics/негатив/начальный-кубик-негатив.gif';  // Установим начальный скин
-if (random < 40) outcome = { src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 1 };
-else if (random < 65) outcome = { src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 2 };
-else if (random < 80) outcome = { src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 3 };
-else if (random < 90) outcome = { src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 4 };
-else if (random < 97) outcome = { src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 5 };
-else outcome = { src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 6 };
+if (random < 40) outcome = { src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 2 };
+else if (random < 65) outcome = { src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 3 };
+else if (random < 80) outcome = { src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 4 };
+else if (random < 90) outcome = { src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 5 };
+else if (random < 97) outcome = { src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 6 };
+else outcome = { src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 7 };
 } 
 else if (isRainbow && equippedSkin === 'Emerald'){
 cube.src = 'pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif';  // Установим начальный скин
-if (random < 15) outcome = { src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 2 };
-else if (random < 45) outcome = { src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 4 };
-else if (random < 70) outcome = { src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 6 };
-else if (random < 85) outcome = { src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 8 };
-else if (random < 94) outcome = { src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 10 };
-else outcome = { src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 12 };
+if (random < 15) outcome = { src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 6 };
+else if (random < 45) outcome = { src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 8 };
+else if (random < 70) outcome = { src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 10 };
+else if (random < 85) outcome = { src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 12};
+else if (random < 94) outcome = { src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 14 };
+else outcome = { src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 16 };
 } 
 else if (equippedSkin === 'Emerald') {
 cube.src = 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif';  // Установим начальный скин
-if (random < 40) outcome = { src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 1 };
-else if (random < 65) outcome = { src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 2 };
-else if (random < 80) outcome = { src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 3 };
-else if (random < 90) outcome = { src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 4 };
-else if (random < 97) outcome = { src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 5 };
-else outcome = { src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 6 };
+if (random < 40) outcome = { src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 3 };
+else if (random < 65) outcome = { src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 4 };
+else if (random < 80) outcome = { src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 5 };
+else if (random < 90) outcome = { src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 6 };
+else if (random < 97) outcome = { src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 7 };
+else outcome = { src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 8 };
 } 
 else if (isRainbow)  {
 cube.src = 'pictures/cubics/классика/супер-начальный-кубик.gif';  // Установим начальный скин
