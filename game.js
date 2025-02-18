@@ -421,11 +421,11 @@ leaderboardMenu.addEventListener('click', (e) => {
     // Обновляем кнопки в зависимости от купленных скинов
     buyNegativeButton.textContent = hasBoughtNegative ?
        (equippedSkin === "negative" ? "Equipped" : "Equip") :
-       "Buy (599)";
+       "Buy //5K $LUCU/";
  
     buyEmeraldButton.textContent = hasBoughtEmerald ?
        (equippedSkin === "Emerald" ? "Equipped" : "Equip") :
-       "Buy (1100)";
+       "Buy //10K $LUCU/";
  
     equipClassicButton.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
  }
