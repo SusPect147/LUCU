@@ -205,10 +205,25 @@ window.onload = () => {
     ParticleSystem,
     Particle
  };
-  document.addEventListener("DOMContentLoaded", () => {
+ document.addEventListener("DOMContentLoaded", () => {
         const questsMenu = document.getElementById("quests-menu");
         const subscribeQuestBtn = document.querySelector(".quest-item .quest-btn");
-        
+
+    questsButton.addEventListener("click", () => {
+        questsMenu.classList.remove("hide", "hidden");
+        questsMenu.classList.add("show");
+    });
+
+    questsMenu.addEventListener("click", (e) => {
+        if (e.target === questsMenu) {
+            questsMenu.classList.add("hide");
+            questsMenu.classList.remove("show");
+            setTimeout(() => {
+                questsMenu.classList.add("hidden");
+                questsMenu.classList.remove("hide");
+            }, 400);
+        }
+    });
         const tg = window.Telegram.WebApp;
         const channelUsername = "@luckycubesCHANNEL"; // Заменить на реальный username канала
         
