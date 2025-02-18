@@ -38,7 +38,6 @@
    transition: opacity 0.4s ease, visibility 0s 0.1s;
 }
 
-/* Контейнер меню */
 #quests-menu-content {
    position: relative;
    background: #f8f8f8;
@@ -46,12 +45,10 @@
    height: 60%;
    border-top-left-radius: 18px;
    border-top-right-radius: 18px;
-   padding: 0 20px 20px;
-   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
+   padding: 0 20px 20px; /* убираем верхний отступ – он теперь в header */
+   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
    display: flex;
    flex-direction: column;
-   transform: translateY(100%);
-   opacity: 0;
    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 
@@ -80,11 +77,11 @@
    visibility: hidden;
 }
 
-/* Заголовок */
+/* Заголовок с аватаром */
 .quests-header {
    display: flex;
    align-items: center;
-   justify-content: center;
+   justify-content: center; /* выравниваем содержимое по центру */
    padding: 20px;
    background: #f8f8f8;
    position: sticky;
@@ -93,52 +90,47 @@
    transition: transform 0.3s ease;
 }
 
-/* Аватар */
+/* Аватар – уменьшенный размер и выравненный по центру */
 .avatar-icon img {
-   width: 44px;
-   height: 44px;
+   width: 40px;  /* уменьшенный размер */
+   height: 40px; /* уменьшенный размер */
    object-fit: cover;
    border-radius: 10px;
    transition: transform 0.3s ease;
 }
 
-/* Список заданий */
+/* Скроллируемый список заданий */
 .quests-list {
    overflow-y: auto;
    flex: 1;
    display: flex;
    flex-direction: column;
-   gap: 12px;
+   gap: 10px;
    padding-bottom: 10px;
 }
 
 /* Стили для каждого задания */
 .quest-item {
-   background: linear-gradient(135deg, #6b6b6b, #3f3f3f);
-   color: #ecf0f1;
-   padding: 14px;
-   border-radius: 12px;
+   background: linear-gradient(135deg, #8d8888, #575555); /* Плавный переход от тёмно-серого к почти чёрному */
+   color: #ecf0f1; /* Светлый текст для контраста */
+   padding: 12px;
+   border-radius: 10px;
    display: flex;
    align-items: center;
-   gap: 12px;
-   transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
+   gap: 10px;
+   transition: background 0.3s ease-in-out;
 }
 
-.quest-item:hover {
-   background: linear-gradient(135deg, #787878, #4a4a4a);
-   transform: scale(1.02);
-}
-
-/* Картинка задания */
+/* Квадратное изображение задания */
 .quest-img {
-   width: 50px;
-   height: 50px;
+   width: 45px;
+   height: 45px;
    object-fit: cover;
-   border-radius: 10px;
+   border-radius: 8px;
    flex-shrink: 0;
 }
 
-/* Информация */
+/* Информация о задании */
 .quest-info {
    flex: 1;
    display: flex;
@@ -147,34 +139,26 @@
 }
 
 .quest-title {
-   font-size: 16px;
+   font-size: 15px;
    font-weight: bold;
-   margin-bottom: 4px;
+   margin-bottom: 5px;
 }
 
 .quest-reward {
    font-size: 15px;
-   color: #d4d4d4;
 }
 
-/* Кнопка "Go" */
+/* Кнопка "Go" – фиксированный размер, красивый красный с белым текстом */
 .quest-btn {
-   background: #e74c3c;
-   color: #ffffff;
+   background: #e74c3c; /* насыщенный красный оттенок */
+   color: #ffffff;     /* белый */
    border: none;
    border-radius: 8px;
    cursor: pointer;
-   width: 70px;
-   height: 42px;
-   font-size: 14px;
-   font-weight: bold;
-   transition: background 0.3s ease-in-out;
+   width: 65px;
+   height: 40px;
+   flex-shrink: 0;
 }
-
-.quest-btn:hover {
-   background: #c0392b;
-}
-
 
  /* Звёзды и анимации */
  .stars,
