@@ -159,20 +159,6 @@
    height: 40px;
    flex-shrink: 0;
 }
-.show {
-    display: block !important; /* Убедись, что это действительно нужно */
-    opacity: 1;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.hide {
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.hidden {
-    display: none;
-}
 
  /* Звёзды и анимации */
  .stars,
