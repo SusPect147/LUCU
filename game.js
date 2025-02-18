@@ -397,8 +397,8 @@ leaderboardMenu.addEventListener('click', (e) => {
           coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
  
           bestLuckDisplay.innerHTML = min_luck === Infinity ?
-             `Your Best MIN Luck: <span style="color: #F80000;">N/A</span>` :
-             `Your Best MIN Luck: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
+             `Your Best MIN number: <span style="color: #F80000;">N/A</span>` :
+             `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
  
           console.log("Данные игры обновлены:", data);
  
