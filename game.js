@@ -205,7 +205,59 @@ window.onload = () => {
     ParticleSystem,
     Particle
  };
- 
+  document.addEventListener("DOMContentLoaded", () => {
+        const questsMenu = document.getElementById("quests-menu");
+        const subscribeQuestBtn = document.querySelector(".quest-item .quest-btn");
+        
+        const tg = window.Telegram.WebApp;
+        const channelUsername = "@luckycubesCHANNEL"; // Заменить на реальный username канала
+        
+        subscribeQuestBtn.addEventListener("click", () => {
+            // Открываем канал в Telegram
+            window.open(`https://t.me/${channelUsername}`, "_blank");
+            
+            // Показываем новое окно с кнопками "Подписаться" и "Проверить подписку"
+            showSubscriptionModal();
+        });
+        
+        function showSubscriptionModal() {
+            const modal = document.createElement("div");
+            modal.id = "subscription-modal";
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <p>Подпишись на Telegram канал</p>
+                    <button id="subscribe-btn">Подписаться</button>
+                    <button id="check-subscription-btn">Проверить подписку</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            document.getElementById("subscribe-btn").addEventListener("click", () => {
+                window.open(`https://t.me/${channelUsername}`, "_blank");
+            });
+            
+            document.getElementById("check-subscription-btn").addEventListener("click", checkSubscription);
+        }
+        
+        function checkSubscription() {
+            fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=${channelUsername}&user_id=${tg.initDataUnsafe?.user?.id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok && ["member", "administrator", "creator"].includes(data.result.status)) {
+                        alert("Вы подписаны! Начисляем монеты...");
+                        updateCoins(250); // Начисление 250 $LUCU
+                        document.getElementById("subscription-modal").remove();
+                    } else {
+                        alert("Вы не подписаны на канал! Подпишитесь и попробуйте снова.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка при проверке подписки:", error);
+                    alert("Ошибка при проверке. Попробуйте снова позже.");
+                });
+        }
+});
+
  const tg = window.Telegram.WebApp;
  const leaderboardList = document.getElementById("leaderboard-list");
  const mostLucuBtn = document.getElementById("most-lucu");
