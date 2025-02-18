@@ -330,17 +330,18 @@ leaderboardMenu.addEventListener('click', (e) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
  }
  
- function formatCoins(amount) {
-    if (amount >= 1_000_000_000) {
-       return (amount / 1_000_000_000).toFixed(1) + "B";
-    } else if (amount >= 1_000_000) {
-       return (amount / 1_000_000).toFixed(1) + "M";
-    } else if (amount >= 1_000) {
-       return (amount / 1_000).toFixed(1) + "K";
-    } else {
-       return amount;
-    }
- }
+function formatCoins(amount) {
+  if (amount >= 1_000_000_000) {
+    return (Math.floor((amount / 1_000_000_000) * 10) / 10) + "B";
+  } else if (amount >= 1_000_000) {
+    return (Math.floor((amount / 1_000_000) * 10) / 10) + "M";
+  } else if (amount >= 1_000) {
+    return (Math.floor((amount / 1_000) * 10) / 10) + "K";
+  } else {
+    return amount;
+  }
+}
+
  
  function updateCoins(amount) {
     // Отправляем на сервер только приращение, не изменяя локальную переменную coins сразу
