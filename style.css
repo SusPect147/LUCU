@@ -437,110 +437,70 @@
  
 /* Фон модального окна */
 #leaderboard-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.4s ease, visibility 0s 0.4s;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-/* Контент модального окна */
-#leaderboard-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateY(100%); /* Начальная позиция скрыта */
-  opacity: 0; /* Начальная непрозрачность */
-  transition: transform 0.4s ease, opacity 0.4s ease;
-}
-
-/* Когда меню открыто */
-#leaderboard-menu.show {
-  visibility: visible;
-  opacity: 1;
-  transition: opacity 0.4s ease, visibility 0s 0s;
-}
-
-#leaderboard-menu.show #leaderboard-menu-content {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-/* Когда меню закрывается */
-#leaderboard-menu.hide {
-  opacity: 0;
-  transition: opacity 0.4s ease, visibility 0s 0.4s;
-}
-
-#leaderboard-menu.hide #leaderboard-menu-content {
-  transform: translateY(100%); /* Возвращаем контент вниз */
-  opacity: 0; /* Убираем непрозрачность */
-}
-
-/* Полностью скрываем после анимации */
-#leaderboard-menu.hidden {
-  visibility: hidden;
-}
-
-/* Стили для кнопок и прочего контента внутри меню */
-.trophy {
-  width: 150px;
-  height: auto;
-  margin-bottom: 15px;
-}
-
-.button-group {
-  display: flex;
-  border-radius: 20px;
-  overflow: hidden;
-  margin-bottom: 5px;
-  width: calc(100% - 20px);
-  margin: 0 10px;
-}
-
-.button-group button {
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
-  background: rgb(22, 22, 22);
-  color: white;
-  flex: 1;
-}
-
-.button-group button:first-child {
-  border-radius: 20px 0 0 20px;
-}
-
-.button-group button:last-child {
-  border-radius: 0 20px 20px 0;
-}
-
-.button-group button.active {
-  background: rgb(39, 39, 39);
-}
-
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: rgba(0, 0, 0, 0.5);
+   backdrop-filter: blur(10px);
+   visibility: hidden;
+   opacity: 0;
+   transition: opacity 0.4s ease, visibility 0s 0.4s;
+   display: flex;
+   justify-content: center;
+   align-items: flex-end;
+ }
  
+ /* Контент модального окна */
+ #leaderboard-menu-content {
+   position: relative;
+   background: #dbdbdb;
+   width: 100%;
+   height: 60%; /* Установлена фиксированная высота 60% */
+   border-top-left-radius: 15px;
+   border-top-right-radius: 15px;
+   padding: 20px;
+   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   transform: translateY(100%);
+   opacity: 0;
+   transition: transform 0.4s ease, opacity 0.4s ease;
+ }
  
+ /* Когда меню открыто */
+ #leaderboard-menu.show {
+   visibility: visible;
+   opacity: 1;
+   transition: opacity 0.4s ease, visibility 0s 0s;
+ }
+ 
+ #leaderboard-menu.show #leaderboard-menu-content {
+   transform: translateY(0);
+   opacity: 1;
+ }
+ 
+ /* Когда меню закрывается */
+ #leaderboard-menu.hide {
+   opacity: 0;
+   transition: opacity 0.4s ease, visibility 0s 0.4s;
+ }
+ 
+ #leaderboard-menu.hide #leaderboard-menu-content {
+   transform: translateY(100%);
+   opacity: 0;
+ }
+ 
+ /* Полностью скрываем после анимации */
+ #leaderboard-menu.hidden {
+   visibility: hidden;
+ }
+ 
+ /* Стили для кнопок и прочего контента внутри меню */
  .trophy {
-   width: 120px;
+   width: 150px;
    height: auto;
    margin-bottom: 15px;
  }
@@ -552,6 +512,7 @@
    margin-bottom: 5px;
    width: calc(100% - 20px);
    margin: 0 10px;
+   flex-shrink: 0; /* Фиксируем размер кнопок */
  }
  
  .button-group button {
@@ -579,10 +540,11 @@
  
  .leaderboard-list {
    width: 100%;
-   max-height: 60%;
+   max-height: calc(100% - 120px); /* Учитываем кнопки и отступы */
    overflow-y: auto;
    padding: 10px;
    margin-bottom: 10px;
+   flex-grow: 1;
  }
  
  .leaderboard-item {
@@ -595,6 +557,7 @@
    font-size: 16px;
    font-weight: bold;
  }
+
  
  /* Модальное окно квестов */
  #quests-menu {
@@ -634,38 +597,37 @@
    left: 0;
    width: 100%;
    height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   backdrop-filter: blur(10px);
+   background: rgba(0, 0, 0, 0.6);
+   backdrop-filter: blur(12px);
    visibility: hidden;
    opacity: 0;
    display: flex;
    justify-content: center;
    align-items: flex-end;
-   transition: opacity 0.4s ease, visibility 0s 0.1s; /* Задержка перед появлением */
+   transition: opacity 0.4s ease, visibility 0s 0.1s;
 }
 
 #friend-menu-content {
    position: relative;
-   background: #dbdbdb;
+   background: #f8f8f8;
    width: 100%;
    height: 60%;
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
+   border-top-left-radius: 18px;
+   border-top-right-radius: 18px;
    padding: 20px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
    display: flex;
    flex-direction: column;
    justify-content: space-between;
    align-items: center;
    font-size: 24px;
    font-weight: bold;
-   color: rgb(38, 38, 41);
+   color: #222;
    transform: translateY(100%);
    opacity: 0;
    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 
-/* Открытие меню - теперь плавное */
 #friend-menu.show {
   visibility: visible;
   opacity: 1;
@@ -674,10 +636,9 @@
 #friend-menu.show #friend-menu-content {
   transform: translateY(0);
   opacity: 1;
-  transition-delay: 0.1s; /* Небольшая задержка, чтобы не открывалось резко */
+  transition-delay: 0.1s;
 }
 
-/* Закрытие - плавное */
 #friend-menu.hide {
   opacity: 0;
 }
@@ -687,16 +648,13 @@
   opacity: 0;
 }
 
-/* Полное скрытие после анимации */
 #friend-menu.hidden {
   visibility: hidden;
 }
 
-
-
 .avatar-icon img {
-   width: 150px;
-   height: 150px;
+   width: 140px;
+   height: 140px;
    margin-bottom: 15px;
 }
 
@@ -712,10 +670,12 @@
    display: flex;
    align-items: center;
    justify-content: space-between;
-   background: #2a2a2a;
-   padding: 10px;
-   border-radius: 20px;
+   background: #222;
+   padding: 12px;
+   border-radius: 16px;
    width: 100%;
+   min-height: 50px;
+   flex-wrap: nowrap;
 }
 
 #referral-link {
@@ -723,8 +683,9 @@
    border: none;
    background: none;
    font-size: 16px;
-   color: white;
+   color: #fff;
    outline: none;
+   word-break: break-all;
 }
 
 #copy-referral {
@@ -734,10 +695,10 @@
    padding: 10px 10px;
    border-radius: 10px;
    cursor: pointer;
-   width: auto; /* Кнопка теперь имеет адаптивную ширину */
-   max-width: 120px; /* Можно регулировать максимальную ширину */
+   width: auto;
+   max-width: 120px;
    text-align: center;
-   flex-shrink: 0; /* Не дает кнопке сжиматься */
+   flex-shrink: 0;
 }
 
 #copy-referral:hover {
@@ -749,29 +710,71 @@
    display: flex;
    flex-direction: column;
    align-items: center;
-   margin-top: auto; /* Прижимает к нижней части */
-   padding-bottom: 2px; /* Добавляем отступ снизу */
+   margin-top: auto;
+   padding-bottom: 10px;
 }
 
 #share-link {
-   background: #b10a0a;
+   background: #d70000;
    color: white;
    border: none;
-   padding: 20px 20px;
+   padding: 16px 20px;
    border-radius: 20px;
-   font-size: 20px;
+   font-size: 18px;
    cursor: pointer;
    width: 100%;
+   min-height: 56px;
 }
 
 #share-link:hover {
-   background: #8c0808;
+   background: #b00000;
 }
 
 .friends-count {
    font-size: 16px;
-   color: #aaa;
+   color: #777;
    margin-bottom: 10px;
+}
+
+@media (max-height: 826px) {
+   .referral-container {
+      flex-direction: row;
+      align-items: center;
+      padding: 8px;
+      border-radius: 12px;
+   }
+
+   #referral-link {
+      font-size: 14px;
+   }
+
+   #share-link {
+      font-size: 16px;
+      padding: 14px;
+      min-height: 50px;
+   }
+}
+
+@media (max-height: 796px) {
+   #referral-link {
+      font-size: 12px;
+   }
+   #copy-referral {
+      font-size: 12px;
+      padding: 8px 8px;
+      max-width: 100px;
+   }
+   #friend-menu-content h2 {
+      font-size: 30px;
+   }
+   #friend-menu-content p {
+      font-size: 20px;
+   }
+   .avatar-icon img {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 15px;
+   }
 }
 
  
