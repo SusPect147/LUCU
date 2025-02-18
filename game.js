@@ -205,7 +205,6 @@ window.onload = () => {
     ParticleSystem,
     Particle
  };
- document.addEventListener("DOMContentLoaded", () => {
         const subscribeQuestBtn = document.querySelector(".quest-item .quest-btn");
  const questsMenu = document.getElementById("quests-menu");
     const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
@@ -272,9 +271,7 @@ window.onload = () => {
                     alert("Ошибка при проверке. Попробуйте снова позже.");
                 });
         }
-});
 
- const tg = window.Telegram.WebApp;
  const leaderboardList = document.getElementById("leaderboard-list");
  const mostLucuBtn = document.getElementById("most-lucu");
  const bestLuckBtn = document.getElementById("best-luck");
