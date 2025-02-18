@@ -225,7 +225,7 @@ window.onload = () => {
         }
     });
         const tg = window.Telegram.WebApp;
-        const channelUsername = "@luckycubesCHANNEL"; // Заменить на реальный username канала
+        const channelUsername = "luckycubesCHANNEL"; // Заменить на реальный username канала
         
         subscribeQuestBtn.addEventListener("click", () => {
             // Открываем канал в Telegram
