@@ -206,8 +206,9 @@ window.onload = () => {
     Particle
  };
  document.addEventListener("DOMContentLoaded", () => {
-        const questsMenu = document.getElementById("quests-menu");
         const subscribeQuestBtn = document.querySelector(".quest-item .quest-btn");
+ const questsMenu = document.getElementById("quests-menu");
+    const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
 
     questsButton.addEventListener("click", () => {
         questsMenu.classList.remove("hide", "hidden");
