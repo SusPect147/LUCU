@@ -224,14 +224,6 @@ window.onload = () => {
             }, 400);
         }
     });
-    questsList.addEventListener('scroll', function() {
-        // Максимальное смещение, при котором аватар исчезнет
-        const maxScroll = 100; 
-        const scrollTop = questsList.scrollTop;
-        // Вычисляем коэффициент масштаба: от 1 (при scrollTop = 0) до 0 (при scrollTop >= maxScroll)
-        let scale = Math.max(1 - scrollTop / maxScroll, 0);
-        avatarImg.style.transform = scale(${scale});
-    });
 });
 const tg = window.Telegram?.WebApp;
  const leaderboardList = document.getElementById("leaderboard-list");
