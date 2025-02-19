@@ -697,37 +697,6 @@
  }
 
  
- /* Модальное окно квестов */
- #quests-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   backdrop-filter: blur(10px);
-   display: none;
-   justify-content: center;
-   align-items: flex-end;
- }
- 
- #quests-menu-content {
-   position: relative;
-   background: #dbdbdb;
-   width: 100%;
-   height: 60%;
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
-   padding: 20px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   font-size: 24px;
-   font-weight: bold;
-   color: rgb(38, 38, 41);
- }
- 
 /* Модальное окно приглашения друзей */
 #friend-menu {
    position: fixed;
