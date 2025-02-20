@@ -45,7 +45,7 @@
    height: 60%;
    border-top-left-radius: 18px;
    border-top-right-radius: 18px;
-   padding: 0 20px 20px; /* убираем верхний отступ – он теперь в header */
+   padding: 0 20px 20px;
    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
    display: flex;
    flex-direction: column;
@@ -81,7 +81,7 @@
 .quests-header {
    display: flex;
    align-items: center;
-   justify-content: center; /* выравниваем содержимое по центру */
+   justify-content: center;
    padding: 20px;
    background: #f8f8f8;
    position: sticky;
@@ -90,16 +90,14 @@
    transition: transform 0.3s ease;
 }
 
-/* Аватар – уменьшенный размер и выравненный по центру */
 .avatar-icon img {
-   width: 40px;  /* уменьшенный размер */
-   height: 40px; /* уменьшенный размер */
+   width: 40px;
+   height: 40px;
    object-fit: cover;
    border-radius: 10px;
    transition: transform 0.3s ease;
 }
 
-/* Скроллируемый список заданий */
 .quests-list {
    overflow-y: auto;
    flex: 1;
@@ -109,10 +107,9 @@
    padding-bottom: 10px;
 }
 
-/* Стили для каждого задания */
 .quest-item {
-   background: linear-gradient(135deg, #8d8888, #575555); /* Плавный переход от тёмно-серого к почти чёрному */
-   color: #ecf0f1; /* Светлый текст для контраста */
+   background: #6a6a6b;
+   color: #ecf0f1;
    padding: 12px;
    border-radius: 10px;
    display: flex;
@@ -121,7 +118,6 @@
    transition: background 0.3s ease-in-out;
 }
 
-/* Квадратное изображение задания */
 .quest-img {
    width: 45px;
    height: 45px;
@@ -130,7 +126,6 @@
    flex-shrink: 0;
 }
 
-/* Информация о задании */
 .quest-info {
    flex: 1;
    display: flex;
@@ -148,18 +143,29 @@
    font-size: 15px;
 }
 
-/* Кнопка "Go" – фиксированный размер, красивый красный с белым текстом */
-.quest-btn {
-   background: #e74c3c; /* насыщенный красный оттенок */
-   color: #ffffff;     /* белый */
-   border: none;
-   border-radius: 8px;
-   cursor: pointer;
-   width: 65px;
-   height: 40px;
-   flex-shrink: 0;
+.quests-list {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
 }
 
+.quest-btn, .quest-progress {
+   background: #444;
+   color: white;
+   border: none;
+   border-radius: 5px;
+   padding: 8px 15px;
+   cursor: pointer;
+   font-size: 14px;
+   width: 50px;
+}
+
+.quest-progress {
+   background: transparent;
+   border: 1px solid #777;
+}
+
+ 
  /* Звёзды и анимации */
  .stars,
  .flying-stars {
@@ -695,8 +701,105 @@
    font-size: 16px;
    font-weight: bold;
  }
+ .leaderboard-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #222;
+  color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
 
- 
+.leaderboard-rank {
+  font-size: 16px;
+  font-weight: bold;
+  width: 30px;
+  text-align: center;
+}
+
+.leaderboard-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
+.leaderboard-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.leaderboard-name {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.leaderboard-score {
+  font-size: 16px;
+  font-weight: bold;
+}
+/* Контейнер для всего содержимого строки */
+.leaderboard-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Ник и место слева, значения справа */
+  width: 100%;
+}
+
+/* Левая часть: аватар + блок с ником и местом */
+.player-left {
+  display: flex;
+  align-items: center;
+}
+
+/* Аватарка */
+.player-avatar {
+  width: 40px;        /* Подберите под свой дизайн */
+  height: 40px;
+  border-radius: 50%; /* Скругление под круглую аватарку */
+  margin-right: 10px; /* Отступ справа от аватарки */
+}
+
+/* Внутри .player-left второй блок (имя + место) */
+.player-info {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Имя игрока */
+.player-name {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Место игрока (#1, #2 и т.д.) */
+.player-rank {
+  font-size: 14px;
+  color: #666; /* более светлый оттенок, чтобы отличать от имени */
+}
+
+/* Правая часть, где будут монеты или удача */
+.player-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column; /* Если хотите, чтобы $LUCU и удача шли вертикально */
+  align-items: flex-end;
+}
+
+/* Стили для чисел (монет) */
+.player-coins {
+  font-weight: bold;
+  margin-bottom: 4px; /* Отступ, если сверху будет ещё что-то */
+}
+
+
+
+
 /* Модальное окно приглашения друзей */
 #friend-menu {
    position: fixed;
