@@ -608,7 +608,7 @@ button:hover {
   position: relative;
   background: #0c0c0c;
   width: 100%;
-  height: 60%;
+  height: 75%;
   border-top-left-radius: 15px;
   border-top-right-radius: 15px;
   padding: 20px;
@@ -743,8 +743,8 @@ button:hover {
 
 /* --- Анимация при уменьшении кубка --- */
 .scrolled .trophy-container {
-  transform: scale(0.5);
-  margin-bottom: -20px;
+  transform: scale(0.5) translateY(-50px); /* Поднимаем кубок выше */
+  margin-bottom: -40px;
 }
 
 .scrolled .header-container,
