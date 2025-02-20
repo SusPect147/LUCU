@@ -284,7 +284,21 @@ leaderboardMenu.addEventListener('click', (e) => {
           data.forEach((player, index) => {
              const li = document.createElement("li");
              li.classList.add("leaderboard-item");
-             li.innerHTML = `${index + 1}. ${player.username} - ${formatCoins(player.coins)} $LUCU`;
+             li.innerHTML = `
+  <div class="leaderboard-item-content">
+    <div class="player-left">
+      <img src="https://t.me/i/userpic/320/${player.user_id}.jpg" alt="Avatar" class="player-avatar">
+      <div class="player-info">
+        <span class="player-name">${player.username}</span>
+        <span class="player-rank">#${index + 1}</span>
+      </div>
+    </div>
+    <div class="player-right">
+      <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
+    </div>
+  </div>
+`;
+
              leaderboardList.appendChild(li);
           });
        })
@@ -318,7 +332,21 @@ leaderboardMenu.addEventListener('click', (e) => {
  
              const li = document.createElement("li");
              li.classList.add("leaderboard-item");
-             li.innerHTML = `${index + 1}. ${player.username} - ${luckValue}`;
+             li.innerHTML = `
+  <div class="leaderboard-item-content">
+    <div class="player-left">
+      <img src="https://t.me/i/userpic/320/${player.user_id}.jpg" alt="Avatar" class="player-avatar">
+      <div class="player-info">
+        <span class="player-name">${player.username}</span>
+        <span class="player-rank">#${index + 1}</span>
+      </div>
+    </div>
+    <div class="player-right">
+      <span class="player-luck">${luckValue}</span>
+    </div>
+  </div>
+`;
+
              leaderboardList.appendChild(li);
           });
        })
@@ -326,7 +354,6 @@ leaderboardMenu.addEventListener('click', (e) => {
           console.error("Ошибка загрузки лидерборда по удаче:", error);
        });
  }
- 
  
  const cube = document.getElementById("cube");
  const coinsDisplay = document.getElementById("coins");
