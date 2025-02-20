@@ -272,6 +272,26 @@ leaderboardMenu.addEventListener('click', (e) => {
     }
 });
 
+function updateUserProfile() {
+  const user = window.Telegram.WebApp.initDataUnsafe.user;
+  if (user) {
+    fetch("https://your-backend-domain.com/update_profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user.id,
+        username: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
+        photo_url: user.photo_url || "default_avatar.png" // если нет фото, используем заглушку
+      })
+    })
+    .then(response => response.json())
+    .then(data => console.log("Профиль обновлён:", data))
+    .catch(error => console.error("Ошибка обновления профиля:", error));
+  }
+}
+
+// Вызываем updateUserProfile при инициализации Mini App
+updateUserProfile();
 
 
  
@@ -296,8 +316,7 @@ leaderboardMenu.addEventListener('click', (e) => {
              li.innerHTML = `
   <div class="leaderboard-item-content">
     <div class="player-left">
-      <img src="${getAvatarUrl(player)}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar"/>
-
+      <img src="${player.photo_url ? player.photo_url : 'default_avatar.png'}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar">
       <div class="player-info">
         <span class="player-name">${player.username}</span>
         <span class="player-rank">#${index + 1}</span>
@@ -345,8 +364,7 @@ leaderboardMenu.addEventListener('click', (e) => {
              li.innerHTML = `
   <div class="leaderboard-item-content">
     <div class="player-left">
-      <img src="${getAvatarUrl(player)}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar"/>
-
+      <img src="${player.photo_url ? player.photo_url : 'default_avatar.png'}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar">
       <div class="player-info">
         <span class="player-name">${player.username}</span>
         <span class="player-rank">#${index + 1}</span>
