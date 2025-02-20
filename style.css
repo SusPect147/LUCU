@@ -1,395 +1,594 @@
 /* Сброс стилей */
 * {
-   margin: 0;
-   padding: 0;
-   box-sizing: border-box;
- }
-  .rainbow-bg {
-  background: linear-gradient(45deg, rgb(66, 4, 4), rgb(58, 39, 3), rgb(44, 44, 3), rgb(4, 46, 4), rgb(3, 3, 43), rgb(29, 4, 48), rgb(63, 8, 63));
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+ .rainbow-bg {
+ background: linear-gradient(45deg, rgb(66, 4, 4), rgb(58, 39, 3), rgb(44, 44, 3), rgb(4, 46, 4), rgb(3, 3, 43), rgb(29, 4, 48), rgb(63, 8, 63));
 }
 .gold-bg {
-  background: #464023; /* золотой цвет */
+ background: #464023; /* золотой цвет */
 }
 .highlight {
-  border: 2px solid #bd0a0a; /* например, зеленая рамка для выделения текущего игрока */
+ border: 2px solid #bd0a0a; /* например, зеленая рамка для выделения текущего игрока */
 }
- /* Основные стили для body */
- body {
-   margin: 0;
-   overflow: hidden;
-   display: flex;
-   flex-direction: column;
-   justify-content: center;
-   align-items: center;
-   height: 100vh;
-   background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
-               linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
-               linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
-   font-family: Arial, sans-serif;
-   transition: 1s ease-in-out;
-   position: relative;
- }
+/* Основные стили для body */
+body {
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
+              linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
+              linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
+  font-family: Arial, sans-serif;
+  transition: 1s ease-in-out;
+  position: relative;
+}
 /* Общие стили для меню */
 #quests-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.6);
-   backdrop-filter: blur(12px);
-   visibility: hidden;
-   opacity: 0;
-   display: flex;
-   justify-content: center;
-   align-items: flex-end;
-   transition: opacity 0.4s ease, visibility 0s 0.1s;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  visibility: hidden;
+  opacity: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  transition: opacity 0.4s ease, visibility 0s 0.1s;
 }
 
 #quests-menu-content {
-   position: relative;
-   background: #f8f8f8;
-   width: 100%;
-   height: 60%;
-   border-top-left-radius: 18px;
-   border-top-right-radius: 18px;
-   padding: 0 20px 20px;
-   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
-   display: flex;
-   flex-direction: column;
-   transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+  position: relative;
+  background: #f8f8f8;
+  width: 100%;
+  height: 60%;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  padding: 0 20px 20px;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 
 /* Появление/скрытие меню */
 #quests-menu.show {
-   visibility: visible;
-   opacity: 1;
+  visibility: visible;
+  opacity: 1;
 }
 
 #quests-menu.show #quests-menu-content {
-   transform: translateY(0);
-   opacity: 1;
-   transition-delay: 0.1s;
+  transform: translateY(0);
+  opacity: 1;
+  transition-delay: 0.1s;
 }
 
 #quests-menu.hide {
-   opacity: 0;
+  opacity: 0;
 }
 
 #quests-menu.hide #quests-menu-content {
-   transform: translateY(100%);
-   opacity: 0;
+  transform: translateY(100%);
+  opacity: 0;
 }
 
 #quests-menu.hidden {
-   visibility: hidden;
+  visibility: hidden;
 }
 
 /* Заголовок с аватаром */
 .quests-header {
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   padding: 20px;
-   background: #f8f8f8;
-   position: sticky;
-   top: 0;
-   z-index: 10;
-   transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f8f8f8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  transition: transform 0.3s ease;
 }
 
 .avatar-icon img {
-   width: 40px;
-   height: 40px;
-   object-fit: cover;
-   border-radius: 10px;
-   transition: transform 0.3s ease;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 10px;
+  transition: transform 0.3s ease;
 }
 
 .quests-list {
-   overflow-y: auto;
-   flex: 1;
-   display: flex;
-   flex-direction: column;
-   gap: 10px;
-   padding-bottom: 10px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
 }
 
 .quest-item {
-   background: #6a6a6b;
-   color: #ecf0f1;
-   padding: 12px;
-   border-radius: 10px;
-   display: flex;
-   align-items: center;
-   gap: 10px;
-   transition: background 0.3s ease-in-out;
+  background: #6a6a6b;
+  color: #ecf0f1;
+  padding: 12px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.3s ease-in-out;
 }
 
 .quest-img {
-   width: 45px;
-   height: 45px;
-   object-fit: cover;
-   border-radius: 8px;
-   flex-shrink: 0;
+  width: 45px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .quest-info {
-   flex: 1;
-   display: flex;
-   flex-direction: column;
-   justify-content: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .quest-title {
-   font-size: 15px;
-   font-weight: bold;
-   margin-bottom: 5px;
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 5px;
 }
 
 .quest-reward {
-   font-size: 15px;
+  font-size: 15px;
 }
 
 .quests-list {
-   display: flex;
-   flex-direction: column;
-   gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .quest-btn, .quest-progress {
-   background: #444;
-   color: white;
-   border: none;
-   border-radius: 5px;
-   padding: 8px 15px;
-   cursor: pointer;
-   font-size: 14px;
-   width: 50px;
+  background: #444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 50px;
 }
 
 .quest-progress {
-   background: transparent;
-   border: 1px solid #777;
+  background: transparent;
+  border: 1px solid #777;
 }
 
- 
- /* Звёзды и анимации */
- .stars,
- .flying-stars {
-   position: absolute;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   pointer-events: none;
-   z-index: -1;
- }
- 
- .star {
-   position: absolute;
-   background-color: rgb(255, 255, 255);
-   border-radius: 50%;
-   opacity: 0.2;
-   animation: twinkle 5s infinite alternate;
- }
- 
- @keyframes twinkle {
-   0% {
-     opacity: 0.2;
-   }
-   100% {
-     opacity: 0.4;
-   }
- }
- 
- .flying-star {
-   position: absolute;
-   background-color: rgb(255, 255, 255);
-   border-radius: 50%;
-   opacity: 0.8;
-   animation: flyUp 5s linear infinite;
- }
- 
- @keyframes flyUp {
-   0% {
-     transform: translateY(100vh);
-     opacity: 0.8;
-   }
-   100% {
-     transform: translateY(-100vh);
-     opacity: 0;
-   }
- }
- 
- /* Экран загрузки */
- .loading-screen {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: linear-gradient(135deg, #000428, #004e92);
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   transition: opacity 1s ease-in-out;
- }
- 
- .loading-gif {
-   width: 120px;
-   height: 120px;
-   animation: pulse 1.5s infinite alternate;
- }
- 
- @keyframes pulse {
-   from {
-     transform: scale(1);
-     opacity: 1;
-   }
-   to {
-     transform: scale(1.1);
-     opacity: 0.8;
-   }
- }
- 
- .loading-text {
-   margin-top: 20px;
-   font-size: 18px;
-   font-weight: bold;
- }
- 
- .progress {
-   margin-top: 10px;
-   font-size: 20px;
-   background: rgba(255, 255, 255, 0.2);
-   width: 80%;
-   max-width: 300px;
-   height: 8px;
-   border-radius: 4px;
-   position: relative;
-   overflow: hidden;
- }
- 
- .progress-bar {
-   position: absolute;
-   height: 100%;
-   width: 0%;
-   background: #00c6ff;
-   border-radius: 4px;
-   transition: width 0.1s ease-in-out;
- }
- 
- /* Стили для canvas */
- #particleCanvas {
-   position: absolute;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   z-index: -1;
- }
- 
- /* Счетчики и текст */
- #coins {
-   font-size: 3rem;
-   font-weight: bold;
-   position: absolute;
-   top: 10%;
-   right: 10%;
-   color: rgb(162, 175, 175);
- }
- 
- #bestLuck {
-   font-weight: bold;
-   position: absolute;
-   top: calc(10% + 4.063rem);
-   font-size: 1.25rem;
-   color: rgb(162, 175, 175);
-   text-align: center;
-   white-space: nowrap;
-   overflow: hidden;
-   text-overflow: ellipsis;
- }
- 
- /* Изображение куба */
- #cube {
-   width: 22rem;
-   height: 22rem;
-   cursor: pointer;
-   user-select: none;
-   transition: transform 0.3s;
-   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-   outline: none;
- }
- 
- /* Пример градиента */
- .pink-gradient {
-   background: linear-gradient(217deg, rgb(77, 7, 7), rgba(49, 4, 4, 0.493) 70.71%),
-               linear-gradient(127deg, rgb(7, 54, 7), rgba(6, 51, 6, 0.219) 70.71%),
-               linear-gradient(336deg, rgb(9, 9, 73), rgba(7, 7, 68, 0.288) 70.71%);
-   background-blend-mode: multiply;
- }
- 
- /* Прогресс-бар внизу экрана */
- #progressBar {
-   position: absolute;
-   bottom: 25%;
-   width: 80%;
-   height: 0.625rem;
-   background: rgba(255, 255, 255, 0.2);
-   border-radius: 0.313rem;
-   overflow: hidden;
- }
- 
- #progressBar div {
-   height: 100%;
-   width: 0;
-   background: #F80000;
- }
- 
- /* Меню */
- .menu {
-   position: absolute;
-   bottom: 0;
-   width: 100%;
-   background: linear-gradient(to top, rgba(200, 200, 200, 0.9), rgba(245, 245, 245, 0.9));
-   display: flex;
-   justify-content: space-around;
-   align-items: center;
-   padding: 10px 0;
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-   flex-basis: 0;
- }
- 
- .menu-item {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   font-size: 20px;
-   color: #555;
- }
- 
- .menu-item img {
-   width: 40px;
-   height: 40px;
-   margin-bottom: 5px;
- }
- 
- .menu-item:hover {
-   color: #000;
- }
- 
- /* Класс для скрытия элементов */
- .hidden {
-   display: none;
- }
- 
+
+/* Звёзды и анимации */
+.stars,
+.flying-stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.star {
+  position: absolute;
+  background-color: rgb(255, 255, 255);
+  border-radius: 50%;
+  opacity: 0.2;
+  animation: twinkle 5s infinite alternate;
+}
+
+@keyframes twinkle {
+  0% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.flying-star {
+  position: absolute;
+  background-color: rgb(255, 255, 255);
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: flyUp 5s linear infinite;
+}
+
+@keyframes flyUp {
+  0% {
+    transform: translateY(100vh);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
+
+/* Экран загрузки */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #000428, #004e92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1s ease-in-out;
+}
+
+.loading-gif {
+  width: 120px;
+  height: 120px;
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.loading-text {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.progress {
+  margin-top: 10px;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 80%;
+  max-width: 300px;
+  height: 8px;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar {
+  position: absolute;
+  height: 100%;
+  width: 0%;
+  background: #00c6ff;
+  border-radius: 4px;
+  transition: width 0.1s ease-in-out;
+}
+
+/* Стили для canvas */
+#particleCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+/* Счетчики и текст */
+#coins {
+  font-size: 3rem;
+  font-weight: bold;
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  color: rgb(162, 175, 175);
+}
+
+#bestLuck {
+  font-weight: bold;
+  position: absolute;
+  top: calc(10% + 4.063rem);
+  font-size: 1.25rem;
+  color: rgb(162, 175, 175);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Изображение куба */
+#cube {
+  width: 22rem;
+  height: 22rem;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.3s;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  outline: none;
+}
+
+/* Пример градиента */
+.pink-gradient {
+  background: linear-gradient(217deg, rgb(77, 7, 7), rgba(49, 4, 4, 0.493) 70.71%),
+              linear-gradient(127deg, rgb(7, 54, 7), rgba(6, 51, 6, 0.219) 70.71%),
+              linear-gradient(336deg, rgb(9, 9, 73), rgba(7, 7, 68, 0.288) 70.71%);
+  background-blend-mode: multiply;
+}
+
+/* Прогресс-бар внизу экрана */
+#progressBar {
+  position: absolute;
+  bottom: 25%;
+  width: 80%;
+  height: 0.625rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 0.313rem;
+  overflow: hidden;
+}
+
+#progressBar div {
+  height: 100%;
+  width: 0;
+  background: #F80000;
+}
+
+/* Меню */
+.menu {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(to top, rgba(200, 200, 200, 0.9), rgba(245, 245, 245, 0.9));
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  flex-basis: 0;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 20px;
+  color: #555;
+}
+
+.menu-item img {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 5px;
+}
+
+.menu-item:hover {
+  color: #000;
+}
+
+/* Класс для скрытия элементов */
+.hidden {
+  display: none;
+}
+
 /* Модальное окно профиля */
 #profile-menu {
+ position: fixed;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background: rgba(0, 0, 0, 0.5);
+ backdrop-filter: blur(10px);
+ visibility: hidden;
+ opacity: 0;
+ display: flex;
+ align-items: flex-end; /* Исправлено: теперь меню внизу */
+ transition: opacity 0.4s ease, visibility 0s 0.4s;
+}
+
+
+/* Контент модального окна */
+#profile-menu-content {
+ position: relative;
+ background: #dbdbdb;
+ width: 100%;
+ height: 35%;
+ border-top-left-radius: 15px;
+ border-top-right-radius: 15px;
+ padding: 20px;
+ box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ text-align: center;
+ font-size: 24px;
+ font-weight: bold;
+ color: rgb(35, 35, 37);
+ transform: translateY(100%); /* Начальная позиция снизу */
+ opacity: 0; /* Скрытый контент */
+ transition: transform 0.4s ease, opacity 0.4s ease; /* Плавная анимация */
+}
+
+/* Когда меню открыто */
+#profile-menu.show {
+ visibility: visible; /* Меню становится видимым */
+ opacity: 1; /* Меню становится непрозрачным */
+ transition: opacity 0.4s ease, visibility 0s 0s; /* Плавное изменение прозрачности */
+}
+
+/* Когда контент меню открывается */
+#profile-menu.show #profile-menu-content {
+ transform: translateY(0); /* Контент появляется сверху */
+ opacity: 1; /* Контент становится видимым */
+}
+
+/* Когда меню закрывается */
+#profile-menu.hide {
+ opacity: 0; /* Меню становится прозрачным */
+}
+
+#profile-menu.hide #profile-menu-content {
+ transform: translateY(100%); /* Контент уходит вниз */
+ opacity: 0; /* Контент исчезает */
+}
+
+/* Полностью скрываем после анимации */
+#profile-menu.hidden {
+ visibility: hidden; /* Меню скрыто */
+ transition: visibility 0s 0.4s; /* Задержка скрытия после анимации */
+}
+
+
+
+#profile-name {
+  margin-top: auto;
+  padding-bottom: 20px;
+}
+
+/* Фон модального окна */
+#skins-menu {
+ position: fixed;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background: rgba(0, 0, 0, 0.5);
+ backdrop-filter: blur(10px);
+ display: flex;
+ justify-content: center;
+ align-items: flex-end;
+ visibility: hidden; /* Скрываем, но элемент остаётся на месте */
+ opacity: 0;
+ transition: visibility 0s 0.4s, opacity 0.4s ease;
+}
+
+/* Контент модального окна */
+#skins-menu-content {
+ position: relative;
+ background: #dbdbdb;
+ width: 100%;
+ height: 60%;
+ border-top-left-radius: 15px;
+ border-top-right-radius: 15px;
+ padding: 20px;
+ box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+ overflow-y: auto;
+ transform: translateY(100%);
+ opacity: 0;
+ transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Открытие */
+#skins-menu.show {
+ visibility: visible;
+ opacity: 1;
+ transition: opacity 0.4s ease;
+}
+
+#skins-menu.show #skins-menu-content {
+ transform: translateY(0);
+ opacity: 1;
+}
+
+/* Закрытие */
+#skins-menu.hide {
+ opacity: 0;
+}
+
+#skins-menu.hide #skins-menu-content {
+ transform: translateY(100%);
+ opacity: 0;
+}
+
+/* Полное скрытие после анимации */
+#skins-menu.hidden {
+ visibility: hidden;
+ transition: visibility 0s 0.4s;
+}
+
+
+
+
+.skin-row {
+  margin-bottom: 20px;
+  color: rgb(58, 56, 56);
+}
+
+.skin-row h3 {
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.skins {
+  display: flex;
+  justify-content: flex-start;
+  overflow-x: scroll;
+  margin-bottom: 10px;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.3s;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  outline: none;
+}
+
+.skins img {
+  width: 123px;
+  height: 123px;
+  border-radius: 10px;
+  transition: transform 0.3s;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  outline: none;
+}
+
+.skins img:hover {
+  transform: scale(1.1);
+}
+
+/* Стили для кнопок */
+button {
+  width: 100%;
+  padding: 10px;
+  font-size: 18px;
+  background-color: #2e2d2d;
+  color: #cecece;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.3s;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  outline: none;
+}
+
+button:hover {
+  background-color: #212122;
+}
+
+/* --- Фон и анимации модального окна --- */
+#leaderboard-menu {
   position: fixed;
   top: 0;
   left: 0;
@@ -399,18 +598,17 @@
   backdrop-filter: blur(10px);
   visibility: hidden;
   opacity: 0;
-  display: flex;
-  align-items: flex-end; /* Исправлено: теперь меню внизу */
   transition: opacity 0.4s ease, visibility 0s 0.4s;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
 }
 
-
-/* Контент модального окна */
-#profile-menu-content {
+#leaderboard-menu-content {
   position: relative;
-  background: #dbdbdb;
+  background: #0c0c0c;
   width: 100%;
-  height: 35%;
+  height: 60%;
   border-top-left-radius: 15px;
   border-top-right-radius: 15px;
   padding: 20px;
@@ -418,298 +616,153 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: rgb(35, 35, 37);
-  transform: translateY(100%); /* Начальная позиция снизу */
-  opacity: 0; /* Скрытый контент */
-  transition: transform 0.4s ease, opacity 0.4s ease; /* Плавная анимация */
-}
-
-/* Когда меню открыто */
-#profile-menu.show {
-  visibility: visible; /* Меню становится видимым */
-  opacity: 1; /* Меню становится непрозрачным */
-  transition: opacity 0.4s ease, visibility 0s 0s; /* Плавное изменение прозрачности */
-}
-
-/* Когда контент меню открывается */
-#profile-menu.show #profile-menu-content {
-  transform: translateY(0); /* Контент появляется сверху */
-  opacity: 1; /* Контент становится видимым */
-}
-
-/* Когда меню закрывается */
-#profile-menu.hide {
-  opacity: 0; /* Меню становится прозрачным */
-}
-
-#profile-menu.hide #profile-menu-content {
-  transform: translateY(100%); /* Контент уходит вниз */
-  opacity: 0; /* Контент исчезает */
-}
-
-/* Полностью скрываем после анимации */
-#profile-menu.hidden {
-  visibility: hidden; /* Меню скрыто */
-  transition: visibility 0s 0.4s; /* Задержка скрытия после анимации */
-}
-
-
- 
- #profile-name {
-   margin-top: auto;
-   padding-bottom: 20px;
- }
- 
-/* Фон модального окна */
-#skins-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  visibility: hidden; /* Скрываем, но элемент остаётся на месте */
-  opacity: 0;
-  transition: visibility 0s 0.4s, opacity 0.4s ease;
-}
-
-/* Контент модального окна */
-#skins-menu-content {
-  position: relative;
-  background: #dbdbdb;
-  width: 100%;
-  height: 60%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  overflow-y: auto;
   transform: translateY(100%);
   opacity: 0;
   transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
-/* Открытие */
-#skins-menu.show {
+/* Состояния модального окна */
+#leaderboard-menu.show {
   visibility: visible;
   opacity: 1;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.4s ease, visibility 0s 0s;
 }
-
-#skins-menu.show #skins-menu-content {
+#leaderboard-menu.show #leaderboard-menu-content {
   transform: translateY(0);
   opacity: 1;
 }
-
-/* Закрытие */
-#skins-menu.hide {
+#leaderboard-menu.hide {
   opacity: 0;
+  transition: opacity 0.4s ease, visibility 0s 0.4s;
 }
-
-#skins-menu.hide #skins-menu-content {
+#leaderboard-menu.hide #leaderboard-menu-content {
   transform: translateY(100%);
   opacity: 0;
 }
-
-/* Полное скрытие после анимации */
-#skins-menu.hidden {
+#leaderboard-menu.hidden {
   visibility: hidden;
-  transition: visibility 0s 0.4s;
 }
 
+/* --- Верхняя секция --- */
+.top-section {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #0c0c0c;
+  width: 100%;
+  padding-bottom: 10px;
+  transition: margin-top 0.3s ease;
+}
 
+/* --- Кубок --- */
+.trophy-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px; /* Постоянный отступ */
+  transition: transform 0.3s ease, margin-bottom 0.3s ease;
+}
 
- 
- .skin-row {
-   margin-bottom: 20px;
-   color: rgb(58, 56, 56);
- }
- 
- .skin-row h3 {
-   font-size: 20px;
-   text-align: center;
-   margin-bottom: 10px;
- }
- 
- .skins {
-   display: flex;
-   justify-content: flex-start;
-   overflow-x: scroll;
-   margin-bottom: 10px;
-   gap: 10px;
-   cursor: pointer;
-   user-select: none;
-   transition: transform 0.3s;
-   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-   outline: none;
- }
- 
- .skins img {
-   width: 123px;
-   height: 123px;
-   border-radius: 10px;
-   transition: transform 0.3s;
-   cursor: pointer;
-   user-select: none;
-   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-   outline: none;
- }
- 
- .skins img:hover {
-   transform: scale(1.1);
- }
- 
- /* Стили для кнопок */
- button {
-   width: 100%;
-   padding: 10px;
-   font-size: 18px;
-   background-color: #2e2d2d;
-   color: #cecece;
-   border: none;
-   border-radius: 5px;
-   cursor: pointer;
-   user-select: none;
-   transition: transform 0.3s;
-   -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-   outline: none;
- }
- 
- button:hover {
-   background-color: #212122;
- }
- 
-/* Фон модального окна */
-#leaderboard-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.5);
-   backdrop-filter: blur(10px);
-   visibility: hidden;
-   opacity: 0;
-   transition: opacity 0.4s ease, visibility 0s 0.4s;
-   display: flex;
-   justify-content: center;
-   align-items: flex-end;
- }
- 
- /* Контент модального окна */
- #leaderboard-menu-content {
-   position: relative;
-   background: #dbdbdb;
-   width: 100%;
-   height: 60%; /* Установлена фиксированная высота 60% */
-   border-top-left-radius: 15px;
-   border-top-right-radius: 15px;
-   padding: 20px;
-   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   transform: translateY(100%);
-   opacity: 0;
-   transition: transform 0.4s ease, opacity 0.4s ease;
- }
- 
- /* Когда меню открыто */
- #leaderboard-menu.show {
-   visibility: visible;
-   opacity: 1;
-   transition: opacity 0.4s ease, visibility 0s 0s;
- }
- 
- #leaderboard-menu.show #leaderboard-menu-content {
-   transform: translateY(0);
-   opacity: 1;
- }
- 
- /* Когда меню закрывается */
- #leaderboard-menu.hide {
-   opacity: 0;
-   transition: opacity 0.4s ease, visibility 0s 0.4s;
- }
- 
- #leaderboard-menu.hide #leaderboard-menu-content {
-   transform: translateY(100%);
-   opacity: 0;
- }
- 
- /* Полностью скрываем после анимации */
- #leaderboard-menu.hidden {
-   visibility: hidden;
- }
- 
- /* Стили для кнопок и прочего контента внутри меню */
- .trophy {
-   width: 150px;
-   height: auto;
-   margin-bottom: 15px;
- }
- 
- .button-group {
-   display: flex;
-   border-radius: 20px;
-   overflow: hidden;
-   margin-bottom: 5px;
-   width: calc(100% - 20px);
-   margin: 0 10px;
-   flex-shrink: 0; /* Фиксируем размер кнопок */
- }
- 
- .button-group button {
-   border: none;
-   font-size: 16px;
-   font-weight: bold;
-   cursor: pointer;
-   transition: background 0.3s;
-   background: rgb(22, 22, 22);
-   color: white;
-   flex: 1;
- }
- 
- .button-group button:first-child {
-   border-radius: 20px 0 0 20px;
- }
- 
- .button-group button:last-child {
-   border-radius: 0 20px 20px 0;
- }
- 
- .button-group button.active {
-   background: rgb(39, 39, 39);
- }
- 
- .leaderboard-list {
-   width: 100%;
-   max-height: calc(100% - 120px); /* Учитываем кнопки и отступы */
-   overflow-y: auto;
-   padding: 10px;
-   margin-bottom: 10px;
-   flex-grow: 1;
- }
- 
- .leaderboard-item {
-   background: white;
-   padding: 10px;
-   margin-bottom: 20px;
-   border-radius: 10px;
-   display: flex;
-   justify-content: space-between;
-   font-size: 16px;
-   font-weight: bold;
- }
- .leaderboard-item {
+.trophy {
+  width: 150px;
+  height: auto;
+  transition: transform 0.3s ease;
+  z-index: 2;
+  position: relative;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(36,36,36,0.8) 0%, rgba(26,25,25,0) 70%);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+
+/* --- Заголовок и кнопки --- */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0 10px;
+  width: 100%;
+  transition: margin-top 0.3s ease;
+}
+
+.header-left {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.header-right {
+  background: #222;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.button-group-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  transition: margin-top 0.3s ease;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.button-group button {
+  border: none;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+  background: #333;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 8px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.button-group button.active {
+  background: #444;
+}
+
+/* --- Анимация при уменьшении кубка --- */
+.scrolled .trophy-container {
+  transform: scale(0.5);
+  margin-bottom: -20px;
+}
+
+.scrolled .header-container,
+.scrolled .button-group-container {
+  margin-top: 5px;
+}
+
+/* --- Список лидеров --- */
+.leaderboard-list {
+  width: 100%;
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding: 0 10px;
+}
+
+/* --- Элемент списка лидеров --- */
+.leaderboard-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -718,16 +771,48 @@
   padding: 10px;
   border-radius: 10px;
   margin-bottom: 10px;
-}
-
-.leaderboard-rank {
   font-size: 16px;
   font-weight: bold;
-  width: 30px;
-  text-align: center;
 }
 
-.leaderboard-avatar img {
+/* --- Изменён порядок элементов: ник, иконка слева; монеты справа --- */
+.leaderboard-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.player-right {
+  order: 1;
+  display: flex;
+  align-items: center;
+}
+
+.player-left {
+  order: 2;
+  display: flex;
+  align-items: center;
+}
+
+/* --- Информация об игроке --- */
+.player-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-name {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.player-rank {
+  font-size: 14px;
+  color: #666;
+}
+
+/* --- Аватар --- */
+.player-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -735,359 +820,311 @@
   margin-right: 10px;
 }
 
-.leaderboard-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.leaderboard-name {
-  font-size: 16px;
+/* --- Значения (монеты/мин. число) --- */
+.player-coins,
+.player-luck {
   font-weight: bold;
+  margin-left: 10px;
 }
 
-.leaderboard-score {
-  font-size: 16px;
-  font-weight: bold;
-}
-/* Контейнер для всего содержимого строки */
-.leaderboard-item-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* Ник и место слева, значения справа */
-  width: 100%;
+/* --- Подсветка текущего пользователя --- */
+.highlight {
+  border: 4px solid #a80505;
 }
 
-/* Левая часть: аватар + блок с ником и местом */
-.player-left {
-  display: flex;
-  align-items: center;
+/* --- Фоновые классы для fallback-аватарок --- */
+.rainbow-bg {
+  background: linear-gradient(45deg, rgb(46, 32, 32), rgb(46, 46, 33), rgb(24, 34, 24), rgb(32, 32, 51));
 }
 
-/* Аватарка */
-.player-avatar {
-  width: 40px;        /* Подберите под свой дизайн */
-  height: 40px;
-  border-radius: 50%; /* Скругление под круглую аватарку */
-  margin-right: 10px; /* Отступ справа от аватарки */
+.gold-bg {
+  background: #44402b;
 }
 
-/* Внутри .player-left второй блок (имя + место) */
-.player-info {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Имя игрока */
-.player-name {
-  font-weight: bold;
-  font-size: 16px;
-}
-
-/* Место игрока (#1, #2 и т.д.) */
-.player-rank {
-  font-size: 14px;
-  color: #666; /* более светлый оттенок, чтобы отличать от имени */
-}
-
-/* Правая часть, где будут монеты или удача */
-.player-right {
-  text-align: right;
-  display: flex;
-  flex-direction: column; /* Если хотите, чтобы $LUCU и удача шли вертикально */
-  align-items: flex-end;
-}
-
-/* Стили для чисел (монет) */
-.player-coins {
-  font-weight: bold;
-  margin-bottom: 4px; /* Отступ, если сверху будет ещё что-то */
-}
 
 
 
 
 /* Модальное окно приглашения друзей */
 #friend-menu {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(0, 0, 0, 0.6);
-   backdrop-filter: blur(12px);
-   visibility: hidden;
-   opacity: 0;
-   display: flex;
-   justify-content: center;
-   align-items: flex-end;
-   transition: opacity 0.4s ease, visibility 0s 0.1s;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  visibility: hidden;
+  opacity: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  transition: opacity 0.4s ease, visibility 0s 0.1s;
 }
 
 #friend-menu-content {
-   position: relative;
-   background: #f8f8f8;
-   width: 100%;
-   height: 60%;
-   border-top-left-radius: 18px;
-   border-top-right-radius: 18px;
-   padding: 20px;
-   box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
-   display: flex;
-   flex-direction: column;
-   justify-content: space-between;
-   align-items: center;
-   font-size: 24px;
-   font-weight: bold;
-   color: #222;
-   transform: translateY(100%);
-   opacity: 0;
-   transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+  position: relative;
+  background: #f8f8f8;
+  width: 100%;
+  height: 60%;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #222;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
 }
 
 #friend-menu.show {
-  visibility: visible;
-  opacity: 1;
+ visibility: visible;
+ opacity: 1;
 }
 
 #friend-menu.show #friend-menu-content {
-  transform: translateY(0);
-  opacity: 1;
-  transition-delay: 0.1s;
+ transform: translateY(0);
+ opacity: 1;
+ transition-delay: 0.1s;
 }
 
 #friend-menu.hide {
-  opacity: 0;
+ opacity: 0;
 }
 
 #friend-menu.hide #friend-menu-content {
-  transform: translateY(100%);
-  opacity: 0;
+ transform: translateY(100%);
+ opacity: 0;
 }
 
 #friend-menu.hidden {
-  visibility: hidden;
+ visibility: hidden;
 }
 
 .avatar-icon img {
-   width: 140px;
-   height: 140px;
-   margin-bottom: 15px;
+  width: 140px;
+  height: 140px;
+  margin-bottom: 15px;
 }
 
 #friend-menu-content h2,  
 #friend-menu-content p {  
-    align-self: flex-start;  
-    text-align: left;  
-    width: 100%;  
-    padding-left: 20px; 
+   align-self: flex-start;  
+   text-align: left;  
+   width: 100%;  
+   padding-left: 20px; 
 }
 
 .referral-container {
-   display: flex;
-   align-items: center;
-   justify-content: space-between;
-   background: #222;
-   padding: 12px;
-   border-radius: 16px;
-   width: 100%;
-   min-height: 50px;
-   flex-wrap: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #222;
+  padding: 12px;
+  border-radius: 16px;
+  width: 100%;
+  min-height: 50px;
+  flex-wrap: nowrap;
 }
 
 #referral-link {
-   flex-grow: 1;
-   border: none;
-   background: none;
-   font-size: 16px;
-   color: #fff;
-   outline: none;
-   word-break: break-all;
+  flex-grow: 1;
+  border: none;
+  background: none;
+  font-size: 16px;
+  color: #fff;
+  outline: none;
+  word-break: break-all;
 }
 
 #copy-referral {
-   background: #b10a0a;
-   color: white;
-   border: none;
-   padding: 10px 10px;
-   border-radius: 10px;
-   cursor: pointer;
-   width: auto;
-   max-width: 120px;
-   text-align: center;
-   flex-shrink: 0;
+  background: #b10a0a;
+  color: white;
+  border: none;
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: auto;
+  max-width: 120px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 #copy-referral:hover {
-   background: #8c0808;
+  background: #8c0808;
 }
 
 .bottom-container {
-   width: 100%;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   margin-top: auto;
-   padding-bottom: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+  padding-bottom: 10px;
 }
 
 #share-link {
-   background: #d70000;
-   color: white;
-   border: none;
-   padding: 16px 20px;
-   border-radius: 20px;
-   font-size: 18px;
-   cursor: pointer;
-   width: 100%;
-   min-height: 56px;
+  background: #d70000;
+  color: white;
+  border: none;
+  padding: 16px 20px;
+  border-radius: 20px;
+  font-size: 18px;
+  cursor: pointer;
+  width: 100%;
+  min-height: 56px;
 }
 
 #share-link:hover {
-   background: #b00000;
+  background: #b00000;
 }
 
 .friends-count {
-   font-size: 16px;
-   color: #777;
-   margin-bottom: 10px;
+  font-size: 16px;
+  color: #777;
+  margin-bottom: 10px;
 }
 
 @media (max-height: 826px) {
-   .referral-container {
-      flex-direction: row;
-      align-items: center;
-      padding: 8px;
-      border-radius: 12px;
-   }
+  .referral-container {
+     flex-direction: row;
+     align-items: center;
+     padding: 8px;
+     border-radius: 12px;
+  }
 
-   #referral-link {
-      font-size: 14px;
-   }
+  #referral-link {
+     font-size: 14px;
+  }
 
-   #share-link {
-      font-size: 16px;
-      padding: 14px;
-      min-height: 50px;
-   }
+  #share-link {
+     font-size: 16px;
+     padding: 14px;
+     min-height: 50px;
+  }
 }
 
 @media (max-height: 796px) {
-   #referral-link {
-      font-size: 12px;
-   }
-   #copy-referral {
-      font-size: 12px;
-      padding: 8px 8px;
-      max-width: 100px;
-   }
-   #friend-menu-content h2 {
-      font-size: 30px;
-   }
-   #friend-menu-content p {
-      font-size: 20px;
-   }
-   .avatar-icon img {
-      width: 100px;
-      height: 100px;
-      margin-bottom: 15px;
-   }
+  #referral-link {
+     font-size: 12px;
+  }
+  #copy-referral {
+     font-size: 12px;
+     padding: 8px 8px;
+     max-width: 100px;
+  }
+  #friend-menu-content h2 {
+     font-size: 30px;
+  }
+  #friend-menu-content p {
+     font-size: 20px;
+  }
+  .avatar-icon img {
+     width: 100px;
+     height: 100px;
+     margin-bottom: 15px;
+  }
 }
 
- 
- /* Стили для десктопного и мобильного контента */
- #desktop-content {
-   background: black;
-   color: white;
-   padding: 50px;
-   position: fixed;
-   top: 0;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   display: flex;
-   flex-direction: column;
-   justify-content: center;
-   align-items: center;
- }
- 
- #desktop-content h1 {
-   margin-bottom: 10px;
- }
- 
- #mobile-content {
-   padding: 20px;
- }
- 
- #desktop-content img {
-   margin-top: 10px;
-   max-width: 100%;
-   height: auto;
- }
- 
- /* Адаптивные стили */
- @media screen and (max-height: 670px) {
-   #cube {
-     width: 18rem;
-     height: 18rem;
-     cursor: pointer;
-     user-select: none;
-     transition: transform 0.3s;
-     -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-     outline: none;
-   }
-   #coins {
-     font-size: 3rem;
-     font-weight: bold;
-     position: absolute;
-     top: 10%;
-     right: 10%;
-     color: rgb(162, 175, 175);
-   }
- }
- 
- @media screen and (min-width: 634px) and (min-height: 872px) {
-   .skins img {
-     width: 200px;
-     height: 200px;
-   }
-   #bestLuck {
-     font-weight: bold;
-     position: absolute;
-     top: calc(10% + 4.063rem);
-     font-size: 1.25rem;
-     color: rgb(162, 175, 175);
-     text-align: center;
-     white-space: nowrap;
-     overflow: hidden;
-     text-overflow: ellipsis;
-     right: 10%;
-   }
- }
- 
- @media screen and (min-width: 1000px) and (min-height: 1000px) {
-   #cube {
-     width: 25rem;
-     height: 25rem;
-     cursor: pointer;
-     user-select: none;
-     transition: transform 0.3s;
-     -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-     outline: none;
-   }
-   #coins {
-     font-size: 3rem;
-     font-weight: bold;
-     position: absolute;
-     top: 10%;
-     right: 10%;
-     color: rgb(162, 175, 175);
-   }
-   .leaderboard-list {
-     text-align: center;
-     font-size: 18px;
-     font-weight: bold;
-     color: gray;
-   }
- }
+
+/* Стили для десктопного и мобильного контента */
+#desktop-content {
+  background: black;
+  color: white;
+  padding: 50px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#desktop-content h1 {
+  margin-bottom: 10px;
+}
+
+#mobile-content {
+  padding: 20px;
+}
+
+#desktop-content img {
+  margin-top: 10px;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Адаптивные стили */
+@media screen and (max-height: 670px) {
+  #cube {
+    width: 18rem;
+    height: 18rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+  }
+  #coins {
+    font-size: 3rem;
+    font-weight: bold;
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    color: rgb(162, 175, 175);
+  }
+}
+
+@media screen and (min-width: 634px) and (min-height: 872px) {
+  .skins img {
+    width: 200px;
+    height: 200px;
+  }
+  #bestLuck {
+    font-weight: bold;
+    position: absolute;
+    top: calc(10% + 4.063rem);
+    font-size: 1.25rem;
+    color: rgb(162, 175, 175);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    right: 10%;
+  }
+}
+
+@media screen and (min-width: 1000px) and (min-height: 1000px) {
+  #cube {
+    width: 25rem;
+    height: 25rem;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.3s;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+    outline: none;
+  }
+  #coins {
+    font-size: 3rem;
+    font-weight: bold;
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    color: rgb(162, 175, 175);
+  }
+  .leaderboard-list {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: gray;
+  }
+}
