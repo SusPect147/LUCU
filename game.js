@@ -294,95 +294,131 @@ function updateUserProfile() {
 updateUserProfile();
 
 
- 
- // Загружаем лидерборд по монетам (от большего к меньшему)
- function loadLeaderboardCoins() {
-    fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
-       .then(response => {
-          if (!response.ok) {
-             throw new Error("Ошибка сети: " + response.status);
-          }
-          return response.json();
-       })
-       .then(data => {
-          leaderboardList.innerHTML = ""; // Очищаем список
-          if (data.length === 0) {
-             leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-             return;
-          }
-          data.forEach((player, index) => {
-             const li = document.createElement("li");
-             li.classList.add("leaderboard-item");
-             li.innerHTML = `
-  <div class="leaderboard-item-content">
-    <div class="player-left">
-      <img src="${player.photo_url ? player.photo_url : 'pictures/cubics/классика/начальный-кубик.gif'}" onerror="this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
-      <div class="player-info">
-        <span class="player-name">${player.username}</span>
-        <span class="player-rank">#${index + 1}</span>
-      </div>
-    </div>
-    <div class="player-right">
-      <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
-    </div>
-  </div>
-`;
+ // Функция для получения fallback-аватарки и класса фона по позиции
+function getFallbackAvatar(index) {
+  if (index === 0) {
+    return { src: "pictures/cubics/классика/супер-начальный-кубик.gif", bgClass: "rainbow-bg" };
+  } else if (index >= 1 && index <= 4) {
+    return { src: "pictures/cubics/золотой-кубик.gif", bgClass: "gold-bg" };
+  } else {
+    return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
+  }
+}
 
-             leaderboardList.appendChild(li);
-          });
-       })
-       .catch(error => {
-          console.error("Ошибка загрузки лидерборда по монетам:", error);
-       });
- }
+// Функция загрузки лидерборда по монетам (от большего к меньшему)
+function loadLeaderboardCoins() {
+  fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Ошибка сети: " + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      leaderboardList.innerHTML = ""; // Очищаем список
+      if (data.length === 0) {
+        leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+        return;
+      }
+      data.forEach((player, index) => {
+        // Получаем fallback данные, если аватарки нет
+        const fallback = getFallbackAvatar(index);
+        const avatarSrc = player.photo_url ? player.photo_url : fallback.src;
+        // Проверяем, является ли игрок текущим пользователем
+        const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
+        const isCurrentUser = currentUser && (player.user_id == currentUser.id);
+        
+        const li = document.createElement("li");
+        li.classList.add("leaderboard-item");
+        // Если это текущий пользователь – добавляем класс highlight (определите его в CSS)
+        if (isCurrentUser) {
+          li.classList.add("highlight");
+        }
+        // Если аватарки нет, а fallback предусматривает особый фон – добавляем класс для фона
+        if (!player.photo_url && fallback.bgClass) {
+          li.classList.add(fallback.bgClass);
+        }
+        
+        li.innerHTML = `
+          <div class="leaderboard-item-content">
+            <div class="player-left">
+              <img src="${avatarSrc}" onerror="this.src='${fallback.src}';" class="player-avatar" alt="Avatar">
+              <div class="player-info">
+                <span class="player-name">${player.username}</span>
+                <span class="player-rank">#${index + 1}</span>
+              </div>
+            </div>
+            <div class="player-right">
+              <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
+            </div>
+          </div>
+        `;
+        leaderboardList.appendChild(li);
+      });
+    })
+    .catch(error => {
+      console.error("Ошибка загрузки лидерборда по монетам:", error);
+    });
+}
  
- // Загружаем лидерборд по удаче (от меньшей удачи к большей)
- function loadLeaderboardLuck() {
-    fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck")
-       .then(response => {
-          if (!response.ok) {
-             throw new Error("Ошибка сети: " + response.status);
-          }
-          return response.json();
-       })
-       .then(data => {
-          leaderboardList.innerHTML = ""; // Очищаем список
-          if (data.length === 0) {
-             leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-             return;
-          }
-          data.forEach((player, index) => {
-             let luckValue = parseFloat(player.min_luck);
-             if (!isFinite(luckValue) || isNaN(luckValue)) {
-                luckValue = "N/A"; // Заменяем некорректные значения
-             } else {
-                luckValue = formatNumber(luckValue); // Применяем форматирование
-             }
- 
-             const li = document.createElement("li");
-             li.classList.add("leaderboard-item");
-             li.innerHTML = `
-  <div class="leaderboard-item-content">
-    <div class="player-left">
-      <img src="${player.photo_url ? player.photo_url : 'pictures/cubics/классика/начальный-кубик.gif'}" onerror="this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
-      <div class="player-info">
-        <span class="player-name">${player.username}</span>
-        <span class="player-rank">#${index + 1}</span>
-      </div>
-    </div>
-    <div class="player-right">
-      <span class="player-luck">${luckValue}</span>
-    </div>
-  </div>
-`;
+// Функция загрузки лидерборда по удаче (от меньшей удачи к большей)
+function loadLeaderboardLuck() {
+  fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Ошибка сети: " + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      leaderboardList.innerHTML = ""; // Очищаем список
+      if (data.length === 0) {
+        leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+        return;
+      }
+      data.forEach((player, index) => {
+        let luckValue = parseFloat(player.min_luck);
+        if (!isFinite(luckValue) || isNaN(luckValue)) {
+          luckValue = "N/A";
+        } else {
+          luckValue = formatNumber(luckValue);
+        }
+        const fallback = getFallbackAvatar(index);
+        const avatarSrc = player.photo_url ? player.photo_url : fallback.src;
+        const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
+        const isCurrentUser = currentUser && (player.user_id == currentUser.id);
+        
+        const li = document.createElement("li");
+        li.classList.add("leaderboard-item");
+        if (isCurrentUser) {
+          li.classList.add("highlight");
+        }
+        if (!player.photo_url && fallback.bgClass) {
+          li.classList.add(fallback.bgClass);
+        }
+        
+        li.innerHTML = `
+          <div class="leaderboard-item-content">
+            <div class="player-left">
+              <img src="${avatarSrc}" onerror="this.src='${fallback.src}';" class="player-avatar" alt="Avatar">
+              <div class="player-info">
+                <span class="player-name">${player.username}</span>
+                <span class="player-rank">#${index + 1}</span>
+              </div>
+            </div>
+            <div class="player-right">
+              <span class="player-luck">${luckValue}</span>
+            </div>
+          </div>
+        `;
+        leaderboardList.appendChild(li);
+      });
+    })
+    .catch(error => {
+      console.error("Ошибка загрузки лидерборда по удаче:", error);
+    });
+}
 
-             leaderboardList.appendChild(li);
-          });
-       })
-       .catch(error => {
-          console.error("Ошибка загрузки лидерборда по удаче:", error);
-       });
- }
  
  const cube = document.getElementById("cube");
  const coinsDisplay = document.getElementById("coins");
