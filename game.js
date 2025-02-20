@@ -235,7 +235,7 @@ const tg = window.Telegram?.WebApp;
   if (currentUser && player.user_id == currentUser.id && currentUser.photo_url) {
     return currentUser.photo_url;
   } else {
-    return "default_avatar.png"; // или любой другой путь к заглушке
+    return "pictures/cubics/классика/начальный-кубик.gif"; // или любой другой путь к заглушке
   }
 }
 
