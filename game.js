@@ -275,7 +275,7 @@ leaderboardMenu.addEventListener('click', (e) => {
 function updateUserProfile() {
   const user = window.Telegram.WebApp.initDataUnsafe.user;
   if (user) {
-    fetch("https://your-backend-domain.com/update_profile", {
+    fetch("https://backend12-production-1210.up.railway.app/update_profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
