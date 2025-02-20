@@ -229,7 +229,16 @@ const tg = window.Telegram?.WebApp;
  const leaderboardList = document.getElementById("leaderboard-list");
  const mostLucuBtn = document.getElementById("most-lucu");
  const bestLuckBtn = document.getElementById("best-luck");
- 
+ function getAvatarUrl(player) {
+  const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
+  // если это текущий пользователь и у него есть photo_url
+  if (currentUser && player.user_id == currentUser.id && currentUser.photo_url) {
+    return currentUser.photo_url;
+  } else {
+    return "default_avatar.png"; // или любой другой путь к заглушке
+  }
+}
+
  mostLucuBtn.addEventListener("click", () => {
     mostLucuBtn.classList.add("active");
     bestLuckBtn.classList.remove("active");
@@ -287,7 +296,8 @@ leaderboardMenu.addEventListener('click', (e) => {
              li.innerHTML = `
   <div class="leaderboard-item-content">
     <div class="player-left">
-      <img src="https://t.me/i/userpic/320/${player.user_id}.jpg" alt="Avatar" class="player-avatar">
+      <img src="${getAvatarUrl(player)}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar"/>
+
       <div class="player-info">
         <span class="player-name">${player.username}</span>
         <span class="player-rank">#${index + 1}</span>
@@ -335,7 +345,8 @@ leaderboardMenu.addEventListener('click', (e) => {
              li.innerHTML = `
   <div class="leaderboard-item-content">
     <div class="player-left">
-      <img src="https://t.me/i/userpic/320/${player.user_id}.jpg" alt="Avatar" class="player-avatar">
+      <img src="${getAvatarUrl(player)}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar"/>
+
       <div class="player-info">
         <span class="player-name">${player.username}</span>
         <span class="player-rank">#${index + 1}</span>
