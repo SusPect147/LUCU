@@ -97,18 +97,37 @@
 				</div>
 			</div>
 		</div>
-<div id="leaderboard-menu" class="hidden">
+  <!-- Модальное окно лидеров -->
+  <div id="leaderboard-menu" class="hidden">
     <div id="leaderboard-menu-content">
-        <img src="https://em-content.zobj.net/source/telegram/386/trophy_1f3c6.webp" alt="Trophy" class="trophy">
-        <div class="button-group">
+
+      <!-- Верхняя секция (кубок, заголовок, кнопки) -->
+      <div class="top-section">
+        <div class="trophy-container">
+          <img src="https://em-content.zobj.net/source/telegram/386/trophy_1f3c6.webp" alt="Trophy" class="trophy" />
+          <div class="glow"></div>
+        </div>
+
+        <div class="header-container">
+          <span class="header-left">Leaderboard</span>
+          <span class="header-right" id="player-place-badge">You #--</span>
+        </div>
+
+        <div class="button-group-container">
+          <div class="button-group">
             <button id="most-lucu" class="active">Most $LUCU</button>
             <button id="best-luck">Best LUCK</button>
+          </div>
         </div>
-        <ul id="leaderboard-list" class="leaderboard-list">
-            <li class="coming-soon">Coming Soon</li>
-        </ul>
+      </div>
+
+      <!-- Список лидеров -->
+      <ul id="leaderboard-list" class="leaderboard-list">
+        <li class="coming-soon">Coming Soon</li>
+      </ul>
     </div>
-</div>
+  </div> 
+		  
 
 <div id="friend-menu" class="hidden">
     <div id="friend-menu-content">
@@ -126,56 +145,47 @@
         <p id="copy-message" class="hidden">Link copied!</p>
     </div>
 </div>
-<div id="quests-menu" class="hidden"> 
-	<div id="quests-menu-content">
-	  <!-- Заголовок с аватаром и названием -->
-	  <div class="quests-header">
-		<div class="avatar-icon">
-		  <img src="https://em-content.zobj.net/source/telegram/386/crystal-ball_1f52e.webp" alt="Quests">
-		</div>
-	  </div>
-	  <!-- Список заданий -->
-	  <div class="quests-list">
-		<!-- Пример задания -->
-		<div class="quest-item">
-		  <img class="quest-img" src="pictures/other png/telegram-logo.png" alt="quest">
-		  <div class="quest-info">
-			<div class="quest-title">Subscribe to LUCU Channel</div>
-			<div class="quest-reward">+250 $LUCU</div>
-		  </div>
-		  <button class="quest-btn">Go</button>
-		</div>
-		<!-- Второе задание -->
-		<div class="quest-item">
-		  <img class="quest-img" src="pictures/other png/check-in.webp" alt="quest">
-		  <div class="quest-info">
-			<div class="quest-title">Daily Check-in</div>
-			<div class="quest-reward">+50 $LUCU</div>
-		  </div>
-		  <button class="quest-btn">Go</button>
-		</div>
-		<!-- Третье задание -->
-		<div class="quest-item">
-		  <img class="quest-img" src="pictures/other png/friends-11.png" alt="quest">
-		  <div class="quest-info">
-			<div class="quest-title">Invite 5 Friends</div>
-			<div class="quest-reward">+700 $LUCU</div>
-		  </div>
-		  <button class="quest-btn">Go</button>
-		</div>
-		<!-- Четвёртое задание -->
-		<div class="quest-item">
-		  <img class="quest-img" src="pictures/other png/telegram-logo.png" alt="quest">
-		  <div class="quest-info">
-			<div class="quest-title">Subscribe to Hammers Games Studio</div>
-			<div class="quest-reward">+50 $LUCU</div>
-		  </div>
-		  <button class="quest-btn">Go</button>
-		</div>
-		<!-- Можно добавить ещё задания, список станет скроллируемым -->
-	  </div>
-	</div>
-  </div>
+<div id="quests-menu" class="hidden">
+    <div id="quests-menu-content">
+        <div class="quests-list">
+            <div class="quest-item">
+                <img class="quest-img" src="pictures/other png/telegram-logo.png" alt="quest">
+                <div class="quest-info">
+                    <div class="quest-title">Subscribe to LUCU Channel</div>
+                    <div class="quest-reward">+250 $LUCU</div>
+                </div>
+                <button class="quest-btn">Go</button>
+            </div>
+            
+            <div class="quest-item">
+                <img class="quest-img" src="pictures/other png/check-in.webp" alt="quest">
+                <div class="quest-info">
+                    <div class="quest-title">Daily Check-in</div>
+                    <div class="quest-reward">+50 $LUCU</div>
+                </div>
+                <button class="quest-btn">Go</button>
+            </div>
+            
+            <div class="quest-item">
+                <img class="quest-img" src="pictures/other png/friends-11.png" alt="quest">
+                <div class="quest-info">
+                    <div class="quest-title">Invite 5 Friends</div>
+                    <div class="quest-reward">+700 $LUCU</div>
+                </div>
+                <button class="quest-progress">0/5</button>
+            </div>
+            
+            <div class="quest-item">
+                <img class="quest-img" src="pictures/other png/telegram-logo.png" alt="quest">
+                <div class="quest-info">
+                    <div class="quest-title">Subscribe to Hammers Games Studio</div>
+                    <div class="quest-reward">+50 $LUCU</div>
+                </div>
+                <button class="quest-btn">Go</button>
+            </div>
+        </div>
+    </div>
+</div>
   
 		<!-- Link to the game.js file -->
 		<script src="game.js"></script>
