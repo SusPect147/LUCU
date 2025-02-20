@@ -4,7 +4,15 @@
    padding: 0;
    box-sizing: border-box;
  }
- 
+  .rainbow-bg {
+  background: linear-gradient(45deg, rgb(66, 4, 4), rgb(58, 39, 3), rgb(44, 44, 3), rgb(4, 46, 4), rgb(3, 3, 43), rgb(29, 4, 48), rgb(63, 8, 63));
+}
+.gold-bg {
+  background: #464023; /* золотой цвет */
+}
+.highlight {
+  border: 2px solid #bd0a0a; /* например, зеленая рамка для выделения текущего игрока */
+}
  /* Основные стили для body */
  body {
    margin: 0;
