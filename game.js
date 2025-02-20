@@ -316,7 +316,7 @@ updateUserProfile();
              li.innerHTML = `
   <div class="leaderboard-item-content">
     <div class="player-left">
-      <img src="${player.photo_url ? player.photo_url : 'pictures/cubics/классика/начальный-кубик.gif'}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar">
+      <img src="${player.photo_url ? player.photo_url : 'pictures/cubics/классика/начальный-кубик.gif'}" onerror="this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
       <div class="player-info">
         <span class="player-name">${player.username}</span>
         <span class="player-rank">#${index + 1}</span>
@@ -364,7 +364,7 @@ updateUserProfile();
              li.innerHTML = `
   <div class="leaderboard-item-content">
     <div class="player-left">
-      <img src="${player.photo_url ? player.photo_url : 'pictures/cubics/классика/начальный-кубик.gif'}" onerror="this.src='default_avatar.png';" class="player-avatar" alt="Avatar">
+      <img src="${player.photo_url ? player.photo_url : 'pictures/cubics/классика/начальный-кубик.gif'}" onerror="this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
       <div class="player-info">
         <span class="player-name">${player.username}</span>
         <span class="player-rank">#${index + 1}</span>
