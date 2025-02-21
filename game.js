@@ -225,9 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
        }
    });
 });
-/*****************************
- * ИНИЦИАЛИЗАЦИЯ ЭЛЕМЕНТОВ
- *****************************/
 const tg = window.Telegram?.WebApp;
 const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardMenuContent = document.getElementById('leaderboard-menu-content');
@@ -244,6 +241,8 @@ const glowElement = document.querySelector(".glow");
 
 // Кнопка для открытия лидерборда
 const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
+
+// Обработка события прокрутки списка лидеров
 leaderboardList.addEventListener("scroll", () => {
    if (leaderboardList.scrollTop > 20) {
      leaderboardMenu.classList.add("scrolled");
@@ -252,27 +251,33 @@ leaderboardList.addEventListener("scroll", () => {
    }
 });
 
-/***************************************
- * ФУНКЦИИ ФОРМАТИРОВАНИЯ ЧИСЕЛ
- ***************************************/
-function formatCoins(value) {
-  if (value >= 1000) {
-    return (value / 1000).toFixed(1) + "K";
-  }
-  return value.toString();
-}
-function formatNumber(value) {
-  return Number(value).toLocaleString();
-}
+// Обработчик свайпа для скрытия меню при свайпе вниз
+let startTouchY = 0;
 
-/****************************************************
- * ОТКРЫТИЕ/ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА ЛИДЕРОВ
- ****************************************************/
+topSection.addEventListener('touchstart', (e) => {
+  startTouchY = e.touches[0].clientY; // Запоминаем координату начала свайпа
+});
+
+topSection.addEventListener('touchmove', (e) => {
+  const currentTouchY = e.touches[0].clientY;
+  if (currentTouchY > startTouchY + 50) { // Если свайп вниз на 50px или больше
+    leaderboardMenu.classList.add('hide');
+    leaderboardMenu.classList.remove('show');
+    setTimeout(() => {
+      leaderboardMenu.classList.add('hidden');
+      leaderboardMenu.classList.remove('hide');
+    }, 400); // Задержка для плавности анимации
+  }
+});
+
+// Открытие лидерборда
 leaderboardButton.addEventListener('click', () => {
   leaderboardMenu.classList.remove('hide', 'hidden');
   leaderboardMenu.classList.add('show');
   loadLeaderboardCoins();
 });
+
+// Закрытие лидерборда при клике вне области меню
 leaderboardMenu.addEventListener('click', (e) => {
   if (e.target === leaderboardMenu) {
     leaderboardMenu.classList.add('hide');
@@ -283,6 +288,19 @@ leaderboardMenu.addEventListener('click', (e) => {
     }, 400);
   }
 });
+
+// Функции для форматирования чисел (монеты, количество и т.д.)
+function formatCoins(value) {
+  if (value >= 1000) {
+    return (value / 1000).toFixed(1) + "K";
+  }
+  return value.toString();
+}
+
+function formatNumber(value) {
+  return Number(value).toLocaleString();
+}
+
 
 /****************************************************
  * ОБНОВЛЕНИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (photo_url)
