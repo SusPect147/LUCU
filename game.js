@@ -848,11 +848,11 @@ buyEmeraldButton.addEventListener('click', () => {
 // Покупка и экипировка Pixel
 buyPixelButton.addEventListener('click', () => {
     if (!hasBoughtPixel) {
-        if (coins >= 5000) {
+        if (coins >= 150000) {
             fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, skin_type: 'Pixel', cost: 5000 })
+                body: JSON.stringify({ user_id: userId, skin_type: 'Pixel', cost: 150000 })
             })
             .then(response => response.json())
             .then(data => {
