@@ -320,7 +320,9 @@ updateUserProfile();
  ****************************************************/
 async function getFallbackAvatar(player, index) {
   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
-  let photoUrl = player?.photo_url;
+const user = window.Telegram.WebApp.initDataUnsafe.user; // Получаем текущего пользователя
+const photoUrl = user?.photo_url;  // Получаем URL его аватарки
+
   
   console.log("Пытаемся загрузить аватарку:", photoUrl);  // Добавим лог
 
