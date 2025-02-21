@@ -319,36 +319,52 @@ updateUserProfile();
  * FALLBACK-АВАТАРКА И КЛАСС ФОНА ДЛЯ РАЗНЫХ МЕСТ В ТОПЕ
  ****************************************************/
 async function getFallbackAvatar(player, index) {
+   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
    let photoUrl = player?.photo_url;
-
+ 
    // Если URL отсутствует или равен "undefined"/"null" (как строка) – возвращаем дефолт
    if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
-      return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
+     return { src: defaultAvatar, bgClass: "" };
    }
-
-   // Приводим URL к нижнему регистру для корректной проверки расширения
+ 
+   // Если аватар в формате SVG, отправляем запрос на сервер для его получения
    if (photoUrl.toLowerCase().endsWith(".svg")) {
-      // Для svg-аватарок сразу возвращаем URL, не выполняя проверку HEAD
-      return {
-         src: photoUrl,
-         bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
-      };
+     try {
+       const response = await fetch(
+         `https://backend12-production-1210.up.railway.app/get_avatar?photo_url=${encodeURIComponent(photoUrl)}`
+       );
+       if (!response.ok) {
+         console.warn(`Сервер не вернул аватар для ${photoUrl} (Ошибка ${response.status}), используем дефолт.`);
+         return { src: defaultAvatar, bgClass: "" };
+       }
+       const blob = await response.blob();
+       const objectUrl = URL.createObjectURL(blob);
+       return { 
+         src: objectUrl, 
+         bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
+       };
+     } catch (error) {
+       console.error(`Ошибка получения аватарки с сервера для ${photoUrl}:`, error);
+       return { src: defaultAvatar, bgClass: "" };
+     }
    }
-
-   // Для других форматов выполняем проверку через HEAD-запрос
+ 
+   // Для остальных форматов загружаем аватар напрямую
    try {
-      const response = await fetch(photoUrl, { method: "HEAD" });
-      if (!response.ok) {
-         console.warn(`Аватарка ${photoUrl} недоступна (Ошибка ${response.status}), заменяем на дефолт.`);
-         return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
-      }
-      return {
-         src: photoUrl,
-         bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
-      };
+     const response = await fetch(photoUrl);
+     if (!response.ok) {
+       console.warn(`Аватарка ${photoUrl} недоступна (Ошибка ${response.status}), заменяем на дефолт.`);
+       return { src: defaultAvatar, bgClass: "" };
+     }
+     const blob = await response.blob();
+     const objectUrl = URL.createObjectURL(blob);
+     return { 
+       src: objectUrl, 
+       bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
+     };
    } catch (error) {
-      console.error(`Ошибка загрузки ${photoUrl}:`, error);
-      return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
+     console.error(`Ошибка загрузки ${photoUrl}:`, error);
+     return { src: defaultAvatar, bgClass: "" };
    }
 }
 
