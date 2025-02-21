@@ -320,13 +320,18 @@ updateUserProfile();
  ****************************************************/
 async function getFallbackAvatar(player, index) {
   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
-  let photoUrl = player?.photo_url; // Используем photo_url для другого игрока
+  
+  // Логируем данные о пользователе, чтобы убедиться, что приходят корректные данные
+  console.log("Данные игрока:", player);
 
-  console.log("Пытаемся загрузить аватарку для игрока:", player.username, "URL:", photoUrl); // Логируем URL аватарки для другого игрока
+  // Получаем URL аватарки для каждого игрока
+  let photoUrl = player?.photo_url; // Здесь уже photo_url будет для конкретного игрока
+
+  console.log("Пытаемся загрузить аватарку для игрока:", player.username, "URL:", photoUrl); // Логируем URL для каждого игрока
 
   // Если URL отсутствует или равен "undefined"/"null", возвращаем дефолт
   if (!photoUrl || photoUrl === null || photoUrl === undefined || photoUrl === "undefined" || photoUrl === "null") {
-    console.log("Аватарка не найдена, возвращаем дефолт для игрока:", player.username);  // Логируем
+    console.log("Аватарка не найдена для игрока:", player.username, "Возвращаем дефолт.");  // Логируем
     return { src: defaultAvatar, bgClass: "" };
   }
 
@@ -343,7 +348,7 @@ async function getFallbackAvatar(player, index) {
   try {
     const response = await fetch(photoUrl);
     if (!response.ok) {
-      console.warn(`Аватарка для ${player.username} недоступна, ошибка ${response.status}. Используем дефолт.`); 
+      console.warn(`Аватарка для ${player.username} недоступна, ошибка ${response.status}. Используем дефолт.`);
       return { src: defaultAvatar, bgClass: "" };
     }
     const blob = await response.blob();
@@ -358,6 +363,8 @@ async function getFallbackAvatar(player, index) {
     return { src: defaultAvatar, bgClass: "" };
   }
 }
+
+
 
 /****************************************************
  * ПЕРЕКЛЮЧЕНИЕ ТАБЛИЦ (Most $LUCU / Best LUCK)
