@@ -1173,37 +1173,53 @@ document.addEventListener("DOMContentLoaded", async () => {
        const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
        referralInput.value = referralLink;
 
-// Функция открытия меню
-friendButton.addEventListener('click', () => {
-   friendMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
-   friendMenu.classList.add('show'); // Добавляем плавное появление
-   updateFriendsCount();
-});
+       // Функция открытия меню
+       friendButton.addEventListener('click', () => {
+           friendMenu.classList.remove('hide', 'hidden');
+           friendMenu.classList.add('show');
+           updateFriendsCount();
+       });
 
-// Функция закрытия меню с зеркальной анимацией
-friendMenu.addEventListener('click', (e) => {
-   if (e.target === friendMenu) {
-       friendMenu.classList.add('hide'); // Запускаем анимацию вниз
-       friendMenu.classList.remove('show'); // Убираем класс show
-       setTimeout(() => {
-           friendMenu.classList.add('hidden'); // Полностью скрываем после анимации
-           friendMenu.classList.remove('hide'); // Убираем класс hide, чтобы при следующем открытии не было проблем
-       }, 400); // Время совпадает с CSS (0.4s)
-   }
-});
+       // Функция закрытия меню с зеркальной анимацией
+       friendMenu.addEventListener('click', (e) => {
+           if (e.target === friendMenu) {
+               closeFriendMenu();
+           }
+       });
+
+       let startY;
+
+       // Обработчик начала свайпа
+       friendMenu.addEventListener("touchstart", (e) => {
+           startY = e.touches[0].clientY;
+       });
+
+       // Обработчик движения пальцем
+       friendMenu.addEventListener("touchmove", (e) => {
+           const deltaY = e.touches[0].clientY - startY;
+           if (deltaY > 50) { // Если свайп вниз больше 50px
+               closeFriendMenu();
+           }
+       });
+
+       function closeFriendMenu() {
+           friendMenu.classList.add("hide");
+           friendMenu.classList.remove("show");
+           setTimeout(() => {
+               friendMenu.classList.add("hidden");
+               friendMenu.classList.remove("hide");
+           }, 400);
+       }
+
        copyButton.addEventListener("click", () => {
            copyToClipboard(referralInput.value);
        });
-shareButton.addEventListener("click", () => {
-   const shareText = "Want to try your luck? Check out this game and join me!";
-   const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
-   
-   // Открытие ссылки в Telegram
-   telegram?.openTelegramLink(telegramLink);
-});
 
-
-
+       shareButton.addEventListener("click", () => {
+           const shareText = "Want to try your luck? Check out this game and join me!";
+           const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
+           telegram?.openTelegramLink(telegramLink);
+       });
 
        function copyToClipboard(text) {
            fallbackCopy(text);
