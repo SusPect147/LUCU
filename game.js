@@ -752,6 +752,9 @@ let equippedSkin = 'classic';
 const skinsMenu = document.getElementById('skins-menu');
 const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
 
+let startY = 0;
+let isSwiping = false;
+
 // Открытие меню
 skinsButton.addEventListener('click', () => {
    skinsMenu.classList.remove('hidden'); // Делаем меню видимым
@@ -761,17 +764,41 @@ skinsButton.addEventListener('click', () => {
 });
 
 // Закрытие меню
+function closeSkinsMenu() {
+   skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
+   skinsMenu.classList.remove('show'); // Убираем show
+   setTimeout(() => {
+       skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
+       skinsMenu.classList.remove('hide'); // Сбрасываем hide
+   }, 400); // Ждём завершения CSS-анимации
+}
+
 skinsMenu.addEventListener('click', (e) => {
    if (e.target === skinsMenu) {
-       skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
-       skinsMenu.classList.remove('show'); // Убираем show
-       setTimeout(() => {
-           skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
-           skinsMenu.classList.remove('hide'); // Сбрасываем hide
-       }, 400); // Ждём завершения CSS-анимации
+       closeSkinsMenu();
    }
 });
 
+// Добавляем поддержку свайпа вниз
+skinsMenu.addEventListener("touchstart", (e) => {
+   startY = e.touches[0].clientY;
+   isSwiping = true;
+});
+
+skinsMenu.addEventListener("touchmove", (e) => {
+   if (!isSwiping) return;
+   const moveY = e.touches[0].clientY;
+   const diffY = moveY - startY;
+
+   if (diffY > 50) { // Если свайп вниз больше 50px
+       isSwiping = false;
+       closeSkinsMenu();
+   }
+});
+
+skinsMenu.addEventListener("touchend", () => {
+   isSwiping = false;
+});
 
 
 buyNegativeButton.addEventListener('click', () => {
@@ -1096,8 +1123,6 @@ const profileName = document.getElementById("profile-name");
 const userName = tg.initDataUnsafe?.user?.username || "NoName";
 profileName.textContent = `Hello, ${userName}`;
 
-let startY = 0;
-let isSwiping = false;
 
 // Функция открытия меню
 profileButton.addEventListener("click", () => {
