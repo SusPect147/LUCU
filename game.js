@@ -631,6 +631,7 @@ function updateGameData() {
 function updateSkinsUI(ownedSkins, equippedSkin) {
    hasBoughtNegative = ownedSkins.includes("negative");
    hasBoughtEmerald = ownedSkins.includes("Emerald");
+   hasBoughtPixel = ownedSkins.includes("Pixel");
 
    // Обновляем кнопки в зависимости от купленных скинов
    buyNegativeButton.textContent = hasBoughtNegative ?
@@ -641,8 +642,13 @@ function updateSkinsUI(ownedSkins, equippedSkin) {
       (equippedSkin === "Emerald" ? "Equipped" : "Equip") :
       "Buy //10K $LUCU/";
 
+   buyPixelButton.textContent = hasBoughtPixel ?
+      (equippedSkin === "Pixel" ? "Equipped" : "Equip") :
+      "Buy //150K $LUCU/";
+
    equipClassicButton.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
 }
+
 
 // Вызываем обновление данных при загрузке страницы
 updateGameData();
@@ -745,15 +751,16 @@ function startProgress(duration) {
 }
 const buyNegativeButton = document.getElementById('buy-negative');
 const buyEmeraldButton = document.getElementById('buy-Emerald');
+const buyPixelButton = document.getElementById('buy-Pixel'); // Исправлено
 const equipClassicButton = document.getElementById('equip-classic');
+
 let hasBoughtNegative = false;
 let hasBoughtEmerald = false;
+let hasBoughtPixel = false;
 let equippedSkin = 'classic';
+
 const skinsMenu = document.getElementById('skins-menu');
 const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
-
-let startY = 0;
-let isSwiping = false;
 
 // Открытие меню
 skinsButton.addEventListener('click', () => {
@@ -779,146 +786,131 @@ skinsMenu.addEventListener('click', (e) => {
    }
 });
 
-// Добавляем поддержку свайпа вниз
-skinsMenu.addEventListener("touchstart", (e) => {
-   startY = e.touches[0].clientY;
-   isSwiping = true;
-});
 
-skinsMenu.addEventListener("touchmove", (e) => {
-   if (!isSwiping) return;
-   const moveY = e.touches[0].clientY;
-   const diffY = moveY - startY;
-
-   if (diffY > 50) { // Если свайп вниз больше 50px
-       isSwiping = false;
-       closeSkinsMenu();
-   }
-});
-
-skinsMenu.addEventListener("touchend", () => {
-   isSwiping = false;
-});
-
-
+// Покупка и экипировка Negative
 buyNegativeButton.addEventListener('click', () => {
-   if (!hasBoughtNegative) {
-      if (coins >= 5000) {
-         // Отправляем запрос на сервер для покупки "negative" скина
-         fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
-               method: 'POST',
-               headers: {
-                  'Content-Type': 'application/json'
-               },
-               body: JSON.stringify({
-                  user_id: userId,
-                  skin_type: 'negative',
-                  cost: 5000
-               })
+    if (!hasBoughtNegative) {
+        if (coins >= 5000) {
+            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, skin_type: 'negative', cost: 5000 })
             })
             .then(response => response.json())
             .then(data => {
-               if (data.message && data.message.startsWith("✅")) {
-                  // Обновляем локальное значение монет на основе ответа сервера
-                  coins = data.new_coins;
-                  updateCoins(0); // Обновляем UI
-                  hasBoughtNegative = true;
-                  buyNegativeButton.textContent = 'Equip';
-               } else {
-                  alert("Purchase failed: " + data.message);
-               }
+                if (data.message && data.message.startsWith("✅")) {
+                    coins = data.new_coins;
+                    updateCoins(0);
+                    hasBoughtNegative = true;
+                    buyNegativeButton.textContent = 'Equip';
+                } else {
+                    alert("Purchase failed: " + data.message);
+                }
             })
-            .catch(err => {
-               console.error("Error purchasing negative skin:", err);
-            });
-      } else {
-         alert("Not enough coins!");
-      }
-   } else {
-      equipSkin('negative');
-   }
+            .catch(err => console.error("Error purchasing negative skin:", err));
+        } else {
+            alert("Not enough coins!");
+        }
+    } else {
+        equipSkin('negative');
+    }
 });
 
+// Покупка и экипировка Emerald
 buyEmeraldButton.addEventListener('click', () => {
-   if (!hasBoughtEmerald) {
-      if (coins >= 10000) {
-         // Отправляем запрос на сервер для покупки "Emerald" скина
-         fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
-               method: 'POST',
-               headers: {
-                  'Content-Type': 'application/json'
-               },
-               body: JSON.stringify({
-                  user_id: userId,
-                  skin_type: 'Emerald',
-                  cost: 10000
-               })
+    if (!hasBoughtEmerald) {
+        if (coins >= 10000) {
+            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, skin_type: 'Emerald', cost: 10000 })
             })
             .then(response => response.json())
             .then(data => {
-               if (data.message && data.message.startsWith("✅")) {
-                  // Обновляем локальное значение монет на основе ответа сервера
-                  coins = data.new_coins;
-                  updateCoins(0);
-                  hasBoughtEmerald = true;
-                  buyEmeraldButton.textContent = 'Equip';
-               } else {
-                  alert("Purchase failed: " + data.message);
-               }
+                if (data.message && data.message.startsWith("✅")) {
+                    coins = data.new_coins;
+                    updateCoins(0);
+                    hasBoughtEmerald = true;
+                    buyEmeraldButton.textContent = 'Equip';
+                } else {
+                    alert("Purchase failed: " + data.message);
+                }
             })
-            .catch(err => {
-               console.error("Error purchasing Emerald skin:", err);
-            });
-      } else {
-         alert("Not enough coins!");
-      }
-   } else {
-      equipSkin('Emerald');
-   }
+            .catch(err => console.error("Error purchasing Emerald skin:", err));
+        } else {
+            alert("Not enough coins!");
+        }
+    } else {
+        equipSkin('Emerald');
+    }
 });
 
+// Покупка и экипировка Pixel
+buyPixelButton.addEventListener('click', () => {
+    if (!hasBoughtPixel) {
+        if (coins >= 5000) {
+            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, skin_type: 'Pixel', cost: 5000 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message && data.message.startsWith("✅")) {
+                    coins = data.new_coins;
+                    updateCoins(0);
+                    hasBoughtPixel = true;
+                    buyPixelButton.textContent = 'Equip';
+                } else {
+                    alert("Purchase failed: " + data.message);
+                }
+            })
+            .catch(err => console.error("Error purchasing Pixel skin:", err));
+        } else {
+            alert("Not enough coins!");
+        }
+    } else {
+        equipSkin('Pixel');
+    }
+});
+
+// Экипировка Classic
 equipClassicButton.addEventListener('click', () => {
-   equipSkin('classic');
+    equipSkin('classic');
 });
 
+// Функция экипировки
 function equipSkin(type, sendToServer = true) {
-   if (equippedSkin === type) return; // Предотвращаем лишние запросы
+    if (equippedSkin === type) return;
 
-   equippedSkin = type;
-   cube.src = type === "negative" ?
-      "pictures/cubics/негатив/начальный-кубик-негатив.gif" :
-      type === "Emerald" ?
-      "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif" :
-      "pictures/cubics/классика/начальный-кубик.gif";
+    equippedSkin = type;
+    cube.src = type === "negative" ? "pictures/cubics/негатив/начальный-кубик-негатив.gif" :
+               type === "Emerald" ? "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif" :
+               type === "Pixel" ? "pictures/cubics/пиксель/начальный-кубик-пиксель.gif" :
+               "pictures/cubics/классика/начальный-кубик.gif";
 
-   buyNegativeButton.textContent = hasBoughtNegative ? (type === "negative" ? "Equipped" : "Equip") : "Buy (599)";
-   buyEmeraldButton.textContent = hasBoughtEmerald ? (type === "Emerald" ? "Equipped" : "Equip") : "Buy (1100)";
-   equipClassicButton.textContent = type === "classic" ? "Equipped" : "Equip";
+    buyNegativeButton.textContent = hasBoughtNegative ? (type === "negative" ? "Equipped" : "Equip") : "Buy (5000)";
+    buyEmeraldButton.textContent = hasBoughtEmerald ? (type === "Emerald" ? "Equipped" : "Equip") : "Buy (10000)";
+    buyPixelButton.textContent = hasBoughtPixel ? (type === "Pixel" ? "Equipped" : "Equip") : "Buy (5000)";
+    equipClassicButton.textContent = type === "classic" ? "Equipped" : "Equip";
 
-   if (sendToServer) {
-      sendSkinToServer(type);
-   }
+    if (sendToServer) {
+        sendSkinToServer(type);
+    }
 }
 
+// Отправка экипированного скина на сервер
 function sendSkinToServer(skinType) {
-   fetch('https://backend12-production-1210.up.railway.app/update_skin', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json'
-         },
-         body: JSON.stringify({
-            user_id: userId,
-            skin_type: skinType
-         })
-      })
-      .then(response => response.json())
-      .then(data => {
-         console.log("Skin updated on server:", data);
-      })
-      .catch(error => {
-         console.error("Error updating skin on server:", error);
-      });
+    fetch('https://backend12-production-1210.up.railway.app/update_skin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, skin_type: skinType })
+    })
+    .then(response => response.json())
+    .then(data => console.log("Skin updated on server:", data))
+    .catch(error => console.error("Error updating skin on server:", error));
 }
+
 
 
 function rollCube() {
@@ -930,14 +922,33 @@ function rollCube() {
       cube.src = isRainbow ? 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif' : 'pictures/cubics/негатив/начальный-кубик-негатив.gif';
    } else if (equippedSkin === 'Emerald') {
       cube.src = isRainbow ? 'pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif' : 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif';
+   } else if (equippedSkin === 'Pixel') {
+      cube.src = isRainbow ? 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif' : 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif';
    }
+
    cube.onclick = async () => {
       if (isAnimating) return;
       isAnimating = true;
       startProgress(3);
       let random = Math.random() * 100;
       let outcome;
-      if (isRainbow && equippedSkin === 'negative') {
+      if (equippedSkin === 'Pixel') {
+         cube.src = isRainbow ? 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif' : 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif';
+         if (random < 40) outcome = { src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 10 };
+         else if (random < 65) outcome = { src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 11 };
+         else if (random < 80) outcome = { src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 12 };
+         else if (random < 90) outcome = { src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 13 };
+         else if (random < 97) outcome = { src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 14 };
+         else outcome = { src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 15 };
+      }   else   if (isRainbow && equippedSkin === 'Pixel') {
+         cube.src = isRainbow ? 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif' : 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif';
+         if (random < 40) outcome = { src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 20 };
+         else if (random < 65) outcome = { src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 22 };
+         else if (random < 80) outcome = { src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 24 };
+         else if (random < 90) outcome = { src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 26 };
+         else if (random < 97) outcome = { src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 28 };
+         else outcome = { src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 30 };
+      }else if (isRainbow && equippedSkin === 'negative') {
          cube.src = 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif'; // Установим начальный скин
          if (random < 15) outcome = {
             src: 'pictures/cubics/негатив/1-кубик-негатив.gif',
