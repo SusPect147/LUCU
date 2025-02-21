@@ -292,7 +292,7 @@ function updateUserProfile() {
    if (user) {
      let photoUrl = user.photo_url || "pictures/cubics/классика/начальный-кубик.gif";
 
-     // Если Telegram-аватар .svg, заменяем на .jpg
+     // Если Telegram-аватар в формате SVG, заменяем его на JPG (если требуется)
      if (photoUrl.endsWith(".svg")) {
        photoUrl = photoUrl.replace(".svg", ".jpg");
      }
@@ -316,7 +316,7 @@ function updateUserProfile() {
 updateUserProfile();
 
 /****************************************************
- * FALLBACK-АВАТАРКА И КЛАСС ФОНА ДЛЯ РАЗНЫХ МЕСТ В ТОПЕ
+ * FALLBACK-АВАТАРКА И КЛАСС ФОНА ДЛЯ ЛИДЕРОВ
  ****************************************************/
 async function getFallbackAvatar(player, index) {
   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
@@ -354,7 +354,6 @@ async function getFallbackAvatar(player, index) {
   }
 }
 
-
 /****************************************************
  * ПЕРЕКЛЮЧЕНИЕ ТАБЛИЦ (Most $LUCU / Best LUCK)
  ****************************************************/
@@ -371,8 +370,7 @@ bestLuckBtn.addEventListener("click", () => {
 
 /****************************************************
  * ЗАГРУЗКА ЛИДЕРБОРДА ПО МОНЕТАМ (COINS)
- * В этой версии количество монет выводится слева,
- * а информация об игроке (аватар, имя, место) — справа.
+ * Слева – монеты, справа – информация об игроке (аватар, имя, место).
  ****************************************************/
 async function loadLeaderboardCoins() {
   try {
@@ -397,21 +395,17 @@ async function loadLeaderboardCoins() {
       return;
     }
 
-    // Для каждого игрока ждем результат getFallbackAvatar и используем его src
+    // Для каждого игрока получаем аватар через getFallbackAvatar
     for (let index = 0; index < data.length; index++) {
       const player = data[index];
       const avatar = await getFallbackAvatar(player, index);
-      const avatarSrc = avatar.src; // используем результат из функции
+      const avatarSrc = avatar.src;
       const isCurrentUser = currentUser && (player.user_id == currentUser.id);
 
       const li = document.createElement("li");
       li.classList.add("leaderboard-item");
       if (isCurrentUser) {
         li.classList.add("highlight");
-      }
-      // Если аватар отсутствует у игрока, можно добавить класс фона fallback (если нужно)
-      if ((!player.photo_url || player.photo_url === "undefined" || player.photo_url === "null") && avatar.bgClass) {
-        li.classList.add(avatar.bgClass);
       }
 
       li.innerHTML = `
@@ -420,7 +414,7 @@ async function loadLeaderboardCoins() {
             <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
           </div>
           <div class="player-right">
-            <img src="${avatarSrc}" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+            <img src="${avatarSrc}" crossorigin="anonymous" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
             <div class="player-info">
               <span class="player-name">${player.username}</span>
               <span class="player-rank">#${index + 1}</span>
@@ -435,11 +429,9 @@ async function loadLeaderboardCoins() {
   }
 }
 
-
 /****************************************************
  * ЗАГРУЗКА ЛИДЕРБОРДА ПО УДАЧЕ (LUCK)
- * В этой версии минимальное число выводится слева,
- * а информация об игроке (аватар, имя, место) — справа.
+ * Слева – минимальное число, справа – информация об игроке (аватар, имя, место).
  ****************************************************/
 async function loadLeaderboardLuck() {
   try {
@@ -448,7 +440,6 @@ async function loadLeaderboardLuck() {
       throw new Error("Ошибка сети: " + response.status);
     }
     const data = await response.json();
-
     leaderboardList.innerHTML = "";
 
     const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
@@ -456,7 +447,9 @@ async function loadLeaderboardLuck() {
     if (currentUser) {
       currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
     }
-    placeBadge.textContent = (currentUserIndex >= 0) ? `You #${currentUserIndex + 1}` : "You #--";
+    placeBadge.textContent = (currentUserIndex >= 0)
+      ? `You #${currentUserIndex + 1}`
+      : "You #--";
 
     if (!data || !Array.isArray(data) || data.length === 0) {
       leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
@@ -471,19 +464,14 @@ async function loadLeaderboardLuck() {
       } else {
         luckValue = formatNumber(luckValue);
       }
-      const fallback = await getFallbackAvatar(player, index);
-      const avatarSrc = (player.photo_url && player.photo_url !== "undefined" && player.photo_url !== "null")
-                          ? player.photo_url
-                          : fallback.src;
+      const avatar = await getFallbackAvatar(player, index);
+      const avatarSrc = avatar.src;
       const isCurrentUser = currentUser && (player.user_id == currentUser.id);
 
       const li = document.createElement("li");
       li.classList.add("leaderboard-item");
       if (isCurrentUser) {
         li.classList.add("highlight");
-      }
-      if ((!player.photo_url || player.photo_url === "undefined" || player.photo_url === "null") && fallback.bgClass) {
-        li.classList.add(fallback.bgClass);
       }
 
       li.innerHTML = `
@@ -492,7 +480,7 @@ async function loadLeaderboardLuck() {
             <span class="player-luck">${luckValue}</span>
           </div>
           <div class="player-right">
-            <img src="${avatarSrc}" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+            <img src="${avatarSrc}" crossorigin="anonymous" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
             <div class="player-info">
               <span class="player-name">${player.username}</span>
               <span class="player-rank">#${index + 1}</span>
@@ -506,6 +494,7 @@ async function loadLeaderboardLuck() {
     console.error("Ошибка загрузки лидерборда по удаче:", error);
   }
 }
+
 
 
 const cube = document.getElementById("cube");
