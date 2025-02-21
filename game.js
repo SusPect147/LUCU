@@ -321,49 +321,42 @@ updateUserProfile();
 async function getFallbackAvatar(player, index) {
   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
   
-  // Логируем данные о пользователе, чтобы убедиться, что приходят корректные данные
-  console.log("Данные игрока:", player);
+  // Проверяем наличие photo_url
+  let photoUrl = player?.photo_url;
+  console.log("Данные игрока:", player, "URL аватарки:", photoUrl);
 
-  // Получаем URL аватарки для каждого игрока
-  let photoUrl = player?.photo_url; // Здесь уже photo_url будет для конкретного игрока
-
-  console.log("Пытаемся загрузить аватарку для игрока:", player.username, "URL:", photoUrl); // Логируем URL для каждого игрока
-
-  // Если URL отсутствует или равен "undefined"/"null", возвращаем дефолт
-  if (!photoUrl || photoUrl === null || photoUrl === undefined || photoUrl === "undefined" || photoUrl === "null") {
-    console.log("Аватарка не найдена для игрока:", player.username, "Возвращаем дефолт.");  // Логируем
+  // Если поле не задано или явно "undefined"/"null" — возвращаем дефолт
+  if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
     return { src: defaultAvatar, bgClass: "" };
   }
 
-  // Если аватар в формате SVG или URL относится к Telegram, сразу возвращаем его
+  // Если это SVG или Telegram-ссылка — не делаем fetch, просто отдаем
+  // (fetch может отвалиться на приватных фотках Telegram)
   if (photoUrl.toLowerCase().endsWith(".svg") || photoUrl.includes("t.me/")) {
-    console.log("Используем URL аватара для Telegram-формата или SVG:", photoUrl);  // Логируем
-    return { 
-      src: photoUrl, 
-      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
+    return {
+      src: photoUrl,
+      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
     };
   }
 
-  // Для других форматов загружаем изображение через GET-запрос
+  // Для всех остальных случаев (сторонние ссылки, хостинги и т.д.)
   try {
     const response = await fetch(photoUrl);
     if (!response.ok) {
-      console.warn(`Аватарка для ${player.username} недоступна, ошибка ${response.status}. Используем дефолт.`);
+      console.warn(`Аватарка недоступна: статус ${response.status}. Используем дефолт.`);
       return { src: defaultAvatar, bgClass: "" };
     }
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-    console.log("Успешно загружен аватар для игрока:", player.username); // Логируем успешную загрузку
-    return { 
-      src: objectUrl, 
-      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
+    return {
+      src: objectUrl,
+      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
     };
   } catch (error) {
-    console.error(`Ошибка загрузки аватарки для ${player.username}:`, error);
+    console.error("Ошибка загрузки:", error);
     return { src: defaultAvatar, bgClass: "" };
   }
 }
-
 
 
 /****************************************************
@@ -425,15 +418,15 @@ async function loadLeaderboardCoins() {
           <div class="player-left">
             <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
           </div>
-          <div class="player-right">
-            <img src="${avatarSrc || 'pictures/cubics/классика/начальный-кубик.gif'}" class="player-avatar" alt="Avatar">
-
-            <div class="player-info">
-              <span class="player-name">${player.username}</span>
-              <span class="player-rank">#${index + 1}</span>
-            </div>
-          </div>
-        </div>
+    <div class="player-right">
+      <img src="${avatarSrc}" class="player-avatar" alt="Avatar" 
+           onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif'">
+      <div class="player-info">
+        <span class="player-name">${player.username}</span>
+        <span class="player-rank">#${index + 1}</span>
+      </div>
+    </div>
+  </div>
       `;
       leaderboardList.appendChild(li);
     }
@@ -492,16 +485,15 @@ async function loadLeaderboardLuck() {
           <div class="player-left">
             <span class="player-luck">${luckValue}</span>
           </div>
-          <div class="player-right">
-            <img src="${avatarSrc || 'pictures/cubics/классика/начальный-кубик.gif'}" class="player-avatar" alt="Avatar">
-
-
-            <div class="player-info">
-              <span class="player-name">${player.username}</span>
-              <span class="player-rank">#${index + 1}</span>
-            </div>
-          </div>
-        </div>
+    <div class="player-right">
+      <img src="${avatarSrc}" class="player-avatar" alt="Avatar" 
+           onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif'">
+      <div class="player-info">
+        <span class="player-name">${player.username}</span>
+        <span class="player-rank">#${index + 1}</span>
+      </div>
+    </div>
+  </div>
       `;
       leaderboardList.appendChild(li);
     }
