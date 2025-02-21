@@ -323,7 +323,8 @@ async function getFallbackAvatar(player, index) {
   let photoUrl = player?.photo_url;
 
   // Если URL отсутствует или равен "undefined"/"null" – возвращаем дефолт
-  if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
+  if (!photoUrl || photoUrl === null || photoUrl === undefined) {
+
     return { src: defaultAvatar, bgClass: "" };
   }
 
@@ -414,7 +415,8 @@ async function loadLeaderboardCoins() {
             <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
           </div>
           <div class="player-right">
-            <img src="${avatarSrc}" crossorigin="anonymous" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+            <img src="${avatarSrc}" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+
             <div class="player-info">
               <span class="player-name">${player.username}</span>
               <span class="player-rank">#${index + 1}</span>
@@ -480,7 +482,9 @@ async function loadLeaderboardLuck() {
             <span class="player-luck">${luckValue}</span>
           </div>
           <div class="player-right">
-            <img src="${avatarSrc}" crossorigin="anonymous" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+            <img src="${avatarSrc}" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+
+
             <div class="player-info">
               <span class="player-name">${player.username}</span>
               <span class="player-rank">#${index + 1}</span>
