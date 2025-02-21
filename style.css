@@ -842,7 +842,7 @@ button:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(14, 14, 14, 0.6);
   backdrop-filter: blur(12px);
   visibility: hidden;
   opacity: 0;
@@ -854,7 +854,9 @@ button:hover {
 
 #friend-menu-content {
   position: relative;
-  background: #f8f8f8;
+  background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
+              linear-gradient(127deg, rgb(20, 84, 99) 0%, rgba(0, 0, 0, 0) 70.71%),
+              linear-gradient(336deg, rgb(45, 45, 158) 0%, rgba(0, 0, 0, 0) 70.71%);
   width: 100%;
   height: 60%;
   border-top-left-radius: 18px;
@@ -867,7 +869,7 @@ button:hover {
   align-items: center;
   font-size: 24px;
   font-weight: bold;
-  color: #222;
+  color: #b68383;
   transform: translateY(100%);
   opacity: 0;
   transition: transform 0.4s ease-out, opacity 0.4s ease-out;
@@ -934,7 +936,7 @@ button:hover {
 }
 
 #copy-referral {
-  background: #b10a0a;
+  background: #3a1919;
   color: white;
   border: none;
   padding: 10px 10px;
@@ -947,7 +949,7 @@ button:hover {
 }
 
 #copy-referral:hover {
-  background: #8c0808;
+  background: #251010;
 }
 
 .bottom-container {
@@ -960,7 +962,7 @@ button:hover {
 }
 
 #share-link {
-  background: #d70000;
+  background: #3d1b1b;
   color: white;
   border: none;
   padding: 16px 20px;
@@ -972,7 +974,7 @@ button:hover {
 }
 
 #share-link:hover {
-  background: #b00000;
+  background: #1b0c0c;
 }
 
 .friends-count {
