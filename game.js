@@ -250,7 +250,7 @@ leaderboardList.addEventListener("scroll", () => {
    } else {
      leaderboardMenu.classList.remove("scrolled");
    }
- });
+});
 
 /***************************************
  * ФУНКЦИИ ФОРМАТИРОВАНИЯ ЧИСЕЛ
@@ -264,9 +264,6 @@ function formatCoins(value) {
 function formatNumber(value) {
   return Number(value).toLocaleString();
 }
-
-
-
 
 /****************************************************
  * ОТКРЫТИЕ/ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА ЛИДЕРОВ
@@ -287,41 +284,72 @@ leaderboardMenu.addEventListener('click', (e) => {
   }
 });
 
-
 /****************************************************
  * ОБНОВЛЕНИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (photo_url)
  ****************************************************/
 function updateUserProfile() {
-  const user = window.Telegram.WebApp.initDataUnsafe.user;
-  if (user) {
-    fetch("https://backend12-production-1210.up.railway.app/update_profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: user.id,
-        username: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
-        photo_url: user.photo_url || "default_avatar.png"
-      })
-    })
-    .then(response => response.json())
-    .then(data => console.log("Профиль обновлён:", data))
-    .catch(error => console.error("Ошибка обновления профиля:", error));
-  }
+   const user = window.Telegram.WebApp.initDataUnsafe.user;
+   if (user) {
+     let photoUrl = user.photo_url || "pictures/cubics/классика/начальный-кубик.gif";
+
+     // Если Telegram-аватар .svg, заменяем на .jpg
+     if (photoUrl.endsWith(".svg")) {
+       photoUrl = photoUrl.replace(".svg", ".jpg");
+     }
+
+     console.log("Используемый аватар:", photoUrl); // Логируем URL для проверки
+
+     fetch("https://backend12-production-1210.up.railway.app/update_profile", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({
+         user_id: user.id,
+         username: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
+         photo_url: photoUrl
+       })
+     })
+     .then(response => response.json())
+     .then(data => console.log("Профиль обновлён:", data))
+     .catch(error => console.error("Ошибка обновления профиля:", error));
+   }
 }
 updateUserProfile();
-
 
 /****************************************************
  * FALLBACK-АВАТАРКА И КЛАСС ФОНА ДЛЯ РАЗНЫХ МЕСТ В ТОПЕ
  ****************************************************/
-function getFallbackAvatar(index) {
-  if (index === 0) {
-    return { src: "pictures/cubics/классика/супер-начальный-кубик.gif", bgClass: "rainbow-bg" };
-  } else if (index >= 1 && index <= 4) {
-    return { src: "pictures/cubics/золотой-кубик.gif", bgClass: "gold-bg" };
-  } else {
-    return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
-  }
+async function getFallbackAvatar(player, index) {
+   let photoUrl = player?.photo_url;
+
+   // Если URL отсутствует или равен "undefined"/"null" (как строка) – возвращаем дефолт
+   if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
+      return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
+   }
+
+   // Приводим URL к нижнему регистру для корректной проверки расширения
+   if (photoUrl.toLowerCase().endsWith(".svg")) {
+      // Для svg-аватарок сразу возвращаем URL, не выполняя проверку HEAD
+      return {
+         src: photoUrl,
+         bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
+      };
+   }
+
+   // Для других форматов выполняем проверку через HEAD-запрос
+   try {
+      const response = await fetch(photoUrl, { method: "HEAD" });
+      if (!response.ok) {
+         console.warn(`Аватарка ${photoUrl} недоступна (Ошибка ${response.status}), заменяем на дефолт.`);
+         return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
+      }
+      return {
+         src: photoUrl,
+         bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
+      };
+   } catch (error) {
+      console.error(`Ошибка загрузки ${photoUrl}:`, error);
+      return { src: "pictures/cubics/классика/начальный-кубик.gif", bgClass: "" };
+   }
 }
 
 
@@ -339,142 +367,144 @@ bestLuckBtn.addEventListener("click", () => {
   loadLeaderboardLuck();
 });
 
-
 /****************************************************
  * ЗАГРУЗКА ЛИДЕРБОРДА ПО МОНЕТАМ (COINS)
- * В этой версии, количество монет выводится слева,
+ * В этой версии количество монет выводится слева,
  * а информация об игроке (аватар, имя, место) — справа.
  ****************************************************/
-function loadLeaderboardCoins() {
-  fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins")
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Ошибка сети: " + response.status);
+async function loadLeaderboardCoins() {
+  try {
+    const response = await fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins");
+    if (!response.ok) {
+      throw new Error("Ошибка сети: " + response.status);
+    }
+    const data = await response.json();
+
+    leaderboardList.innerHTML = "";
+
+    const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
+    let currentUserIndex = -1;
+    if (currentUser) {
+      currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
+    }
+    placeBadge.textContent = (currentUserIndex >= 0) ? `Your place #${currentUserIndex + 1}` : "Your place #--";
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+      return;
+    }
+
+    // Обрабатываем каждого игрока по очереди
+    for (let index = 0; index < data.length; index++) {
+      const player = data[index];
+      // Получаем fallback-аватарку для игрока
+      const fallback = await getFallbackAvatar(player, index);
+      // Если у игрока есть валидный photo_url, используем его, иначе fallback
+      const avatarSrc = (player.photo_url && player.photo_url !== "undefined" && player.photo_url !== "null")
+                          ? player.photo_url
+                          : fallback.src;
+      const isCurrentUser = currentUser && (player.user_id == currentUser.id);
+
+      const li = document.createElement("li");
+      li.classList.add("leaderboard-item");
+      if (isCurrentUser) {
+        li.classList.add("highlight");
       }
-      return response.json();
-    })
-    .then(data => {
-      leaderboardList.innerHTML = "";
-
-      const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
-      let currentUserIndex = -1;
-      if (currentUser) {
-        currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
-      }
-      placeBadge.textContent = (currentUserIndex >= 0) ? `You #${currentUserIndex + 1}` : "You #--";
-
-      if (data.length === 0) {
-        leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-        return;
+      // Если нет аватарки у игрока, добавляем класс фона fallback
+      if ((!player.photo_url || player.photo_url === "undefined" || player.photo_url === "null") && fallback.bgClass) {
+        li.classList.add(fallback.bgClass);
       }
 
-      data.forEach((player, index) => {
-        const fallback = getFallbackAvatar(index);
-        const avatarSrc = player.photo_url ? player.photo_url : fallback.src;
-        const isCurrentUser = currentUser && (player.user_id == currentUser.id);
-
-        const li = document.createElement("li");
-        li.classList.add("leaderboard-item");
-        if (isCurrentUser) {
-          li.classList.add("highlight");
-        }
-        if (!player.photo_url && fallback.bgClass) {
-          li.classList.add(fallback.bgClass);
-        }
-
-        // Здесь изменяем порядок: Слева — количество монет, справа — информация об игроке.
-        li.innerHTML = `
-          <div class="leaderboard-item-content">
-            <div class="player-left">
-              <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
-            </div>
-            <div class="player-right">
-              <img src="${avatarSrc}" onerror="this.src='${fallback.src}';" class="player-avatar" alt="Avatar">
-              <div class="player-info">
-                <span class="player-name">${player.username}</span>
-                <span class="player-rank">#${index + 1}</span>
-              </div>
+      li.innerHTML = `
+        <div class="leaderboard-item-content">
+          <div class="player-left">
+            <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
+          </div>
+          <div class="player-right">
+            <img src="${avatarSrc}" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+            <div class="player-info">
+              <span class="player-name">${player.username}</span>
+              <span class="player-rank">#${index + 1}</span>
             </div>
           </div>
-        `;
-        leaderboardList.appendChild(li);
-      });
-    })
-    .catch(error => {
-      console.error("Ошибка загрузки лидерборда по монетам:", error);
-    });
+        </div>
+      `;
+      leaderboardList.appendChild(li);
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки лидерборда по монетам:", error);
+  }
 }
-
 
 /****************************************************
  * ЗАГРУЗКА ЛИДЕРБОРДА ПО УДАЧЕ (LUCK)
- * В этой версии, минимальное число выводится слева,
+ * В этой версии минимальное число выводится слева,
  * а информация об игроке (аватар, имя, место) — справа.
  ****************************************************/
-function loadLeaderboardLuck() {
-  fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck")
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Ошибка сети: " + response.status);
+async function loadLeaderboardLuck() {
+  try {
+    const response = await fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck");
+    if (!response.ok) {
+      throw new Error("Ошибка сети: " + response.status);
+    }
+    const data = await response.json();
+
+    leaderboardList.innerHTML = "";
+
+    const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
+    let currentUserIndex = -1;
+    if (currentUser) {
+      currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
+    }
+    placeBadge.textContent = (currentUserIndex >= 0) ? `You #${currentUserIndex + 1}` : "You #--";
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
+      return;
+    }
+
+    for (let index = 0; index < data.length; index++) {
+      const player = data[index];
+      let luckValue = parseFloat(player.min_luck);
+      if (!isFinite(luckValue) || isNaN(luckValue)) {
+        luckValue = "N/A";
+      } else {
+        luckValue = formatNumber(luckValue);
       }
-      return response.json();
-    })
-    .then(data => {
-      leaderboardList.innerHTML = "";
+      const fallback = await getFallbackAvatar(player, index);
+      const avatarSrc = (player.photo_url && player.photo_url !== "undefined" && player.photo_url !== "null")
+                          ? player.photo_url
+                          : fallback.src;
+      const isCurrentUser = currentUser && (player.user_id == currentUser.id);
 
-      const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
-      let currentUserIndex = -1;
-      if (currentUser) {
-        currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
+      const li = document.createElement("li");
+      li.classList.add("leaderboard-item");
+      if (isCurrentUser) {
+        li.classList.add("highlight");
       }
-      placeBadge.textContent = (currentUserIndex >= 0) ? `You #${currentUserIndex + 1}` : "You #--";
-
-      if (data.length === 0) {
-        leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-        return;
+      if ((!player.photo_url || player.photo_url === "undefined" || player.photo_url === "null") && fallback.bgClass) {
+        li.classList.add(fallback.bgClass);
       }
 
-      data.forEach((player, index) => {
-        let luckValue = parseFloat(player.min_luck);
-        if (!isFinite(luckValue) || isNaN(luckValue)) {
-          luckValue = "N/A";
-        } else {
-          luckValue = formatNumber(luckValue);
-        }
-        const fallback = getFallbackAvatar(index);
-        const avatarSrc = player.photo_url ? player.photo_url : fallback.src;
-        const isCurrentUser = currentUser && (player.user_id == currentUser.id);
-
-        const li = document.createElement("li");
-        li.classList.add("leaderboard-item");
-        if (isCurrentUser) {
-          li.classList.add("highlight");
-        }
-        if (!player.photo_url && fallback.bgClass) {
-          li.classList.add(fallback.bgClass);
-        }
-
-        // В этой версии слева выводится минимальное число, справа – информация об игроке.
-        li.innerHTML = `
-          <div class="leaderboard-item-content">
-            <div class="player-left">
-              <span class="player-luck">${luckValue}</span>
-            </div>
-            <div class="player-right">
-              <img src="${avatarSrc}" onerror="this.src='${fallback.src}';" class="player-avatar" alt="Avatar">
-              <div class="player-info">
-                <span class="player-name">${player.username}</span>
-                <span class="player-rank">#${index + 1}</span>
-              </div>
+      li.innerHTML = `
+        <div class="leaderboard-item-content">
+          <div class="player-left">
+            <span class="player-luck">${luckValue}</span>
+          </div>
+          <div class="player-right">
+            <img src="${avatarSrc}" onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif';" class="player-avatar" alt="Avatar">
+            <div class="player-info">
+              <span class="player-name">${player.username}</span>
+              <span class="player-rank">#${index + 1}</span>
             </div>
           </div>
-        `;
-        leaderboardList.appendChild(li);
-      });
-    })
-    .catch(error => {
-      console.error("Ошибка загрузки лидерборда по удаче:", error);
-    });
+        </div>
+      `;
+      leaderboardList.appendChild(li);
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки лидерборда по удаче:", error);
+  }
 }
 
 
