@@ -487,7 +487,9 @@ body {
 /* Контент модального окна */
 #skins-menu-content {
  position: relative;
- background: #dbdbdb;
+ background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
+              linear-gradient(127deg, rgb(20, 84, 99) 0%, rgba(0, 0, 0, 0) 70.71%),
+              linear-gradient(336deg, rgb(45, 45, 158) 0%, rgba(0, 0, 0, 0) 70.71%);
  width: 100%;
  height: 60%;
  border-top-left-radius: 15px;
@@ -533,7 +535,7 @@ body {
 
 .skin-row {
   margin-bottom: 20px;
-  color: rgb(58, 56, 56);
+  color: rgb(219, 214, 214);
 }
 
 .skin-row h3 {
@@ -575,7 +577,7 @@ button {
   width: 100%;
   padding: 10px;
   font-size: 18px;
-  background-color: #2e2d2d;
+  background-color: #462424;
   color: #cecece;
   border: none;
   border-radius: 5px;
