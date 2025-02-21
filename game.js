@@ -320,21 +320,19 @@ updateUserProfile();
  ****************************************************/
 async function getFallbackAvatar(player, index) {
   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
-const user = window.Telegram.WebApp.initDataUnsafe.user; // Получаем текущего пользователя
-const photoUrl = user?.photo_url;  // Получаем URL его аватарки
+  let photoUrl = player?.photo_url; // Используем photo_url для другого игрока
 
-  
-  console.log("Пытаемся загрузить аватарку:", photoUrl);  // Добавим лог
+  console.log("Пытаемся загрузить аватарку для игрока:", player.username, "URL:", photoUrl); // Логируем URL аватарки для другого игрока
 
-  // Если URL отсутствует или равен "undefined"/"null" – возвращаем дефолт
-  if (!photoUrl || photoUrl === null || photoUrl === undefined) {
-    console.log("Аватарка не найдена, возвращаем дефолт.");  // Логируем
+  // Если URL отсутствует или равен "undefined"/"null", возвращаем дефолт
+  if (!photoUrl || photoUrl === null || photoUrl === undefined || photoUrl === "undefined" || photoUrl === "null") {
+    console.log("Аватарка не найдена, возвращаем дефолт для игрока:", player.username);  // Логируем
     return { src: defaultAvatar, bgClass: "" };
   }
 
   // Если аватар в формате SVG или URL относится к Telegram, сразу возвращаем его
   if (photoUrl.toLowerCase().endsWith(".svg") || photoUrl.includes("t.me/")) {
-    console.log("Используем URL аватара:", photoUrl);  // Логируем
+    console.log("Используем URL аватара для Telegram-формата или SVG:", photoUrl);  // Логируем
     return { 
       src: photoUrl, 
       bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
@@ -345,22 +343,21 @@ const photoUrl = user?.photo_url;  // Получаем URL его аватарк
   try {
     const response = await fetch(photoUrl);
     if (!response.ok) {
-      console.warn(`Аватарка ${photoUrl} недоступна (Ошибка ${response.status}), заменяем на дефолт.`);  // Логируем ошибку
+      console.warn(`Аватарка для ${player.username} недоступна, ошибка ${response.status}. Используем дефолт.`); 
       return { src: defaultAvatar, bgClass: "" };
     }
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-    console.log("Аватарка успешно загружена:", objectUrl);  // Логируем
+    console.log("Успешно загружен аватар для игрока:", player.username); // Логируем успешную загрузку
     return { 
       src: objectUrl, 
       bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
     };
   } catch (error) {
-    console.error(`Ошибка загрузки ${photoUrl}:`, error);  // Логируем ошибку
+    console.error(`Ошибка загрузки аватарки для ${player.username}:`, error);
     return { src: defaultAvatar, bgClass: "" };
   }
 }
-
 
 /****************************************************
  * ПЕРЕКЛЮЧЕНИЕ ТАБЛИЦ (Most $LUCU / Best LUCK)
