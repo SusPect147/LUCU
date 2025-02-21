@@ -319,53 +319,39 @@ updateUserProfile();
  * FALLBACK-АВАТАРКА И КЛАСС ФОНА ДЛЯ РАЗНЫХ МЕСТ В ТОПЕ
  ****************************************************/
 async function getFallbackAvatar(player, index) {
-   const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
-   let photoUrl = player?.photo_url;
- 
-   // Если URL отсутствует или равен "undefined"/"null" (как строка) – возвращаем дефолт
-   if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
-     return { src: defaultAvatar, bgClass: "" };
-   }
- 
-   // Если аватар в формате SVG, отправляем запрос на сервер для его получения
-   if (photoUrl.toLowerCase().endsWith(".svg")) {
-     try {
-       const response = await fetch(
-         `https://backend12-production-1210.up.railway.app/get_avatar?photo_url=${encodeURIComponent(photoUrl)}`
-       );
-       if (!response.ok) {
-         console.warn(`Сервер не вернул аватар для ${photoUrl} (Ошибка ${response.status}), используем дефолт.`);
-         return { src: defaultAvatar, bgClass: "" };
-       }
-       const blob = await response.blob();
-       const objectUrl = URL.createObjectURL(blob);
-       return { 
-         src: objectUrl, 
-         bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
-       };
-     } catch (error) {
-       console.error(`Ошибка получения аватарки с сервера для ${photoUrl}:`, error);
-       return { src: defaultAvatar, bgClass: "" };
-     }
-   }
- 
-   // Для остальных форматов загружаем аватар напрямую
-   try {
-     const response = await fetch(photoUrl);
-     if (!response.ok) {
-       console.warn(`Аватарка ${photoUrl} недоступна (Ошибка ${response.status}), заменяем на дефолт.`);
-       return { src: defaultAvatar, bgClass: "" };
-     }
-     const blob = await response.blob();
-     const objectUrl = URL.createObjectURL(blob);
-     return { 
-       src: objectUrl, 
-       bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
-     };
-   } catch (error) {
-     console.error(`Ошибка загрузки ${photoUrl}:`, error);
-     return { src: defaultAvatar, bgClass: "" };
-   }
+  const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
+  let photoUrl = player?.photo_url;
+
+  // Если URL отсутствует или равен "undefined"/"null" – возвращаем дефолт
+  if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
+    return { src: defaultAvatar, bgClass: "" };
+  }
+
+  // Если аватар в формате SVG или URL относится к Telegram, сразу возвращаем его
+  if (photoUrl.toLowerCase().endsWith(".svg") || photoUrl.includes("t.me/")) {
+    return { 
+      src: photoUrl, 
+      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
+    };
+  }
+
+  // Для других форматов загружаем изображение через GET-запрос
+  try {
+    const response = await fetch(photoUrl);
+    if (!response.ok) {
+      console.warn(`Аватарка ${photoUrl} недоступна (Ошибка ${response.status}), заменяем на дефолт.`);
+      return { src: defaultAvatar, bgClass: "" };
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    return { 
+      src: objectUrl, 
+      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : "" 
+    };
+  } catch (error) {
+    console.error(`Ошибка загрузки ${photoUrl}:`, error);
+    return { src: defaultAvatar, bgClass: "" };
+  }
 }
 
 
@@ -395,7 +381,6 @@ async function loadLeaderboardCoins() {
       throw new Error("Ошибка сети: " + response.status);
     }
     const data = await response.json();
-
     leaderboardList.innerHTML = "";
 
     const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
@@ -403,22 +388,20 @@ async function loadLeaderboardCoins() {
     if (currentUser) {
       currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
     }
-    placeBadge.textContent = (currentUserIndex >= 0) ? `Your place #${currentUserIndex + 1}` : "Your place #--";
+    placeBadge.textContent = (currentUserIndex >= 0)
+      ? `Your place #${currentUserIndex + 1}`
+      : "Your place #--";
 
     if (!data || !Array.isArray(data) || data.length === 0) {
       leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
       return;
     }
 
-    // Обрабатываем каждого игрока по очереди
+    // Для каждого игрока ждем результат getFallbackAvatar и используем его src
     for (let index = 0; index < data.length; index++) {
       const player = data[index];
-      // Получаем fallback-аватарку для игрока
-      const fallback = await getFallbackAvatar(player, index);
-      // Если у игрока есть валидный photo_url, используем его, иначе fallback
-      const avatarSrc = (player.photo_url && player.photo_url !== "undefined" && player.photo_url !== "null")
-                          ? player.photo_url
-                          : fallback.src;
+      const avatar = await getFallbackAvatar(player, index);
+      const avatarSrc = avatar.src; // используем результат из функции
       const isCurrentUser = currentUser && (player.user_id == currentUser.id);
 
       const li = document.createElement("li");
@@ -426,9 +409,9 @@ async function loadLeaderboardCoins() {
       if (isCurrentUser) {
         li.classList.add("highlight");
       }
-      // Если нет аватарки у игрока, добавляем класс фона fallback
-      if ((!player.photo_url || player.photo_url === "undefined" || player.photo_url === "null") && fallback.bgClass) {
-        li.classList.add(fallback.bgClass);
+      // Если аватар отсутствует у игрока, можно добавить класс фона fallback (если нужно)
+      if ((!player.photo_url || player.photo_url === "undefined" || player.photo_url === "null") && avatar.bgClass) {
+        li.classList.add(avatar.bgClass);
       }
 
       li.innerHTML = `
@@ -451,6 +434,7 @@ async function loadLeaderboardCoins() {
     console.error("Ошибка загрузки лидерборда по монетам:", error);
   }
 }
+
 
 /****************************************************
  * ЗАГРУЗКА ЛИДЕРБОРДА ПО УДАЧЕ (LUCK)
