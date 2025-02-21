@@ -454,8 +454,8 @@ async function loadLeaderboardLuck() {
       currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
     }
     placeBadge.textContent = (currentUserIndex >= 0)
-      ? `You #${currentUserIndex + 1}`
-      : "You #--";
+      ? `Your place #${currentUserIndex + 1}`
+      : "Your place #--";
 
     if (!data || !Array.isArray(data) || data.length === 0) {
       leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
