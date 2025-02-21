@@ -1096,26 +1096,53 @@ const profileName = document.getElementById("profile-name");
 const userName = tg.initDataUnsafe?.user?.username || "NoName";
 profileName.textContent = `Hello, ${userName}`;
 
+let startY = 0;
+let isSwiping = false;
+
 // Функция открытия меню
-profileButton.addEventListener('click', () => {
-   profileMenu.classList.remove('hide', 'hidden'); // Убираем скрытие
-   requestAnimationFrame(() => {
-       profileMenu.classList.add('show'); // Добавляем класс show для плавного появления
-   });
+profileButton.addEventListener("click", () => {
+  profileMenu.classList.remove("hide", "hidden");
+  requestAnimationFrame(() => {
+    profileMenu.classList.add("show");
+  });
 });
 
 // Функция закрытия меню с зеркальной анимацией
-profileMenu.addEventListener('click', (e) => {
-   if (e.target === profileMenu) {
-       profileMenu.classList.add('hide'); // Запускаем анимацию закрытия
-       profileMenu.classList.remove('show'); // Убираем класс show
-       setTimeout(() => {
-           profileMenu.classList.add('hidden'); // Полностью скрываем меню после анимации
-           profileMenu.classList.remove('hide'); // Сбрасываем hide
-       }, 400); // Время совпадает с CSS (0.4s)
-   }
+function closeProfileMenu() {
+  profileMenu.classList.add("hide");
+  profileMenu.classList.remove("show");
+  setTimeout(() => {
+    profileMenu.classList.add("hidden");
+    profileMenu.classList.remove("hide");
+  }, 400);
+}
+
+profileMenu.addEventListener("click", (e) => {
+  if (e.target === profileMenu) {
+    closeProfileMenu();
+  }
 });
 
+// Добавляем поддержку свайпа вниз
+profileMenu.addEventListener("touchstart", (e) => {
+  startY = e.touches[0].clientY;
+  isSwiping = true;
+});
+
+profileMenu.addEventListener("touchmove", (e) => {
+  if (!isSwiping) return;
+  const moveY = e.touches[0].clientY;
+  const diffY = moveY - startY;
+
+  if (diffY > 50) { // Если свайп вниз больше 50px
+    isSwiping = false;
+    closeProfileMenu();
+  }
+});
+
+profileMenu.addEventListener("touchend", () => {
+  isSwiping = false;
+});
 
 
 
