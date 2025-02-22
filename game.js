@@ -232,41 +232,40 @@ const leaderboardList = document.getElementById("leaderboard-list");
 const mostLucuBtn = document.getElementById("most-lucu");
 const bestLuckBtn = document.getElementById("best-luck");
 const placeBadge = document.getElementById("player-place-badge");
-
-// Верхняя секция (фиксированная — заголовок, бейдж, кнопки)
 const topSection = document.querySelector(".top-section");
-// Трофей с тенями
 const trophyImage = document.querySelector(".trophy");
 const glowElement = document.querySelector(".glow");
-
-// Кнопка для открытия лидерборда
 const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
 
-// Обработка события прокрутки списка лидеров
-leaderboardList.addEventListener("scroll", () => {
-   if (leaderboardList.scrollTop > 20) {
-     leaderboardMenu.classList.add("scrolled");
-   } else {
-     leaderboardMenu.classList.remove("scrolled");
-   }
-});
+// Добавляем плавный скролл через requestAnimationFrame
+let lastScrollTop = 0;
+function handleScroll() {
+  let currentScroll = leaderboardList.scrollTop;
+  if (currentScroll > 20) {
+    leaderboardMenu.classList.add("scrolled");
+  } else {
+    leaderboardMenu.classList.remove("scrolled");
+  }
+  lastScrollTop = currentScroll;
+  requestAnimationFrame(handleScroll);
+}
+requestAnimationFrame(handleScroll);
 
 // Обработчик свайпа для скрытия меню при свайпе вниз
 let startTouchY = 0;
-
 topSection.addEventListener('touchstart', (e) => {
-  startTouchY = e.touches[0].clientY; // Запоминаем координату начала свайпа
+  startTouchY = e.touches[0].clientY;
 });
 
 topSection.addEventListener('touchmove', (e) => {
   const currentTouchY = e.touches[0].clientY;
-  if (currentTouchY > startTouchY + 50) { // Если свайп вниз на 50px или больше
+  if (currentTouchY > startTouchY + 50) {
     leaderboardMenu.classList.add('hide');
     leaderboardMenu.classList.remove('show');
     setTimeout(() => {
       leaderboardMenu.classList.add('hidden');
       leaderboardMenu.classList.remove('hide');
-    }, 400); // Задержка для плавности анимации
+    }, 400);
   }
 });
 
