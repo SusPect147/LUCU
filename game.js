@@ -1201,24 +1201,27 @@ document.addEventListener("DOMContentLoaded", async () => {
    const urlParams = new URLSearchParams(window.location.search);
    const referrerId = urlParams.get("start");
 
-   if (referrerId && referrerId !== userId) {
-       try {
-           const response = await fetch("https://backend12-production-1210.up.railway.app/update_coins", {
-               method: "POST",
-               headers: {
-                   "Content-Type": "application/json"
-               },
-               body: JSON.stringify({
-                   user_id: userId,
-                   coins: 100
-               })
-           });
-           const result = await response.json();
-           console.log("Referral bonus added:", result);
-       } catch (error) {
-           console.error("Failed to update coins:", error);
-       }
-   }
+if (referrerId && referrerId !== userId) {
+    const isPremium = telegram?.initDataUnsafe?.user?.premium || false;
+    const bonusCoins = isPremium ? 1000 : 100;
+
+    try {
+        const response = await fetch("https://backend12-production-1210.up.railway.app/update_coins", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                coins: bonusCoins
+            })
+        });
+        const result = await response.json();
+        console.log(`Referral bonus added: ${bonusCoins} coins`, result);
+    } catch (error) {
+        console.error("Failed to update coins:", error);
+    }
+}
 
    async function updateFriendsCount() {
        try {
