@@ -1202,7 +1202,8 @@ document.addEventListener("DOMContentLoaded", async () => {
    const referrerId = urlParams.get("start");
 
 if (referrerId && userId && referrerId !== userId) {
-    const isPremium = telegram?.initDataUnsafe?.user?.premium === true; // Явная проверка на true
+    // Проверяем, точно ли premium === true
+    const isPremium = Boolean(telegram?.initDataUnsafe?.user?.premium);
     const bonusCoins = isPremium ? 1000 : 100;
 
     try {
@@ -1222,6 +1223,7 @@ if (referrerId && userId && referrerId !== userId) {
         console.error("Failed to update coins:", error);
     }
 }
+
 
 
    async function updateFriendsCount() {
