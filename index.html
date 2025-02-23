@@ -159,48 +159,55 @@
         <p id="copy-message" class="hidden">Link copied!</p>
     </div>
 </div>
-<div id="quests-menu" class="hidden">
-    <div id="quests-menu-content">
-        <div class="quests-list">
-            <div class="quest-item">
-                <img class="quest-img" src="pictures/other png/telegram-logo.png" alt="quest">
+        <!-- Список квестов -->
+        <ul id="quests-list" class="quests-list">
+            <li class="quest-item">
+                <img src="pictures/other png/телега.jpg" alt="Subscribe" class="quest-icon">
                 <div class="quest-info">
-                    <div class="quest-title">Subscribe to LUCU Channel</div>
-                    <div class="quest-reward">+250 $LUCU</div>
+                    <span class="quest-title">Subscribe to LUCU channel</span>
+                    <span class="quest-reward">Reward: 250 $LUCU</span>
                 </div>
                 <button class="quest-btn">Go</button>
-            </div>
-            
-            <div class="quest-item">
-                <img class="quest-img" src="pictures/other png/check-in.webp" alt="quest">
+            </li>
+            <li class="quest-item">
+                <img src="pictures/other png/$LUCU.png" alt="Watch Ad" class="quest-icon">
                 <div class="quest-info">
-                    <div class="quest-title">Daily Check-in</div>
-                    <div class="quest-reward">+50 $LUCU</div>
+                    <span class="quest-title">Watch an ad</span>
+                    <span class="quest-reward">Reward: 50 $LUCU</span>
                 </div>
                 <button class="quest-btn">Go</button>
-            </div>
-            
-            <div class="quest-item">
-                <img class="quest-img" src="pictures/other png/friends-11.png" alt="quest">
-                <div class="quest-info">
-                    <div class="quest-title">Invite 5 Friends</div>
-                    <div class="quest-reward">+700 $LUCU</div>
+            </li>
+        </ul>
+
+        <!-- Список ачивок -->
+        <ul id="achievements-list" class="achievements-list hidden">
+            <li class="achievement-item">
+                <img src="pictures/other png/телега.jpg" alt="Beta Tester" class="achievement-icon">
+                <div class="achievement-info">
+                    <span class="achievement-title">Beta Tester</span>
+                    <span class="achievement-reward">You were a beta tester of the game.</span>
                 </div>
-                <button class="quest-progress">0/5</button>
-            </div>
-            
-            <div class="quest-item">
-                <img class="quest-img" src="pictures/other png/telegram-logo.png" alt="quest">
-                <div class="quest-info">
-                    <div class="quest-title">Subscribe to Hammers Games Studio</div>
-                    <div class="quest-reward">+50 $LUCU</div>
+                <div class="progress-circle" data-progress="100"></div>
+            </li>
+            <li class="achievement-item">
+                <img src="pictures/cubics/классика/начальный-кубик.gif" alt="Dice Rolls" class="achievement-icon">
+                <div class="achievement-info">
+                    <span class="achievement-title">Rolls</span>
+                    <span class="achievement-reward">Make 123456 dice rolls.</span>
                 </div>
-                <button class="quest-btn">Go</button>
-            </div>
-        </div>
+                <div class="progress-circle" data-progress="50"></div>
+            </li>
+            <li class="achievement-item">
+                <img src="pictures/other png/Logo.png" alt="100K+ LUCU" class="achievement-icon">
+                <div class="achievement-info">
+                    <span class="achievement-title">Rich $LUCU</span>
+                    <span class="achievement-reward">Bro, did you really get 100K+ $LUCU?</span>
+                </div>
+                <div class="progress-circle" data-progress="75"></div>
+            </li>
+        </ul>
     </div>
 </div>
-  
 		<!-- Link to the game.js file -->
 		<script src="game.js"></script>
 	</body>
