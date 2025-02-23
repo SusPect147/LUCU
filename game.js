@@ -269,8 +269,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
                    // Пользователь подписан
-                   this.textContent = "Completed"; // Меняем текст кнопки
-                   this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
+                   this.textContent = "✔️"; // Меняем текст кнопки
+                   this.classList.add("✔️"); // Добавляем класс, чтобы нельзя было нажать
                    this.style.background = "#4CAF50"; // Зеленый цвет для статуса "выполнено"
                    this.style.cursor = "default"; // Отключаем курсор
                }
@@ -280,7 +280,6 @@ document.addEventListener("DOMContentLoaded", function () {
        }
    });
 });
-
 const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardMenuContent = document.getElementById('leaderboard-menu-content');
 const leaderboardList = document.getElementById("leaderboard-list");
