@@ -269,8 +269,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
                    // Пользователь подписан
-                   this.textContent = "✔️"; // Меняем текст кнопки
-                   this.classList.add("✔️"); // Добавляем класс, чтобы нельзя было нажать
+                   this.textContent = "✓"; // Меняем текст кнопки
+                   this.classList.add("✓"); // Добавляем класс, чтобы нельзя было нажать
                    this.style.background = "#4CAF50"; // Зеленый цвет для статуса "выполнено"
                    this.style.cursor = "default"; // Отключаем курсор
                }
