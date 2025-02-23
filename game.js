@@ -205,27 +205,82 @@ window.particlex = {
    ParticleSystem,
    Particle
 };
-document.addEventListener("DOMContentLoaded", () => {
-   const questsMenu = document.getElementById("quests-menu");
-   const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
+const tg = window.Telegram?.WebApp;
+const questsMenu = document.getElementById('quests-menu');
+  const questsMenuContent = document.getElementById('quests-menu-content');
+  const questsList = document.getElementById("quests-list");
+  const questsTab = document.getElementById("quests-tab");
+  const achievementsTab = document.getElementById("achievements-tab");
+  const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
 
-   questsButton.addEventListener("click", () => {
-       questsMenu.classList.remove("hide", "hidden");
-       questsMenu.classList.add("show");
-   });
+  // Открытие меню квестов
+  questsButton.addEventListener('click', () => {
+    questsMenu.classList.remove('hide', 'hidden');
+    questsMenu.classList.add('show');
+  });
 
-   questsMenu.addEventListener("click", (e) => {
-       if (e.target === questsMenu) {
-           questsMenu.classList.add("hide");
-           questsMenu.classList.remove("show");
-           setTimeout(() => {
-               questsMenu.classList.add("hidden");
-               questsMenu.classList.remove("hide");
-           }, 400);
+  // Закрытие меню при клике вне области
+  questsMenu.addEventListener('click', (e) => {
+    if (e.target === questsMenu) {
+      questsMenu.classList.add('hide');
+      questsMenu.classList.remove('show');
+      setTimeout(() => {
+        questsMenu.classList.add('hidden');
+        questsMenu.classList.remove('hide');
+      }, 400);
+    }
+  });
+
+  // Переключение между вкладками
+  questsTab.addEventListener('click', () => {
+    questsTab.classList.add('active');
+    achievementsTab.classList.remove('active');
+  });
+
+  achievementsTab.addEventListener('click', () => {
+    achievementsTab.classList.add('active');
+    questsTab.classList.remove('active');
+  });
+  document.getElementById("quests-tab").addEventListener("click", function() {
+   document.getElementById("quests-list").classList.remove("hidden");
+   document.getElementById("achievements-list").classList.add("hidden");
+});
+
+document.getElementById("achievements-tab").addEventListener("click", function() {
+   document.getElementById("quests-list").classList.add("hidden");
+   document.getElementById("achievements-list").classList.remove("hidden");
+});
+document.addEventListener("DOMContentLoaded", function () {
+   const subscribeButton = document.querySelector(".quest-item .quest-btn");
+   const telegramChannelUsername = "luckycubesCHANNEL"; // Замените на юзернейм канала
+
+   subscribeButton.addEventListener("click", async function () {
+       if (this.classList.contains("completed")) return; // Если уже выполнено, ничего не делаем
+
+       // Открываем канал
+       window.open(`https://t.me/${telegramChannelUsername}`, "_blank");
+
+       // Проверяем подписку через Telegram Web Apps API
+       const user = window.Telegram.WebApp.initDataUnsafe.user;
+       if (user) {
+           try {
+               const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
+               const data = await response.json();
+
+               if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
+                   // Пользователь подписан
+                   this.textContent = "Completed"; // Меняем текст кнопки
+                   this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
+                   this.style.background = "#4CAF50"; // Зеленый цвет для статуса "выполнено"
+                   this.style.cursor = "default"; // Отключаем курсор
+               }
+           } catch (error) {
+               console.error("Ошибка проверки подписки:", error);
+           }
        }
    });
 });
-const tg = window.Telegram?.WebApp;
+
 const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardMenuContent = document.getElementById('leaderboard-menu-content');
 const leaderboardList = document.getElementById("leaderboard-list");
