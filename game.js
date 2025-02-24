@@ -264,28 +264,25 @@ document.addEventListener("DOMContentLoaded", function () {
         const user = window.Telegram.WebApp.initDataUnsafe.user;
         if (user) {
             try {
-                const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
+                const response = await fetch(`https://api.telegram.org/botYOUR_BOT_TOKEN/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
                 const data = await response.json();
 
                 if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
                     // Пользователь подписан
-                    this.textContent = "✔️"; // Меняем текст кнопки
-                    this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
-                    this.style.background = "rgb(161, 23, 23)"; 
+                    this.textContent = "✔"; // Меняем текст кнопки
+                    this.classList.add("completed"); // Добавляем класс
+                    this.style.background = "#c41e3a";
                     this.style.cursor = "default"; // Отключаем курсор
-                    
+
                     // Обновляем баланс монет на +250 $LUCU
                     updateCoins(250);
-                   // Отправляем данные на сервер о выполнении задания
-                   await fetch("https://your-server.com/task_completed", {
-                       method: "POST",
-                       headers: { "Content-Type": "application/json" },
-                       body: JSON.stringify({
-                           user_id: user.id,
-                           task: "subscribe_to_channel",
-                           reward: 250
-                       })
-                   });
+
+                    // Отправляем данные о выполнении квеста на сервер
+                    await fetch("/complete_quest", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ user_id: user.id, quest: "subscribe_channel" })
+                    });
                 }
             } catch (error) {
                 console.error("Ошибка проверки подписки:", error);
@@ -293,6 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
 
 
 // Функция обновления монет
