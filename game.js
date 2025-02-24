@@ -283,34 +283,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-document.addEventListener("DOMContentLoaded", function () {
-    const watchAdButton = document.querySelector(".quest-item:nth-child(2) .quest-btn"); // Кнопка "Watch Ad"
 
-    watchAdButton.addEventListener("click", async function () {
-        if (this.classList.contains("completed")) return; // Если уже выполнено, не даём повторять
-
-        // Открываем рекламу AdsGram
-        const adsgramURL = "https://adsgram.me/show_ad?unit_id=8455"; // Используем ваш Unit ID
-        const adWindow = window.open(adsgramURL, "_blank");
-
-        if (!adWindow) {
-            alert("Разрешите всплывающие окна для просмотра рекламы.");
-            return;
-        }
-
-        // Ждём закрытия рекламного окна
-        const checkAdInterval = setInterval(() => {
-            if (adWindow.closed) {
-                clearInterval(checkAdInterval);
-                    this.textContent = "✔️"; // Меняем текст кнопки
-                    this.classList.add("✔️"); // Запрещаем повторное выполнение
-                    this.style.background = "rgb(161, 23, 23)"; // Зеленый цвет для статуса "выполнено"
-                    this.style.cursor = "default"; // Отключаем курсор
-                   updateCoins(50);
-            }
-        }, 1000); // Проверяем каждую секунду, закрылось ли окно рекламы
-    });
-});
 
 // Функция обновления монет
 function updateCoins(amount) {
