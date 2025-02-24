@@ -693,7 +693,8 @@ function updateGameData() {
             coins,
             min_luck,
             owned_skins = [],
-            equipped_skin = "classic"
+            equipped_skin = "classic",
+            completed_quests = []
          } = data;
 
          coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
@@ -706,6 +707,20 @@ function updateGameData() {
 
          updateSkinsUI(owned_skins, equipped_skin);
 
+         // Проверяем, выполнен ли квест подписки
+         const subscribeButton = document.querySelector(".quest-item .quest-btn");
+         if (completed_quests.includes("subscribe_channel")) {
+            subscribeButton.textContent = "✔️";
+            subscribeButton.classList.add("completed");
+            subscribeButton.style.background = "rgb(161, 23, 23)";
+            subscribeButton.style.cursor = "default";
+         } else {
+            subscribeButton.textContent = "GO"; // Если не выполнено, показываем "GO"
+            subscribeButton.classList.remove("completed");
+            subscribeButton.style.background = ""; // Сброс стиля (если надо)
+            subscribeButton.style.cursor = "pointer";
+         }
+
          // Только если загруженный скин отличается от текущего — меняем его
          if (equippedSkin !== equipped_skin) {
             equipSkin(equipped_skin, false); // false = не отправлять сразу на сервер
@@ -715,6 +730,7 @@ function updateGameData() {
          console.error("Ошибка при получении данных с сервера:", error);
       });
 }
+
 
 function updateSkinsUI(ownedSkins, equippedSkin) {
    hasBoughtNegative = ownedSkins.includes("negative");
