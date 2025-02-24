@@ -668,7 +668,7 @@ function updateGameData() {
       return;
    }
 
-   fetch(https://backend12-production-1210.up.railway.app/get_user_data/${userId})
+   fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
       .then(response => {
          if (!response.ok) {
             throw new Error("Ошибка сети: " + response.status);
@@ -683,18 +683,18 @@ function updateGameData() {
             equipped_skin = "classic"
          } = data;
 
-         coinsDisplay.textContent = ${formatCoins(coins)} $LUCU;
+         coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
 
-         bestLuckDisplay.innerHTML = min_luck === Infinity ?
-            Your Best MIN number: <span style="color: #F80000;">N/A</span> :
-            Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>;
+         bestLuckDisplay.innerHTML = min_luck === Infinity
+            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+            : `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
 
          console.log("Данные игры обновлены:", data);
 
          updateSkinsUI(owned_skins, equipped_skin);
 
-         // Только если загруженный скин отличается от текущего — меняем его
-         if (equippedSkin !== equipped_skin) {
+         // Проверяем, определена ли переменная equippedSkin, чтобы избежать ошибки
+         if (typeof equippedSkin !== "undefined" && equippedSkin !== equipped_skin) {
             equipSkin(equipped_skin, false); // false = не отправлять сразу на сервер
          }
       })
