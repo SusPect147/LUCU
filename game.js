@@ -258,28 +258,21 @@ document.addEventListener("DOMContentLoaded", function () {
        if (this.classList.contains("completed")) return; // Если уже выполнено, ничего не делаем
 
        // Открываем канал
-       window.open(https://t.me/${telegramChannelUsername}, "_blank");
+       window.open(`https://t.me/${telegramChannelUsername}`, "_blank");
 
-       // Проверяем подписку через Telegram Web Apps API
+       // Проверяем подписку через Telegram API
        const user = window.Telegram.WebApp.initDataUnsafe.user;
-       if (user) {
-           try {
-               const response = await fetch(https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id});
-               const data = await response.json();
+       const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
+       const data = await response.json();
 
-               if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
-                   // Пользователь подписан
-                   this.textContent = "✔️"; // Меняем текст кнопки
-                   this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
-                   this.style.background = "rgb(161, 23, 23)"; 
-                   this.style.cursor = "default"; // Отключаем курсор
-                   
-                   // Обновляем баланс монет на +250 $LUCU
-                   updateCoins(250);
-               }
-           } catch (error) {
-               console.error("Ошибка проверки подписки:", error);
-           }
+       if (data.ok && ["member", "administrator", "creator"].includes(data.result.status)) {
+           this.textContent = "✔️"; // Меняем текст кнопки
+           this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
+           this.style.background = "rgb(161, 23, 23)"; 
+           this.style.cursor = "default"; // Отключаем курсор
+
+           // Обновляем баланс монет на +250 $LUCU
+           updateCoins(250);
        }
    });
 });
