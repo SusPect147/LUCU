@@ -697,7 +697,7 @@ function updateGameData() {
             completed_quests = []
          } = data;
 
-         // Обновляем UI
+         // Обновляем UI (с проверкой существования элементов)
          if (coinsDisplay) {
             coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
          }
@@ -712,18 +712,25 @@ function updateGameData() {
 
          updateSkinsUI(owned_skins, equipped_skin);
 
-         // Оптимизированное обновление кнопки квеста (без лишних изменений стилей)
+         // Получаем кнопку квеста
          const subscribeButton = document.querySelector(".quest-item .quest-btn");
          if (subscribeButton) {
             if (completed_quests.includes("subscribe_channel")) {
-               if (subscribeButton.textContent !== "✔️") {
-                  subscribeButton.textContent = "✔️";
-                  subscribeButton.disabled = true; // Блокируем повторное нажатие
-               }
+               // Если квест уже выполнен, ставим галочку
+               subscribeButton.textContent = "✔️";
+               subscribeButton.disabled = true;
             } else {
-               if (subscribeButton.textContent !== "GO") {
-                  subscribeButton.textContent = "GO";
-                  subscribeButton.disabled = false;
+               // Если квест НЕ выполнен, ставим "GO"
+               subscribeButton.textContent = "GO";
+               subscribeButton.disabled = false;
+
+               // Назначаем обработчик клика, если его еще нет
+               if (!subscribeButton.dataset.listener) {
+                  subscribeButton.dataset.listener = "true"; // Помечаем, что обработчик добавлен
+
+                  subscribeButton.addEventListener("click", () => {
+                     completeQuest(userId, "subscribe_channel", subscribeButton);
+                  });
                }
             }
          }
@@ -737,6 +744,42 @@ function updateGameData() {
          console.error("Ошибка при получении данных с сервера:", error);
       });
 }
+
+// Функция для выполнения квеста
+function completeQuest(userId, questId, button) {
+   fetch(`https://backend12-production-1210.up.railway.app/complete_quest`, {
+      method: "POST",
+      headers: {
+         "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+         user_id: userId,
+         quest_id: questId
+      })
+   })
+   .then(response => {
+      if (!response.ok) {
+         throw new Error("Ошибка выполнения квеста: " + response.status);
+      }
+      return response.json();
+   })
+   .then(data => {
+      console.log("Квест выполнен:", data);
+      
+      // Обновляем UI после выполнения квеста
+      button.textContent = "✔️";
+      button.disabled = true;
+
+      // Обновляем баланс (если сервер вернул новые данные)
+      if (data.new_coins !== undefined && coinsDisplay) {
+         coinsDisplay.textContent = `${formatCoins(data.new_coins)} $LUCU`;
+      }
+   })
+   .catch(error => {
+      console.error("Ошибка при выполнении квеста:", error);
+   });
+}
+
 
 
 function updateSkinsUI(ownedSkins, equippedSkin) {
