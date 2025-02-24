@@ -697,33 +697,40 @@ function updateGameData() {
             completed_quests = []
          } = data;
 
-         coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+         // Обновляем UI
+         if (coinsDisplay) {
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+         }
 
-         bestLuckDisplay.innerHTML = min_luck === Infinity ?
-            `Your Best MIN number: <span style="color: #F80000;">N/A</span>` :
-            `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
+         if (bestLuckDisplay) {
+            bestLuckDisplay.innerHTML = min_luck === Infinity ?
+               `Your Best MIN number: <span style="color: #F80000;">N/A</span>` :
+               `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
+         }
 
          console.log("Данные игры обновлены:", data);
 
          updateSkinsUI(owned_skins, equipped_skin);
 
-         // Проверяем, выполнен ли квест подписки
+         // Оптимизированное обновление кнопки квеста (без лишних изменений стилей)
          const subscribeButton = document.querySelector(".quest-item .quest-btn");
-         if (completed_quests.includes("subscribe_channel")) {
-            subscribeButton.textContent = "✔️";
-            subscribeButton.classList.add("completed");
-            subscribeButton.style.background = "rgb(161, 23, 23)";
-            subscribeButton.style.cursor = "default";
-         } else {
-            subscribeButton.textContent = "GO"; // Если не выполнено, показываем "GO"
-            subscribeButton.classList.remove("completed");
-            subscribeButton.style.background = ""; // Сброс стиля (если надо)
-            subscribeButton.style.cursor = "pointer";
+         if (subscribeButton) {
+            if (completed_quests.includes("subscribe_channel")) {
+               if (subscribeButton.textContent !== "✔️") {
+                  subscribeButton.textContent = "✔️";
+                  subscribeButton.disabled = true; // Блокируем повторное нажатие
+               }
+            } else {
+               if (subscribeButton.textContent !== "GO") {
+                  subscribeButton.textContent = "GO";
+                  subscribeButton.disabled = false;
+               }
+            }
          }
 
-         // Только если загруженный скин отличается от текущего — меняем его
+         // Меняем скин только если он другой
          if (equippedSkin !== equipped_skin) {
-            equipSkin(equipped_skin, false); // false = не отправлять сразу на сервер
+            equipSkin(equipped_skin, false);
          }
       })
       .catch(error => {
