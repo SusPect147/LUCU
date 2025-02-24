@@ -251,45 +251,39 @@ document.getElementById("achievements-tab").addEventListener("click", function()
    document.getElementById("achievements-list").classList.remove("hidden");
 });
 document.addEventListener("DOMContentLoaded", function () {
-    const subscribeButton = document.querySelector(".quest-item .quest-btn");
-    const telegramChannelUsername = "luckycubesCHANNEL"; // Юзернейм канала
+   const subscribeButton = document.querySelector(".quest-item .quest-btn");
+   const telegramChannelUsername = "luckycubesCHANNEL"; // Юзернейм канала
 
-    subscribeButton.addEventListener("click", async function () {
-        if (this.classList.contains("completed")) return; // Если уже выполнено, ничего не делаем
+   subscribeButton.addEventListener("click", async function () {
+       if (this.classList.contains("completed")) return; // Если уже выполнено, ничего не делаем
 
-        // Открываем канал
-        window.open(`https://t.me/${telegramChannelUsername}`, "_blank");
+       // Открываем канал
+       window.open(https://t.me/${telegramChannelUsername}, "_blank");
 
-        // Проверяем подписку через Telegram Web Apps API
-        const user = window.Telegram.WebApp.initDataUnsafe.user;
-        if (user) {
-            try {
-                const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
-                const data = await response.json();
+       // Проверяем подписку через Telegram Web Apps API
+       const user = window.Telegram.WebApp.initDataUnsafe.user;
+       if (user) {
+           try {
+               const response = await fetch(https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id});
+               const data = await response.json();
 
-                if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
-                    // Пользователь подписан
-                    this.textContent = "✔"; // Меняем текст кнопки
-                    this.classList.add("completed"); // Добавляем класс
-                    this.style.background = "#c41e3a";
-                    this.style.cursor = "default"; // Отключаем курсор
-
-                    // Обновляем баланс монет на +250 $LUCU
-                    updateCoins(250);
-
-                    // Отправляем данные о выполнении квеста на сервер
-                    await fetch("/complete_quest", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ user_id: user.id, quest: "subscribe_channel" })
-                    });
-                }
-            } catch (error) {
-                console.error("Ошибка проверки подписки:", error);
-            }
-        }
-    });
+               if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
+                   // Пользователь подписан
+                   this.textContent = "✔️"; // Меняем текст кнопки
+                   this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
+                   this.style.background = "rgb(161, 23, 23)"; 
+                   this.style.cursor = "default"; // Отключаем курсор
+                   
+                   // Обновляем баланс монет на +250 $LUCU
+                   updateCoins(250);
+               }
+           } catch (error) {
+               console.error("Ошибка проверки подписки:", error);
+           }
+       }
+   });
 });
+
 
 
 
@@ -681,7 +675,7 @@ function updateGameData() {
       return;
    }
 
-   fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
+   fetch(https://backend12-production-1210.up.railway.app/get_user_data/${userId})
       .then(response => {
          if (!response.ok) {
             throw new Error("Ошибка сети: " + response.status);
@@ -693,94 +687,28 @@ function updateGameData() {
             coins,
             min_luck,
             owned_skins = [],
-            equipped_skin = "classic",
-            completed_quests = []
+            equipped_skin = "classic"
          } = data;
 
-         // Обновляем UI (с проверкой существования элементов)
-         if (coinsDisplay) {
-            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-         }
+         coinsDisplay.textContent = ${formatCoins(coins)} $LUCU;
 
-         if (bestLuckDisplay) {
-            bestLuckDisplay.innerHTML = min_luck === Infinity ?
-               `Your Best MIN number: <span style="color: #F80000;">N/A</span>` :
-               `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
-         }
+         bestLuckDisplay.innerHTML = min_luck === Infinity ?
+            Your Best MIN number: <span style="color: #F80000;">N/A</span> :
+            Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>;
 
          console.log("Данные игры обновлены:", data);
 
          updateSkinsUI(owned_skins, equipped_skin);
 
-         // Получаем кнопку квеста
-         const subscribeButton = document.querySelector(".quest-item .quest-btn");
-         if (subscribeButton) {
-            if (completed_quests.includes("subscribe_channel")) {
-               // Если квест уже выполнен, ставим галочку
-               subscribeButton.textContent = "✔️";
-               subscribeButton.disabled = true;
-            } else {
-               // Если квест НЕ выполнен, ставим "GO"
-               subscribeButton.textContent = "GO";
-               subscribeButton.disabled = false;
-
-               // Назначаем обработчик клика, если его еще нет
-               if (!subscribeButton.dataset.listener) {
-                  subscribeButton.dataset.listener = "true"; // Помечаем, что обработчик добавлен
-
-                  subscribeButton.addEventListener("click", () => {
-                     completeQuest(userId, "subscribe_channel", subscribeButton);
-                  });
-               }
-            }
-         }
-
-         // Меняем скин только если он другой
+         // Только если загруженный скин отличается от текущего — меняем его
          if (equippedSkin !== equipped_skin) {
-            equipSkin(equipped_skin, false);
+            equipSkin(equipped_skin, false); // false = не отправлять сразу на сервер
          }
       })
       .catch(error => {
          console.error("Ошибка при получении данных с сервера:", error);
       });
 }
-
-// Функция для выполнения квеста
-function completeQuest(userId, questId, button) {
-   fetch(`https://backend12-production-1210.up.railway.app/complete_quest`, {
-      method: "POST",
-      headers: {
-         "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-         user_id: userId,
-         quest_id: questId
-      })
-   })
-   .then(response => {
-      if (!response.ok) {
-         throw new Error("Ошибка выполнения квеста: " + response.status);
-      }
-      return response.json();
-   })
-   .then(data => {
-      console.log("Квест выполнен:", data);
-      
-      // Обновляем UI после выполнения квеста
-      button.textContent = "✔️";
-      button.disabled = true;
-
-      // Обновляем баланс (если сервер вернул новые данные)
-      if (data.new_coins !== undefined && coinsDisplay) {
-         coinsDisplay.textContent = `${formatCoins(data.new_coins)} $LUCU`;
-      }
-   })
-   .catch(error => {
-      console.error("Ошибка при выполнении квеста:", error);
-   });
-}
-
-
 
 function updateSkinsUI(ownedSkins, equippedSkin) {
    hasBoughtNegative = ownedSkins.includes("negative");
