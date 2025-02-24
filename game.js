@@ -276,6 +276,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     
                     // Обновляем баланс монет на +250 $LUCU
                     updateCoins(250);
+                   // Отправляем данные на сервер о выполнении задания
+                   await fetch("https://your-server.com/task_completed", {
+                       method: "POST",
+                       headers: { "Content-Type": "application/json" },
+                       body: JSON.stringify({
+                           user_id: user.id,
+                           task: "subscribe_to_channel",
+                           reward: 250
+                       })
+                   });
                 }
             } catch (error) {
                 console.error("Ошибка проверки подписки:", error);
