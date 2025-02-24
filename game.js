@@ -264,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const user = window.Telegram.WebApp.initDataUnsafe.user;
         if (user) {
             try {
-                const response = await fetch(`https://api.telegram.org/botYOUR_BOT_TOKEN/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
+                const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
                 const data = await response.json();
 
                 if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
