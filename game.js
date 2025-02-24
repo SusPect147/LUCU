@@ -283,6 +283,34 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+document.addEventListener("DOMContentLoaded", function () {
+    const watchAdButton = document.querySelector(".quest-item:nth-child(2) .quest-btn"); // Кнопка "Watch Ad"
+
+    watchAdButton.addEventListener("click", async function () {
+        if (this.classList.contains("completed")) return; // Если уже выполнено, не даём повторять
+        
+        // Проверяем, поддерживает ли Telegram WebApp API
+        if (window.Telegram && window.Telegram.WebApp) {
+            try {
+                window.Telegram.WebApp.openAd("adsgram"); // Открываем рекламу AdsGram
+                
+                // Ждём завершения рекламы
+                window.Telegram.WebApp.onEvent("ad_completed", () => {
+                    this.textContent = "✔️"; // Меняем текст кнопки
+                    this.classList.add("✔️"); // Запрещаем повторное выполнение
+                    this.style.background = "rgb(161, 23, 23)"; // Зеленый цвет для статуса "выполнено"
+                    this.style.cursor = "default"; // Отключаем курсор
+                   updateCoins(50);
+                });
+            } catch (error) {
+                console.error("Ошибка открытия рекламы:", error);
+            }
+        } else {
+            alert("WebApp API не поддерживается.");
+        }
+    });
+});
+
 const leaderboardMenu = document.getElementById('leaderboard-menu');
 const leaderboardMenuContent = document.getElementById('leaderboard-menu-content');
 const leaderboardList = document.getElementById("leaderboard-list");
