@@ -282,7 +282,7 @@ async function loadQuestStatus() {
         
         const subscribeButton = document.querySelector(".quest-item .quest-btn");
         if (isSubscribed) {
-            subscribeButton.textContent = "✔️ Done";
+            subscribeButton.textContent = "✔️";
             subscribeButton.classList.add("completed");
             subscribeButton.style.background = "rgb(139, 0, 0)"; // Темно-красный
             subscribeButton.style.cursor = "default";
