@@ -1291,7 +1291,7 @@ function rollCube() {
       setTimeout(() => {
          rollCube();
          isAnimating = false;
-      }, 1150);
+      }, 1000);
    };
 }
 rollCube();
