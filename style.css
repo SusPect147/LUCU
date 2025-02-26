@@ -242,12 +242,11 @@ body {
 .progress-circle::before {
     content: '';
     position: absolute;
-    top: 5%;
-    left: 5%;
-    width: 90%;
-    height: 90%;
+    top: 10%; /* Увеличиваем отступ сверху */
+    left: 10%; /* Увеличиваем отступ слева */
+    width: 80%; /* Уменьшаем ширину внутреннего круга */
+    height: 80%; /* Уменьшаем высоту внутреннего круга */
     border-radius: 50%;
-    background: #1a1a1a; /* Темно-серый внутренний фон */
 }
 
 .progress-circle::after {
