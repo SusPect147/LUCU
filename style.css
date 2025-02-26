@@ -234,7 +234,7 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #000000; /* Черный фон */
+    background: transparent; /* Убираем черный фон, чтобы был только прогресс */
     position: relative;
     overflow: hidden;
 }
@@ -242,11 +242,13 @@ body {
 .progress-circle::before {
     content: '';
     position: absolute;
-    top: 10%; /* Увеличиваем отступ сверху */
-    left: 10%; /* Увеличиваем отступ слева */
-    width: 80%; /* Уменьшаем ширину внутреннего круга */
-    height: 80%; /* Уменьшаем высоту внутреннего круга */
+    top: 8px; /* Фиксированный отступ для толщины кольца */
+    left: 8px; /* Фиксированный отступ для толщины кольца */
+    width: 24px; /* Фиксированный размер внутреннего выреза */
+    height: 24px; /* Фиксированный размер внутреннего выреза */
     border-radius: 50%;
+    background: transparent; /* Прозрачный центр */
+    z-index: 1; /* Помещаем вырез поверх прогресса */
 }
 
 .progress-circle::after {
@@ -257,7 +259,7 @@ body {
     border-radius: 50%;
     background: conic-gradient(
         #ff0000 var(--progress, 0%),  /* Красный прогресс */
-        transparent var(--progress, 0%)
+        #000000 var(--progress, 0%)   /* Черный фон кольца вместо transparent */
     );
     transform: rotate(-90deg); /* Начало сверху */
 }
@@ -266,7 +268,6 @@ body {
 .progress-circle span {
     display: none;
 }
-
 /* --- Новый стиль списка ачивок --- */
 .achievement-info {
   display: flex;
