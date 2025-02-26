@@ -213,7 +213,7 @@ const questsTab = document.getElementById("quests-tab");
 const achievementsTab = document.getElementById("achievements-tab");
 const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
 
-// Функция загрузки прогресса ачивок
+// Загрузка прогресса ачивок
 async function loadAchievementsProgress() {
     const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
     if (!userId) return;
@@ -1050,7 +1050,7 @@ function sendSkinToServer(skinType) {
 }
 
 
-// Добавим функцию для обновления прогресса ачивки
+// Функция обновления прогресса ачивки
 function updateAchievementProgress(rolls) {
     const targetRolls = 123456;
     const progress = Math.min((rolls / targetRolls) * 100, 100); // Процент выполнения
@@ -1059,16 +1059,21 @@ function updateAchievementProgress(rolls) {
     const progressCircle = rollsAchievement.querySelector('.progress-circle');
     const rewardText = rollsAchievement.querySelector('.achievement-reward');
     
-    progressCircle.setAttribute('data-progress', progress);
-    rewardText.textContent = `Make ${targetRolls - rolls} more dice rolls to complete (${progress.toFixed(1)}%)`;
+    // Устанавливаем прогресс как CSS-переменную
+    progressCircle.style.setProperty('--progress', `${progress}%`);
     
-    // Обновляем визуальный прогресс круга (предполагая, что у вас есть CSS для этого)
-    progressCircle.style.background = `conic-gradient(#00ff00 ${progress}%, #333 ${progress}%)`;
-    
-    if (progress === 100) {
-        rewardText.textContent = "Achievement Completed! 123456 dice rolls made!";
-    }
+    // Обновляем текст подписи
+    rewardText.textContent = rolls >= targetRolls 
+        ? "Achievement Completed! 123456 dice rolls made!"
+        : `Make ${formatNumber1(targetRolls - rolls)} more dice rolls to complete`;
 }
+
+// Форматирование чисел с разделителями тысяч
+function formatNumber1(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+
 
 function rollCube() {
    let isRainbow = Math.random() < 0.2;
