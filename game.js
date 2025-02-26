@@ -250,34 +250,79 @@ document.getElementById("achievements-tab").addEventListener("click", function()
    document.getElementById("quests-list").classList.add("hidden");
    document.getElementById("achievements-list").classList.remove("hidden");
 });
-document.addEventListener("DOMContentLoaded", function () {
-   const subscribeButton = document.querySelector(".quest-item .quest-btn");
-   const telegramChannelUsername = "luckycubesCHANNEL"; // Юзернейм канала
+// Добавим функцию для загрузки статуса квестов
+async function loadQuestStatus() {
+    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    if (!userId) return;
 
-   subscribeButton.addEventListener("click", async function () {
-       if (this.classList.contains("completed")) return; // Если уже выполнено, ничего не делаем
+    try {
+        const response = await fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`);
+        const data = await response.json();
+        
+        // Проверяем статус подписки на канал
+        const isSubscribed = data?.quests?.subscription_quest === "yes";
+        
+        const subscribeButton = document.querySelector(".quest-item .quest-btn");
+        if (isSubscribed) {
+            subscribeButton.textContent = "✔️ Done";
+            subscribeButton.classList.add("completed");
+            subscribeButton.style.background = "rgb(139, 0, 0)"; // Темно-красный
+            subscribeButton.style.cursor = "default";
+            subscribeButton.disabled = true;
+        }
+        
+        return isSubscribed;
+    } catch (error) {
+        console.error("Ошибка при загрузке статуса квестов:", error);
+    }
+}
 
-       // Открываем канал
-       window.open(`https://t.me/${telegramChannelUsername}`, "_blank");
-
-       // Проверяем подписку через Telegram API
-       const user = window.Telegram.WebApp.initDataUnsafe.user;
-       const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
-       const data = await response.json();
-
-       if (data.ok && ["member", "administrator", "creator"].includes(data.result.status)) {
-           this.textContent = "✔️"; // Меняем текст кнопки
-           this.classList.add("completed"); // Добавляем класс, чтобы нельзя было нажать
-           this.style.background = "rgb(161, 23, 23)"; 
-           this.style.cursor = "default"; // Отключаем курсор
-
-           // Обновляем баланс монет на +250 $LUCU
-           updateCoins(250);
-       }
-   });
+// Модифицируем обработчик открытия меню квестов
+questsButton.addEventListener('click', async () => {
+    // Показываем меню только после загрузки статуса
+    await loadQuestStatus();
+    questsMenu.classList.remove('hide', 'hidden');
+    questsMenu.classList.add('show');
 });
 
+// Модифицируем обработчик кнопки подписки
+document.addEventListener("DOMContentLoaded", function () {
+    const subscribeButton = document.querySelector(".quest-item .quest-btn");
+    const telegramChannelUsername = "luckycubesCHANNEL";
 
+    subscribeButton.addEventListener("click", async function () {
+        if (this.classList.contains("completed")) return;
+
+        window.open(`https://t.me/${telegramChannelUsername}`, "_blank");
+
+        const user = window.Telegram.WebApp.initDataUnsafe.user;
+        const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
+        const data = await response.json();
+
+        if (data.ok && ["member", "administrator", "creator"].includes(data.result.status)) {
+            this.textContent = "✔️"; // Меняем на текст с галочкой
+            this.classList.add("completed");
+            this.style.background = "rgb(139, 0, 0)"; // Темно-красный
+            this.style.cursor = "default";
+            this.disabled = true;
+
+            // Отправляем статус на сервер
+            const userId = user.id;
+            await fetch("https://backend12-production-1210.up.railway.app/update_quest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    quest: "subscription_quest",
+                    status: "yes"
+                })
+            });
+
+            // Обновляем баланс
+            updateCoins(250);
+        }
+    });
+});
 
 
 // Функция обновления монет
