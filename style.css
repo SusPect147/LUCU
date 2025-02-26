@@ -234,21 +234,8 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: transparent; /* Убираем черный фон, чтобы был только прогресс */
     position: relative;
-    overflow: hidden;
-}
-
-.progress-circle::before {
-    content: '';
-    position: absolute;
-    top: 8px; /* Фиксированный отступ для толщины кольца */
-    left: 8px; /* Фиксированный отступ для толщины кольца */
-    width: 24px; /* Фиксированный размер внутреннего выреза */
-    height: 24px; /* Фиксированный размер внутреннего выреза */
-    border-radius: 50%;
-    background: transparent; /* Прозрачный центр */
-    z-index: 1; /* Помещаем вырез поверх прогресса */
+    background: transparent; /* Прозрачный фон контейнера */
 }
 
 .progress-circle::after {
@@ -259,12 +246,14 @@ body {
     border-radius: 50%;
     background: conic-gradient(
         #ff0000 var(--progress, 0%),  /* Красный прогресс */
-        #000000 var(--progress, 0%)   /* Черный фон кольца вместо transparent */
+        #000000 var(--progress, 0%)   /* Черный фон кольца */
     );
     transform: rotate(-90deg); /* Начало сверху */
+    -webkit-mask: radial-gradient(circle at center, transparent 60%, black 70%); /* Вырезаем центр */
+    mask: radial-gradient(circle at center, transparent 60%, black 70%); /* Стандартная маска */
 }
 
-/* Скрываем текст процентов, если он был */
+/* Убираем ::before, так как он больше не нужен */
 .progress-circle span {
     display: none;
 }
