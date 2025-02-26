@@ -212,6 +212,20 @@ const questsMenu = document.getElementById('quests-menu');
   const questsTab = document.getElementById("quests-tab");
   const achievementsTab = document.getElementById("achievements-tab");
   const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
+// Добавим загрузку начального прогресса при открытии меню ачивок
+async function loadAchievementsProgress() {
+    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    if (!userId) return;
+
+    try {
+        const response = await fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`);
+        const data = await response.json();
+        const totalRolls = data.rolls || 0;
+        updateAchievementProgress(totalRolls);
+    } catch (error) {
+        console.error("Ошибка при загрузке прогресса ачивок:", error);
+    }
+}
 
   // Открытие меню квестов
   questsButton.addEventListener('click', () => {
@@ -345,20 +359,6 @@ async function sendCoinsToServer(amount) {
         body: JSON.stringify({ amount })
     });
     return await response.json();
-}
-// Добавим загрузку начального прогресса при открытии меню ачивок
-async function loadAchievementsProgress() {
-    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
-    if (!userId) return;
-
-    try {
-        const response = await fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`);
-        const data = await response.json();
-        const totalRolls = data.rolls || 0;
-        updateAchievementProgress(totalRolls);
-    } catch (error) {
-        console.error("Ошибка при загрузке прогресса ачивок:", error);
-    }
 }
 
 
