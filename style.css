@@ -225,7 +225,7 @@ body {
   text-align: center;
 }
 .quest-btn.completed {
-  background: #4CAF50 !important; /* Зеленый цвет */
+  background: #680606 !important; /* Зеленый цвет */
   cursor: default !important; /* Запрещаем клик */
   pointer-events: none;
 }
@@ -234,19 +234,40 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: conic-gradient(#660404 0%, #333 0%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #000000; /* Черный фон */
     position: relative;
+    overflow: hidden;
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    border-radius: 50%;
+    background: #1a1a1a; /* Темно-серый внутренний фон */
 }
 
 .progress-circle::after {
-    content: attr(data-progress)'%';
+    content: '';
     position: absolute;
-    color: white;
-    font-size: 12px;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+        #ff0000 var(--progress, 0%),  /* Красный прогресс */
+        transparent var(--progress, 0%)
+    );
+    transform: rotate(-90deg); /* Начало сверху */
 }
+
+/* Скрываем текст процентов, если он был */
+.progress-circle span {
+    display: none;
+}
+
 /* --- Новый стиль списка ачивок --- */
 .achievement-info {
   display: flex;
