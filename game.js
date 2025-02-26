@@ -240,6 +240,7 @@ const questsMenu = document.getElementById('quests-menu');
   achievementsTab.addEventListener('click', () => {
     achievementsTab.classList.add('active');
     questsTab.classList.remove('active');
+    await loadAchievementsProgress();
   });
   document.getElementById("quests-tab").addEventListener("click", function() {
    document.getElementById("quests-list").classList.remove("hidden");
@@ -344,6 +345,20 @@ async function sendCoinsToServer(amount) {
         body: JSON.stringify({ amount })
     });
     return await response.json();
+}
+// Добавим загрузку начального прогресса при открытии меню ачивок
+async function loadAchievementsProgress() {
+    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    if (!userId) return;
+
+    try {
+        const response = await fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`);
+        const data = await response.json();
+        const totalRolls = data.rolls || 0;
+        updateAchievementProgress(totalRolls);
+    } catch (error) {
+        console.error("Ошибка при загрузке прогресса ачивок:", error);
+    }
 }
 
 
@@ -1032,6 +1047,25 @@ function sendSkinToServer(skinType) {
 }
 
 
+// Добавим функцию для обновления прогресса ачивки
+function updateAchievementProgress(rolls) {
+    const targetRolls = 123456;
+    const progress = Math.min((rolls / targetRolls) * 100, 100); // Процент выполнения
+    
+    const rollsAchievement = document.querySelector('#achievements-list .achievement-item:nth-child(2)');
+    const progressCircle = rollsAchievement.querySelector('.progress-circle');
+    const rewardText = rollsAchievement.querySelector('.achievement-reward');
+    
+    progressCircle.setAttribute('data-progress', progress);
+    rewardText.textContent = `Make ${targetRolls - rolls} more dice rolls to complete (${progress.toFixed(1)}%)`;
+    
+    // Обновляем визуальный прогресс круга (предполагая, что у вас есть CSS для этого)
+    progressCircle.style.background = `conic-gradient(#00ff00 ${progress}%, #333 ${progress}%)`;
+    
+    if (progress === 100) {
+        rewardText.textContent = "Achievement Completed! 123456 dice rolls made!";
+    }
+}
 
 function rollCube() {
    let isRainbow = Math.random() < 0.2;
@@ -1227,6 +1261,28 @@ function rollCube() {
       }
       cube.src = outcome.src;
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Отправляем информацию о прокрутке на сервер
+        const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+        if (userId) {
+            try {
+                const response = await fetch("https://backend12-production-1210.up.railway.app/update_rolls", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        rolls_increment: 1
+                    })
+                });
+                
+                const data = await response.json();
+                const totalRolls = data.total_rolls;
+                
+                // Обновляем прогресс ачивки
+                updateAchievementProgress(totalRolls);
+            } catch (error) {
+                console.error("Ошибка при обновлении счетчика прокруток:", error);
+            }
+        }
       updateBestLuck();
       updateCoins(outcome.coins);
       setTimeout(() => {
