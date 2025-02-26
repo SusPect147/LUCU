@@ -231,11 +231,21 @@ body {
 }
 
 .progress-circle {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  border: 5px solid rgb(71, 67, 67);
-  position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: conic-gradient(#660404 0%, #333 0%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.progress-circle::after {
+    content: attr(data-progress)'%';
+    position: absolute;
+    color: white;
+    font-size: 12px;
 }
 /* --- Новый стиль списка ачивок --- */
 .achievement-info {
