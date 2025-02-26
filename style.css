@@ -151,33 +151,18 @@ body {
   width: calc(100% - 10px);
 }
 
-/* Элемент ачивки */
-#achievements-list .achievement-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    background: transparent; /* Прозрачный фон для ачивки */
-    border-radius: 10px;
-    margin: 10px 5px;
-    width: calc(100% - 10px);
-    box-sizing: border-box;
-}
-
-/* Исправляем ширину самих элементов ачивок */
+/* Элемент ачивки (удаляем дубликат и исправляем ширину) */
 #achievements-list .achievement-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px;
-  background: #222;
+  background: #222; /* Оставляем один фон */
   border-radius: 10px;
-  margin: 10px 5px !important; /* Фиксированные отступы */
-  width: calc(100% - 10px) !important; /* Заполняем всю ширину с учётом отступов */
+  margin: 10px 5px; /* Без !important, так как нет конфликтов */
+  width: calc(100% - 10px); /* Убираем !important, так как достаточно calc */
   box-sizing: border-box; /* Учитываем padding в ширине */
 }
-
-
 
 /* Делаем иконки круглыми */
 .quest-icon,
@@ -187,9 +172,6 @@ body {
   margin-right: 10px;
   border-radius: 50%;
 }
-
-
-
 
 .quest-info, .achievement-info {
   flex-grow: 1;
