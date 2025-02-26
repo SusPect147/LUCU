@@ -207,12 +207,13 @@ window.particlex = {
 };
 const tg = window.Telegram?.WebApp;
 const questsMenu = document.getElementById('quests-menu');
-  const questsMenuContent = document.getElementById('quests-menu-content');
-  const questsList = document.getElementById("quests-list");
-  const questsTab = document.getElementById("quests-tab");
-  const achievementsTab = document.getElementById("achievements-tab");
-  const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
-// Добавим загрузку начального прогресса при открытии меню ачивок
+const questsMenuContent = document.getElementById('quests-menu-content');
+const questsList = document.getElementById("quests-list");
+const questsTab = document.getElementById("quests-tab");
+const achievementsTab = document.getElementById("achievements-tab");
+const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
+
+// Функция загрузки прогресса ачивок
 async function loadAchievementsProgress() {
     const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
     if (!userId) return;
@@ -227,43 +228,45 @@ async function loadAchievementsProgress() {
     }
 }
 
-  // Открытие меню квестов
-  questsButton.addEventListener('click', () => {
+// Открытие меню квестов
+questsButton.addEventListener('click', () => {
     questsMenu.classList.remove('hide', 'hidden');
     questsMenu.classList.add('show');
-  });
+});
 
-  // Закрытие меню при клике вне области
-  questsMenu.addEventListener('click', (e) => {
+// Закрытие меню при клике вне области
+questsMenu.addEventListener('click', (e) => {
     if (e.target === questsMenu) {
-      questsMenu.classList.add('hide');
-      questsMenu.classList.remove('show');
-      setTimeout(() => {
-        questsMenu.classList.add('hidden');
-        questsMenu.classList.remove('hide');
-      }, 400);
+        questsMenu.classList.add('hide');
+        questsMenu.classList.remove('show');
+        setTimeout(() => {
+            questsMenu.classList.add('hidden');
+            questsMenu.classList.remove('hide');
+        }, 400);
     }
-  });
+});
 
-  // Переключение между вкладками
-  questsTab.addEventListener('click', () => {
+// Переключение между вкладками
+questsTab.addEventListener('click', () => {
     questsTab.classList.add('active');
     achievementsTab.classList.remove('active');
-  });
+});
 
-  achievementsTab.addEventListener('click', () => {
+// Добавляем async к обработчику achievementsTab
+achievementsTab.addEventListener('click', async () => {
     achievementsTab.classList.add('active');
     questsTab.classList.remove('active');
     await loadAchievementsProgress();
-  });
-  document.getElementById("quests-tab").addEventListener("click", function() {
-   document.getElementById("quests-list").classList.remove("hidden");
-   document.getElementById("achievements-list").classList.add("hidden");
+});
+
+document.getElementById("quests-tab").addEventListener("click", function() {
+    document.getElementById("quests-list").classList.remove("hidden");
+    document.getElementById("achievements-list").classList.add("hidden");
 });
 
 document.getElementById("achievements-tab").addEventListener("click", function() {
-   document.getElementById("quests-list").classList.add("hidden");
-   document.getElementById("achievements-list").classList.remove("hidden");
+    document.getElementById("quests-list").classList.add("hidden");
+    document.getElementById("achievements-list").classList.remove("hidden");
 });
 // Добавим функцию для загрузки статуса квестов
 async function loadQuestStatus() {
