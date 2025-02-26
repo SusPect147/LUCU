@@ -29,38 +29,38 @@ body {
   transition: 1s ease-in-out;
   position: relative;
 }
-/* --- Фон и анимации модального окна --- */
+/* Фон модального окна */
 #quests-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(14, 14, 14, 0.5);
-  backdrop-filter: blur(10px);
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.4s ease, visibility 0s 0.4s;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(14, 14, 14, 0.5);
+    backdrop-filter: blur(10px);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.4s ease, visibility 0s 0.4s;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
 }
 
 #quests-menu-content {
-  position: relative;
-  background: #0c0c0c;
-  width: 100%;
-  height: 65%;
-  border-top-left-radius: 15px;
-  border-top-right-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateY(100%);
-  opacity: 0;
-  transition: transform 0.4s ease, opacity 0.4s ease;
+    position: relative;
+    background: #0c0c0c; /* Это будет видно через прозрачный центр */
+    width: 100%;
+    height: 65%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
 /* --- Состояния модального окна --- */
@@ -151,12 +151,17 @@ body {
   width: calc(100% - 10px);
 }
 
-/* Убираем возможные отступы у списка ачивок */
-#achievements-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  width: 100% !important; /* Растягиваем список на всю ширину */
+/* Элемент ачивки */
+#achievements-list .achievement-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: transparent; /* Прозрачный фон для ачивки */
+    border-radius: 10px;
+    margin: 10px 5px;
+    width: calc(100% - 10px);
+    box-sizing: border-box;
 }
 
 /* Исправляем ширину самих элементов ачивок */
@@ -230,12 +235,13 @@ body {
   pointer-events: none;
 }
 
+/* Прогресс "пончик" */
 .progress-circle {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     position: relative;
-    background: transparent; /* Прозрачный фон контейнера */
+    background: transparent;
 }
 
 .progress-circle::after {
@@ -245,15 +251,14 @@ body {
     height: 100%;
     border-radius: 50%;
     background: conic-gradient(
-        #ff0000 var(--progress, 0%),  /* Красный прогресс */
-        #000000 var(--progress, 0%)   /* Черный фон кольца */
+        #ff0000 var(--progress, 0%),
+        #000000 var(--progress, 0%)
     );
-    transform: rotate(-90deg); /* Начало сверху */
-    -webkit-mask: radial-gradient(circle at center, transparent 60%, black 70%); /* Вырезаем центр */
-    mask: radial-gradient(circle at center, transparent 60%, black 70%); /* Стандартная маска */
+    transform: rotate(-90deg);
+    -webkit-mask: radial-gradient(circle at center, transparent 65%, black 75%);
+    mask: radial-gradient(circle at center, transparent 65%, black 75%);
 }
 
-/* Убираем ::before, так как он больше не нужен */
 .progress-circle span {
     display: none;
 }
