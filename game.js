@@ -376,6 +376,10 @@ const trophyImage = document.querySelector(".trophy");
 const glowElement = document.querySelector(".glow");
 const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
 
+
+let equippedSkin = 'classic';
+
+
 // Добавляем плавный скролл через requestAnimationFrame
 let lastScrollTop = 0;
 function handleScroll() {
@@ -725,66 +729,67 @@ function updateBestLuck() {
 }
 
 function updateGameData() {
-   const userId = tg.initDataUnsafe?.user?.id;
-   if (!userId) {
-      console.error("User ID не найден");
-      return;
-   }
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) {
+        console.error("User ID не найден");
+        return;
+    }
 
-   fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
-      .then(response => {
-         if (!response.ok) {
-            throw new Error("Ошибка сети: " + response.status);
-         }
-         return response.json();
-      })
-      .then(data => {
-         const {
-            coins,
-            min_luck,
-            owned_skins = [],
-            equipped_skin = "classic"
-         } = data;
+    fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Ошибка сети: " + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const {
+                coins,
+                min_luck,
+                owned_skins = [],
+                equipped_skin = "classic"
+            } = data;
 
-         coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
+            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
 
-         bestLuckDisplay.innerHTML = min_luck === Infinity
-            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-            : `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
+            bestLuckDisplay.innerHTML = min_luck === Infinity
+                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                : `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
 
-         console.log("Данные игры обновлены:", data);
+            console.log("Данные игры обновлены:", data);
 
-         updateSkinsUI(owned_skins, equipped_skin);
+            // Обновляем UI и локальное состояние
+            updateSkinsUI(owned_skins, equipped_skin);
+            equippedSkin = equipped_skin; // Синхронизируем локальную переменную с сервером
 
-         // Проверяем, определена ли переменная equippedSkin, чтобы избежать ошибки
-         if (typeof equippedSkin !== "undefined" && equippedSkin !== equipped_skin) {
-            equipSkin(equipped_skin, false); // false = не отправлять сразу на сервер
-         }
-      })
-      .catch(error => {
-         console.error("Ошибка при получении данных с сервера:", error);
-      });
+            // Если скин отличается, экипируем его, но не отправляем на сервер при загрузке
+            if (equippedSkin !== equipped_skin) {
+                equipSkin(equipped_skin, false);
+            }
+        })
+        .catch(error => {
+            console.error("Ошибка при получении данных с сервера:", error);
+        });
 }
 
 function updateSkinsUI(ownedSkins, equippedSkin) {
-   hasBoughtNegative = ownedSkins.includes("negative");
-   hasBoughtEmerald = ownedSkins.includes("Emerald");
-   hasBoughtPixel = ownedSkins.includes("Pixel");
+    hasBoughtNegative = ownedSkins.includes("negative");
+    hasBoughtEmerald = ownedSkins.includes("Emerald");
+    hasBoughtPixel = ownedSkins.includes("Pixel");
 
-   // Обновляем кнопки в зависимости от купленных скинов
-   buyNegativeButton.textContent = hasBoughtNegative ?
-      (equippedSkin === "negative" ? "Equipped" : "Equip") :
-      "Buy //5K $LUCU/";
+    buyNegativeButton.textContent = hasBoughtNegative ?
+        (equippedSkin === "negative" ? "Equipped" : "Equip") :
+        "Buy //5K $LUCU/";
 
-   buyEmeraldButton.textContent = hasBoughtEmerald ?
-      (equippedSkin === "Emerald" ? "Equipped" : "Equip") :
-      "Buy //10K $LUCU/";
+    buyEmeraldButton.textContent = hasBoughtEmerald ?
+        (equippedSkin === "Emerald" ? "Equipped" : "Equip") :
+        "Buy //10K $LUCU/";
 
-   buyPixelButton.textContent = hasBoughtPixel ?
-      (equippedSkin === "Pixel" ? "Equipped" : "Equip") :
-      "Buy //150K $LUCU/";
+    buyPixelButton.textContent = hasBoughtPixel ?
+        (equippedSkin === "Pixel" ? "Equipped" : "Equip") :
+        "Buy //150K $LUCU/";
 
-   equipClassicButton.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
+    equipClassicButton.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
 }
 
 
@@ -895,7 +900,6 @@ const equipClassicButton = document.getElementById('equip-classic');
 let hasBoughtNegative = false;
 let hasBoughtEmerald = false;
 let hasBoughtPixel = false;
-let equippedSkin = 'classic';
 
 const skinsMenu = document.getElementById('skins-menu');
 const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
@@ -1017,38 +1021,46 @@ equipClassicButton.addEventListener('click', () => {
     equipSkin('classic');
 });
 
-// Функция экипировки
+// Функция экипировки скина
 function equipSkin(type, sendToServer = true) {
     if (equippedSkin === type) return;
 
-    equippedSkin = type;
+    equippedSkin = type; // Обновляем локальное состояние
     cube.src = type === "negative" ? "pictures/cubics/негатив/начальный-кубик-негатив.gif" :
                type === "Emerald" ? "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif" :
                type === "Pixel" ? "pictures/cubics/пиксель/начальный-кубик-пиксель.gif" :
                "pictures/cubics/классика/начальный-кубик.gif";
 
-    buyNegativeButton.textContent = hasBoughtNegative ? (type === "negative" ? "Equipped" : "Equip") : "Buy (5000)";
-    buyEmeraldButton.textContent = hasBoughtEmerald ? (type === "Emerald" ? "Equipped" : "Equip") : "Buy (10000)";
-    buyPixelButton.textContent = hasBoughtPixel ? (type === "Pixel" ? "Equipped" : "Equip") : "Buy (5000)";
-    equipClassicButton.textContent = type === "classic" ? "Equipped" : "Equip";
+    // Обновляем UI кнопок
+    updateSkinsUI(
+        [hasBoughtNegative && "negative", hasBoughtEmerald && "Emerald", hasBoughtPixel && "Pixel"].filter(Boolean),
+        equippedSkin
+    );
 
     if (sendToServer) {
         sendSkinToServer(type);
     }
 }
 
-// Отправка экипированного скина на сервер
+// Отправка скина на сервер
 function sendSkinToServer(skinType) {
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return;
+
     fetch('https://backend12-production-1210.up.railway.app/update_skin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, skin_type: skinType })
     })
-    .then(response => response.json())
-    .then(data => console.log("Skin updated on server:", data))
-    .catch(error => console.error("Error updating skin on server:", error));
+        .then(response => response.json())
+        .then(data => console.log("Skin updated on server:", data))
+        .catch(error => console.error("Error updating skin on server:", error));
 }
 
+// Обработчики событий для кнопок
+equipClassicButton.addEventListener('click', () => {
+    equipSkin('classic', true); // Всегда отправляем на сервер при выборе пользователем
+});
 
 // Функция обновления прогресса ачивки
 function updateAchievementProgress(rolls) {
