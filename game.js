@@ -1076,229 +1076,173 @@ function formatNumber1(num) {
 
 
 function rollCube() {
-   let isRainbow = Math.random() < 0.2;
-   document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
-   if (equippedSkin === 'classic') {
-      cube.src = isRainbow ? 'pictures/cubics/классика/супер-начальный-кубик.gif' : 'pictures/cubics/классика/начальный-кубик.gif';
-   } else if (equippedSkin === 'negative') {
-      cube.src = isRainbow ? 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif' : 'pictures/cubics/негатив/начальный-кубик-негатив.gif';
-   } else if (equippedSkin === 'Emerald') {
-      cube.src = isRainbow ? 'pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif' : 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif';
-   } else if (equippedSkin === 'Pixel') {
-      cube.src = isRainbow ? 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif' : 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif';
-   }
+    let isRainbow = Math.random() < 0.2;
+    document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
 
-   cube.onclick = async () => {
-      if (isAnimating) return;
-      isAnimating = true;
-      startProgress(3);
-      let random = Math.random() * 100;
-      let outcome;
-      if (equippedSkin === 'Pixel') {
-         cube.src = isRainbow ? 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif' : 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif';
-         if (random < 40) outcome = { src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 10 };
-         else if (random < 65) outcome = { src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 11 };
-         else if (random < 80) outcome = { src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 12 };
-         else if (random < 90) outcome = { src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 13 };
-         else if (random < 97) outcome = { src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 14 };
-         else outcome = { src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 15 };
-      }   else   if (isRainbow && equippedSkin === 'Pixel') {
-         cube.src = isRainbow ? 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif' : 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif';
-         if (random < 40) outcome = { src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 20 };
-         else if (random < 65) outcome = { src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 22 };
-         else if (random < 80) outcome = { src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 24 };
-         else if (random < 90) outcome = { src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 26 };
-         else if (random < 97) outcome = { src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 28 };
-         else outcome = { src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 30 };
-      }else if (isRainbow && equippedSkin === 'negative') {
-         cube.src = 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif'; // Установим начальный скин
-         if (random < 15) outcome = {
-            src: 'pictures/cubics/негатив/1-кубик-негатив.gif',
-            coins: 4
-         };
-         else if (random < 45) outcome = {
-            src: 'pictures/cubics/негатив/2-кубик-негатив.gif',
-            coins: 6
-         };
-         else if (random < 70) outcome = {
-            src: 'pictures/cubics/негатив/3-кубик-негатив.gif',
-            coins: 8
-         };
-         else if (random < 85) outcome = {
-            src: 'pictures/cubics/негатив/4-кубик-негатив.gif',
-            coins: 10
-         };
-         else if (random < 94) outcome = {
-            src: 'pictures/cubics/негатив/5-кубик-негатив.gif',
-            coins: 12
-         };
-         else outcome = {
-            src: 'pictures/cubics/негатив/6-кубик-негатив.gif',
-            coins: 14
-         };
-      } else if (equippedSkin === 'negative') {
-         cube.src = 'pictures/cubics/негатив/начальный-кубик-негатив.gif'; // Установим начальный скин
-         if (random < 40) outcome = {
-            src: 'pictures/cubics/негатив/1-кубик-негатив.gif',
-            coins: 2
-         };
-         else if (random < 65) outcome = {
-            src: 'pictures/cubics/негатив/2-кубик-негатив.gif',
-            coins: 3
-         };
-         else if (random < 80) outcome = {
-            src: 'pictures/cubics/негатив/3-кубик-негатив.gif',
-            coins: 4
-         };
-         else if (random < 90) outcome = {
-            src: 'pictures/cubics/негатив/4-кубик-негатив.gif',
-            coins: 5
-         };
-         else if (random < 97) outcome = {
-            src: 'pictures/cubics/негатив/5-кубик-негатив.gif',
-            coins: 6
-         };
-         else outcome = {
-            src: 'pictures/cubics/негатив/6-кубик-негатив.gif',
-            coins: 7
-         };
-      } else if (isRainbow && equippedSkin === 'Emerald') {
-         cube.src = 'pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif'; // Установим начальный скин
-         if (random < 15) outcome = {
-            src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif',
-            coins: 6
-         };
-         else if (random < 45) outcome = {
-            src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif',
-            coins: 8
-         };
-         else if (random < 70) outcome = {
-            src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif',
-            coins: 10
-         };
-         else if (random < 85) outcome = {
-            src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif',
-            coins: 12
-         };
-         else if (random < 94) outcome = {
-            src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif',
-            coins: 14
-         };
-         else outcome = {
-            src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif',
-            coins: 16
-         };
-      } else if (equippedSkin === 'Emerald') {
-         cube.src = 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif'; // Установим начальный скин
-         if (random < 40) outcome = {
-            src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif',
-            coins: 3
-         };
-         else if (random < 65) outcome = {
-            src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif',
-            coins: 4
-         };
-         else if (random < 80) outcome = {
-            src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif',
-            coins: 5
-         };
-         else if (random < 90) outcome = {
-            src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif',
-            coins: 6
-         };
-         else if (random < 97) outcome = {
-            src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif',
-            coins: 7
-         };
-         else outcome = {
-            src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif',
-            coins: 8
-         };
-      } else if (isRainbow) {
-         cube.src = 'pictures/cubics/классика/супер-начальный-кубик.gif'; // Установим начальный скин
-         if (random < 40) outcome = {
-            src: 'pictures/cubics/классика/1-кубик.gif',
-            coins: 2
-         };
-         else if (random < 65) outcome = {
-            src: 'pictures/cubics/классика/2-кубик.gif',
-            coins: 4
-         };
-         else if (random < 80) outcome = {
-            src: 'pictures/cubics/классика/3-кубик.gif',
-            coins: 6
-         };
-         else if (random < 90) outcome = {
-            src: 'pictures/cubics/классика/4-кубик.gif',
-            coins: 8
-         };
-         else if (random < 97) outcome = {
-            src: 'pictures/cubics/классика/5-кубик.gif',
-            coins: 10
-         };
-         else outcome = {
-            src: 'pictures/cubics/классика/6-кубик.gif',
-            coins: 12
-         };
-      } else {
-         cube.src = 'pictures/cubics/классика/начальный-кубик.gif'; // Установим начальный скин
-         if (random < 40) outcome = {
-            src: 'pictures/cubics/классика/1-кубик.gif',
-            coins: 1
-         };
-         else if (random < 65) outcome = {
-            src: 'pictures/cubics/классика/2-кубик.gif',
-            coins: 2
-         };
-         else if (random < 80) outcome = {
-            src: 'pictures/cubics/классика/3-кубик.gif',
-            coins: 3
-         };
-         else if (random < 90) outcome = {
-            src: 'pictures/cubics/классика/4-кубик.gif',
-            coins: 4
-         };
-         else if (random < 97) outcome = {
-            src: 'pictures/cubics/классика/5-кубик.gif',
-            coins: 5
-         };
-         else outcome = {
-            src: 'pictures/cubics/классика/6-кубик.gif',
-            coins: 6
-         };
-      }
-      cube.src = outcome.src;
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      // Отправляем информацию о прокрутке на сервер
-        const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
-        if (userId) {
-            try {
-                const response = await fetch("https://backend12-production-1210.up.railway.app/update_rolls", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        rolls_increment: 1
-                    })
-                });
-                
-                const data = await response.json();
-                const totalRolls = data.total_rolls;
-                
-                // Обновляем прогресс ачивки
-                updateAchievementProgress(totalRolls);
-            } catch (error) {
-                console.error("Ошибка при обновлении счетчика прокруток:", error);
-            }
+    // Конфигурация путей к изображениям скинов
+    const skinConfig = {
+        'classic': {
+            default: 'pictures/cubics/классика/начальный-кубик.gif',
+            rainbow: 'pictures/cubics/классика/супер-начальный-кубик.gif'
+        },
+        'negative': {
+            default: 'pictures/cubics/негатив/начальный-кубик-негатив.gif',
+            rainbow: 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif'
+        },
+        'Emerald': {
+            default: 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif',
+            rainbow: 'pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif'
+        },
+        'Pixel': {
+            default: 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif',
+            rainbow: 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif'
         }
-      updateBestLuck();
-      updateCoins(outcome.coins);
-      setTimeout(() => {
-         rollCube();
-         isAnimating = false;
-      }, 1000);
-   };
+    };
+
+    // Установка начального изображения
+    cube.src = skinConfig[equippedSkin][isRainbow ? 'rainbow' : 'default'];
+
+    cube.onclick = async () => {
+        if (isAnimating) return;
+        isAnimating = true;
+
+        try {
+            startProgress(3);
+            const random = Math.random() * 100;
+            let outcome = getOutcome(random, equippedSkin, isRainbow);
+
+            // Плавная смена изображения
+            cube.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 150));
+            cube.src = outcome.src;
+            cube.style.opacity = '1';
+
+            // Ждем завершения анимации (3050мс)
+            await new Promise(resolve => setTimeout(resolve, 3050));
+
+            // Асинхронное обновление данных на сервере
+            const updateServerPromise = updateServerData();
+            const [serverData] = await Promise.all([updateServerPromise]);
+
+            // Обновляем UI
+            updateAchievementProgress(serverData?.total_rolls || 0);
+            updateBestLuck();
+            updateCoins(outcome.coins);
+
+            // Завершаем анимацию
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            rollCube();
+
+        } catch (error) {
+            console.error('Ошибка в процессе броска кубика:', error);
+        } finally {
+            isAnimating = false;
+        }
+    };
 }
+
+// Функция получения результата броска
+function getOutcome(random, skin, isRainbow) {
+    const outcomes = {
+        'classic': {
+            default: [
+                { range: 40, src: 'pictures/cubics/классика/1-кубик.gif', coins: 1 },
+                { range: 65, src: 'pictures/cubics/классика/2-кубик.gif', coins: 2 },
+                { range: 80, src: 'pictures/cubics/классика/3-кубик.gif', coins: 3 },
+                { range: 90, src: 'pictures/cubics/классика/4-кубик.gif', coins: 4 },
+                { range: 97, src: 'pictures/cubics/классика/5-кубик.gif', coins: 5 },
+                { range: 100, src: 'pictures/cubics/классика/6-кубик.gif', coins: 6 }
+            ],
+            rainbow: [
+                { range: 40, src: 'pictures/cubics/классика/1-кубик.gif', coins: 2 },
+                { range: 65, src: 'pictures/cubics/классика/2-кубик.gif', coins: 4 },
+                { range: 80, src: 'pictures/cubics/классика/3-кубик.gif', coins: 6 },
+                { range: 90, src: 'pictures/cubics/классика/4-кубик.gif', coins: 8 },
+                { range: 97, src: 'pictures/cubics/классика/5-кубик.gif', coins: 10 },
+                { range: 100, src: 'pictures/cubics/классика/6-кубик.gif', coins: 12 }
+            ]
+        },
+        'negative': {
+            default: [
+                { range: 40, src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 2 },
+                { range: 65, src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 3 },
+                { range: 80, src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 4 },
+                { range: 90, src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 5 },
+                { range: 97, src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 6 },
+                { range: 100, src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 7 }
+            ],
+            rainbow: [
+                { range: 15, src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 4 },
+                { range: 45, src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 6 },
+                { range: 70, src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 8 },
+                { range: 85, src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 10 },
+                { range: 94, src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 12 },
+                { range: 100, src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 14 }
+            ]
+        },
+        'Emerald': {
+            default: [
+                { range: 40, src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 3 },
+                { range: 65, src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 4 },
+                { range: 80, src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 5 },
+                { range: 90, src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 6 },
+                { range: 97, src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 7 },
+                { range: 100, src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 8 }
+            ],
+            rainbow: [
+                { range: 15, src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 6 },
+                { range: 45, src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 8 },
+                { range: 70, src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 10 },
+                { range: 85, src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 12 },
+                { range: 94, src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 14 },
+                { range: 100, src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 16 }
+            ]
+        },
+        'Pixel': {
+            default: [
+                { range: 40, src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 10 },
+                { range: 65, src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 11 },
+                { range: 80, src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 12 },
+                { range: 90, src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 13 },
+                { range: 97, src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 14 },
+                { range: 100, src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 15 }
+            ],
+            rainbow: [
+                { range: 40, src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 20 },
+                { range: 65, src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 22 },
+                { range: 80, src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 24 },
+                { range: 90, src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 26 },
+                { range: 97, src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 28 },
+                { range: 100, src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 30 }
+            ]
+        }
+    };
+
+    const skinOutcomes = outcomes[skin][isRainbow ? 'rainbow' : 'default'];
+    return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
+}
+
+// Функция обновления данных на сервере
+async function updateServerData() {
+    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
+    if (!userId) return null;
+
+    try {
+        const response = await fetch("https://backend12-production-1210.up.railway.app/update_rolls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user_id: userId,
+                rolls_increment: 1
+            })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error("Ошибка при обновлении счетчика прокруток:", error);
+        return null;
+    }
+}
+
 rollCube();
 // Подключение TON Connect
 const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
