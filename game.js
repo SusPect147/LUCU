@@ -1087,11 +1087,18 @@ function formatNumber1(num) {
 
 
 
+// Глобальная переменная для контроля состояния
+let isAnimating = false;
+let currentCube = null; // Для отслеживания текущего элемента кубика
+
 function rollCube() {
+    if (!currentCube) {
+        currentCube = document.getElementById('cube'); // Предполагается, что у кубика есть id="cube"
+    }
+
     let isRainbow = Math.random() < 0.2;
     document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
 
-    // Конфигурация путей к изображениям скинов
     const skinConfig = {
         'classic': {
             default: 'pictures/cubics/классика/начальный-кубик.gif',
@@ -1111,49 +1118,65 @@ function rollCube() {
         }
     };
 
-    // Установка начального изображения
-    cube.src = skinConfig[equippedSkin][isRainbow ? 'rainbow' : 'default'];
+    // Установка начального изображения с параметром для остановки анимации
+    currentCube.src = `${skinConfig[equippedSkin][isRainbow ? 'rainbow' : 'default']}?t=${Date.now()}`; // Добавляем timestamp для сброса анимации
 
-    cube.onclick = async () => {
-        if (isAnimating) return;
-        isAnimating = true;
-
-        try {
-            startProgress(3);
-            const random = Math.random() * 100;
-            let outcome = getOutcome(random, equippedSkin, isRainbow);
-
-            // Плавная смена изображения
-            cube.style.opacity = '0';
-            await new Promise(resolve => setTimeout(resolve, 150));
-            cube.src = outcome.src;
-            cube.style.opacity = '1';
-
-            // Ждем завершения анимации (3050мс)
-            await new Promise(resolve => setTimeout(resolve, 3050));
-
-            // Асинхронное обновление данных на сервере
-            const updateServerPromise = updateServerData();
-            const [serverData] = await Promise.all([updateServerPromise]);
-
-            // Обновляем UI
-            updateAchievementProgress(serverData?.total_rolls || 0);
-            updateBestLuck();
-            updateCoins(outcome.coins);
-
-            // Завершаем анимацию
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            rollCube();
-
-        } catch (error) {
-            console.error('Ошибка в процессе броска кубика:', error);
-        } finally {
-            isAnimating = false;
-        }
-    };
+    // Удаляем старый обработчик, чтобы избежать накопления
+    currentCube.onclick = null;
+    currentCube.onclick = handleCubeClick.bind(null, isRainbow, skinConfig);
 }
 
-// Функция получения результата броска
+// Обработчик клика по кубику
+async function handleCubeClick(isRainbow, skinConfig) {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    try {
+        startProgress(3);
+        const random = Math.random() * 100;
+        const outcome = getOutcome(random, equippedSkin, isRainbow);
+
+        // Плавная смена изображения
+        currentCube.style.opacity = '0';
+        await wait(150);
+
+        // Устанавливаем новое изображение и останавливаем анимацию после первого воспроизведения
+        currentCube.src = `${outcome.src}?t=${Date.now()}`; // Timestamp для сброса
+        currentCube.style.opacity = '1';
+
+        // Ждем завершения анимации GIF (3050мс)
+        await wait(3050);
+
+        // Останавливаем анимацию, заменив GIF на статичное изображение (предполагается, что есть PNG версия)
+        const staticSrc = outcome.src.replace('.gif', '.png'); // Предполагаем наличие статичной версии
+        currentCube.src = staticSrc;
+
+        // Асинхронное обновление данных на сервере (не ждем окончания анимации)
+        const serverData = await updateServerData();
+
+        // Обновляем UI после получения данных с сервера
+        updateAchievementProgress(serverData?.total_rolls || 0);
+        updateBestLuck();
+        updateCoins(outcome.coins);
+
+        // Плавный переход к начальному состоянию
+        currentCube.style.opacity = '0';
+        await wait(150);
+        currentCube.src = `${skinConfig[equippedSkin][isRainbow ? 'rainbow' : 'default']}?t=${Date.now()}`;
+        currentCube.style.opacity = '1';
+
+    } catch (error) {
+        console.error('Ошибка в процессе броска кубика:', error);
+    } finally {
+        isAnimating = false;
+        // Не вызываем rollCube() автоматически, даем пользователю контроль
+    }
+}
+
+// Вспомогательная функция для ожидания
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Функция получения результата броска (без изменений)
 function getOutcome(random, skin, isRainbow) {
     const outcomes = {
         'classic': {
@@ -1234,7 +1257,7 @@ function getOutcome(random, skin, isRainbow) {
     return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
 }
 
-// Функция обновления данных на сервере
+// Функция обновления данных на сервере (без изменений)
 async function updateServerData() {
     const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
     if (!userId) return null;
@@ -1255,6 +1278,7 @@ async function updateServerData() {
     }
 }
 
+// Инициализация
 rollCube();
 // Подключение TON Connect
 const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
