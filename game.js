@@ -1,1487 +1,897 @@
-window.onload = () => {
-   const canvas = document.getElementById("particleCanvas");
-   if (canvas) {
-      const particleSystem = new ParticleSystem(canvas, {
-         x: window.innerWidth,
-         y: window.innerHeight
-      });
-      particleSystem.amount = 60; // Количество частиц
-      particleSystem.diameter = {
-         min: 2,
-         max: 5
-      }; // Размер частиц
-      particleSystem.life = {
-         min: 3,
-         max: 7
-      }; // Время жизни
-      particleSystem.speed = {
-         x: {
-            min: -2,
-            max: 2
-         },
-         y: {
-            min: -2,
-            max: 2
-         }
-      }; // Скорость
-      particleSystem.init();
-   }
+// ============================================================================
+// Константы и глобальные переменные
+// ============================================================================
+
+const CONFIG = {
+    CANVAS_ID: "particleCanvas",
+    DEFAULT_SKIN: "classic",
+    ANIMATION_DURATION: 3050, // ms
+    PROGRESS_DURATION: 3,     // seconds
+    API_BASE_URL: "https://backend12-production-1210.up.railway.app",
+    TELEGRAM_BOT_TOKEN: "7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU",
+    CHANNEL_USERNAME: "luckycubesCHANNEL",
+    SKIN_PRICES: {
+        negative: 5000,
+        Emerald: 10000,
+        Pixel: 150000
+    },
+    REFERRAL_BONUS: { default: 100, premium: 1000 },
+    FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
 };
 
-window.addEventListener("resize", () => {
-   const canvas = document.getElementById("particleCanvas");
-   if (canvas) {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-   }
+const tg = window.Telegram?.WebApp;
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
+    buttonRootId: "ton-connect"
 });
 
-window.onload = () => {
-   const canvas = document.getElementById("particleCanvas");
-   if (canvas) {
-      const particleSystem = new ParticleSystem(canvas, {
-         x: window.innerWidth,
-         y: window.innerHeight
-      });
-      particleSystem.amount = 100;
-      particleSystem.diameter = {
-         min: 1,
-         max: 3
-      };
-      particleSystem.life = {
-         min: 3,
-         max: 7
-      };
-      particleSystem.speed = {
-         x: {
-            min: -2,
-            max: 2
-         },
-         y: {
-            min: -2,
-            max: 2
-         }
-      };
-      particleSystem.init();
+// ============================================================================
+// Утилиты
+// ============================================================================
 
-      // Добавляем обработчик изменения размера экрана
-      window.addEventListener("resize", () => {
-         const oldSize = {
-            x: particleSystem.size.x,
-            y: particleSystem.size.y
-         };
-         particleSystem.resize({
-            x: window.innerWidth,
-            y: window.innerHeight
-         }, oldSize);
-      });
-   }
+const Utils = {
+    getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    },
+
+    getRandomInRange(range) {
+        return Math.random() * (range.max - range.min) + range.min;
+    },
+
+    formatCoins(amount) {
+        if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
+        if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
+        if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`;
+        return amount.toString();
+    },
+
+    formatNumber(num) {
+        return num >= 1 ? num.toFixed(4) : num.toPrecision(4);
+    },
+
+    formatWithCommas(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    },
+
+    wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    adjustFontSize(element) {
+        const parentWidth = element.parentElement.offsetWidth;
+        let fontSize = 35;
+        element.style.fontSize = `${fontSize}px`;
+        while (element.scrollWidth > parentWidth && fontSize > 5) {
+            element.style.fontSize = `${--fontSize}px`;
+        }
+    },
+
+    copyToClipboard(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "absolute";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+    }
 };
 
+// ============================================================================
+// API Взаимодействие
+// ============================================================================
+
+const API = {
+    async fetch(url, options = {}) {
+        const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
+            headers: { "Content-Type": "application/json" },
+            ...options
+        });
+        if (!response.ok) throw new Error(`Network error: ${response.status}`);
+        return response.json();
+    },
+
+    getUserData(userId) {
+        return this.fetch(`/get_user_data/${userId}`);
+    },
+
+    updateCoins(userId, amount, username) {
+        return this.fetch("/update_coins", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, coins: amount, username })
+        });
+    },
+
+    updateLuck(userId, luck, username) {
+        return this.fetch("/update_luck", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, luck, username })
+        });
+    },
+
+    updateSkin(userId, skinType) {
+        return this.fetch("/update_skin", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, skin_type: skinType })
+        });
+    },
+
+    buySkin(userId, skinType, cost) {
+        return this.fetch("/buy_skin", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, skin_type: skinType, cost })
+        });
+    },
+
+    updateRolls(userId) {
+        return this.fetch("/update_rolls", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, rolls_increment: 1 })
+        });
+    },
+
+    updateQuest(userId, quest, status) {
+        return this.fetch("/update_quest", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, quest, status })
+        });
+    },
+
+    updateProfile(userId, username, photoUrl) {
+        return this.fetch("/update_profile", {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId, username, photo_url: photoUrl })
+        });
+    },
+
+    getLeaderboard(type) {
+        return this.fetch(`/leaderboard_${type}`);
+    },
+
+    getReferralCount(userId) {
+        return this.fetch(`/get_referral_count/${userId}`);
+    },
+
+    async checkTelegramSubscription(userId, channel) {
+        const response = await fetch(
+            `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=@${channel}&user_id=${userId}`
+        );
+        const data = await response.json();
+        return data.ok && ["member", "administrator", "creator"].includes(data.result.status);
+    }
+};
+
+// ============================================================================
+// Частицы (Particle System)
+// ============================================================================
+
 class Particle {
-   constructor(id, parent) {
-      this.parent = parent;
-      this.id = id;
-      this.position = {
-         x: 0,
-         y: 0
-      };
-      this.diameter = 0;
-      this.life = 0;
-      this.speed = {
-         x: 0,
-         y: 0
-      };
-      this.init();
-   }
+    constructor(id, parent) {
+        this.id = id;
+        this.parent = parent;
+        this.position = { x: 0, y: 0 };
+        this.diameter = 0;
+        this.life = 0;
+        this.speed = { x: 0, y: 0 };
+        this.init();
+    }
 
-   init() {
-      let interval = setInterval(() => {
-         this.position.x += (60 * this.speed.x) / 1000;
-         this.position.y -= (60 * this.speed.y) / 1000;
-         this.life -= 1 / 60;
-
-         if (this.life <= 0) {
-            clearInterval(interval);
-            this.parent.particles.delete(this.id);
-         }
-      }, 1000 / 60);
-   }
+    init() {
+        const FPS = 60;
+        const interval = setInterval(() => {
+            this.position.x += (FPS * this.speed.x) / 1000;
+            this.position.y -= (FPS * this.speed.y) / 1000;
+            this.life -= 1 / FPS;
+            if (this.life <= 0) {
+                clearInterval(interval);
+                this.parent.particles.delete(this.id);
+            }
+        }, 1000 / FPS);
+    }
 }
 
 class ParticleSystem {
-   constructor(canvas, size) {
-      this.canvas = canvas;
-      this.size = size;
-      this.lastId = 0;
-      this.amount = 0;
-      this.particles = new Map();
-      this.diameter = {
-         min: 0,
-         max: 0
-      };
-      this.life = {
-         min: 0,
-         max: 0
-      };
-      this.speed = {
-         x: {
-            min: 0,
-            max: 0
-         },
-         y: {
-            min: 0,
-            max: 0
-         }
-      };
+    constructor(canvas, size) {
+        this.canvas = canvas;
+        this.size = size;
+        this.particles = new Map();
+        this.lastId = 0;
+        this.amount = 0;
+        this.diameter = { min: 0, max: 0 };
+        this.life = { min: 0, max: 0 };
+        this.speed = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 } };
+        this.canvas.width = size.x;
+        this.canvas.height = size.y;
+    }
 
-      canvas.width = size.x;
-      canvas.height = size.y;
-   }
+    createParticle() {
+        const particle = new Particle(this.lastId.toString(), this);
+        particle.position.x = Utils.getRandomInRange({ min: 0, max: this.size.x });
+        particle.position.y = Utils.getRandomInRange({ min: 0, max: this.size.y });
+        particle.diameter = Utils.getRandomInRange(this.diameter);
+        particle.life = Utils.getRandomInRange(this.life);
+        particle.speed.x = Utils.getRandomInRange(this.speed.x);
+        particle.speed.y = Utils.getRandomInRange(this.speed.y);
+        this.particles.set(this.lastId.toString(), particle);
+        this.lastId++;
+    }
 
-   static getRandomNumberInInterval(range) {
-      return Math.random() * (range.max - range.min) + range.min;
-   }
+    init() {
+        const ctx = this.canvas.getContext("2d");
+        ctx.fillStyle = "white";
 
-   createParticle() {
-      let particle = new Particle(this.lastId.toString(), this);
-      particle.position.x = ParticleSystem.getRandomNumberInInterval({
-         min: 0,
-         max: this.size.x
-      });
-      particle.position.y = ParticleSystem.getRandomNumberInInterval({
-         min: 0,
-         max: this.size.y
-      });
-      particle.diameter = ParticleSystem.getRandomNumberInInterval(this.diameter);
-      particle.life = ParticleSystem.getRandomNumberInInterval(this.life);
-      particle.speed.x = ParticleSystem.getRandomNumberInInterval(this.speed.x);
-      particle.speed.y = ParticleSystem.getRandomNumberInInterval(this.speed.y);
-
-      this.particles.set(this.lastId.toString(), particle);
-      this.lastId++;
-   }
-
-   init() {
-      let ctx = this.canvas.getContext("2d");
-      ctx.fillStyle = "white";
-
-      for (let i = 0; i < this.amount; i++) {
-         this.createParticle();
-      }
-
-      setInterval(() => {
-         if (this.particles.size < this.amount) {
+        for (let i = 0; i < this.amount; i++) {
             this.createParticle();
-         }
-      }, 1000 / 60);
-
-      setInterval(() => {
-         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-         this.particles.forEach((particle) => {
-            ctx.beginPath();
-            ctx.arc(particle.position.x, particle.position.y, particle.diameter / 2, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
-         });
-      }, 1000 / 60);
-   }
-
-   resize(newSize, oldSize) {
-      this.canvas.width = newSize.x;
-      this.canvas.height = newSize.y;
-      let ctx = this.canvas.getContext("2d");
-      ctx.fillStyle = "white";
-      this.particles.forEach((particle) => {
-         particle.position.x = (particle.position.x / oldSize.x) * newSize.x;
-         particle.position.y = (particle.position.y / oldSize.y) * newSize.y;
-      });
-
-      this.size = newSize;
-   }
-}
-
-window.particlex = {
-   ParticleSystem,
-   Particle
-};
-const tg = window.Telegram?.WebApp;
-const questsMenu = document.getElementById('quests-menu');
-const questsMenuContent = document.getElementById('quests-menu-content');
-const questsList = document.getElementById("quests-list");
-const questsTab = document.getElementById("quests-tab");
-const achievementsTab = document.getElementById("achievements-tab");
-const questsButton = document.querySelector('.menu-item img[alt="Quests"]');
-
-// Загрузка прогресса ачивок
-async function loadAchievementsProgress() {
-    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
-    if (!userId) return;
-
-    try {
-        const response = await fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`);
-        const data = await response.json();
-        const totalRolls = data.rolls || 0;
-        updateAchievementProgress(totalRolls);
-    } catch (error) {
-        console.error("Ошибка при загрузке прогресса ачивок:", error);
-    }
-}
-
-// Открытие меню квестов
-questsButton.addEventListener('click', () => {
-    questsMenu.classList.remove('hide', 'hidden');
-    questsMenu.classList.add('show');
-});
-
-// Закрытие меню при клике вне области
-questsMenu.addEventListener('click', (e) => {
-    if (e.target === questsMenu) {
-        questsMenu.classList.add('hide');
-        questsMenu.classList.remove('show');
-        setTimeout(() => {
-            questsMenu.classList.add('hidden');
-            questsMenu.classList.remove('hide');
-        }, 400);
-    }
-});
-
-// Переключение между вкладками
-questsTab.addEventListener('click', () => {
-    questsTab.classList.add('active');
-    achievementsTab.classList.remove('active');
-});
-
-// Добавляем async к обработчику achievementsTab
-achievementsTab.addEventListener('click', async () => {
-    achievementsTab.classList.add('active');
-    questsTab.classList.remove('active');
-    await loadAchievementsProgress();
-});
-
-document.getElementById("quests-tab").addEventListener("click", function() {
-    document.getElementById("quests-list").classList.remove("hidden");
-    document.getElementById("achievements-list").classList.add("hidden");
-});
-
-document.getElementById("achievements-tab").addEventListener("click", function() {
-    document.getElementById("quests-list").classList.add("hidden");
-    document.getElementById("achievements-list").classList.remove("hidden");
-});
-// Добавим функцию для загрузки статуса квестов
-async function loadQuestStatus() {
-    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
-    if (!userId) return;
-
-    try {
-        const response = await fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`);
-        const data = await response.json();
-        
-        // Проверяем статус подписки на канал
-        const isSubscribed = data?.quests?.subscription_quest === "yes";
-        
-        const subscribeButton = document.querySelector(".quest-item .quest-btn");
-        if (isSubscribed) {
-            subscribeButton.textContent = "✔️";
-            subscribeButton.classList.add("completed");
-            subscribeButton.style.background = "rgb(139, 0, 0)"; // Темно-красный
-            subscribeButton.style.cursor = "default";
-            subscribeButton.disabled = true;
         }
-        
-        return isSubscribed;
-    } catch (error) {
-        console.error("Ошибка при загрузке статуса квестов:", error);
-    }
-}
 
-// Модифицируем обработчик открытия меню квестов
-questsButton.addEventListener('click', async () => {
-    // Показываем меню только после загрузки статуса
-    await loadQuestStatus();
-    questsMenu.classList.remove('hide', 'hidden');
-    questsMenu.classList.add('show');
-});
+        setInterval(() => {
+            if (this.particles.size < this.amount) this.createParticle();
+        }, 1000 / 60);
 
-// Модифицируем обработчик кнопки подписки
-document.addEventListener("DOMContentLoaded", function () {
-    const subscribeButton = document.querySelector(".quest-item .quest-btn");
-    const telegramChannelUsername = "luckycubesCHANNEL";
-
-    subscribeButton.addEventListener("click", async function () {
-        if (this.classList.contains("completed")) return;
-
-        window.open(`https://t.me/${telegramChannelUsername}`, "_blank");
-
-        const user = window.Telegram.WebApp.initDataUnsafe.user;
-        const response = await fetch(`https://api.telegram.org/bot7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU/getChatMember?chat_id=@${telegramChannelUsername}&user_id=${user.id}`);
-        const data = await response.json();
-
-        if (data.ok && ["member", "administrator", "creator"].includes(data.result.status)) {
-            this.textContent = "✔️"; // Меняем на текст с галочкой
-            this.classList.add("completed");
-            this.style.background = "rgb(139, 0, 0)"; // Темно-красный
-            this.style.cursor = "default";
-            this.disabled = true;
-
-            // Отправляем статус на сервер
-            const userId = user.id;
-            await fetch("https://backend12-production-1210.up.railway.app/update_quest", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    user_id: userId,
-                    quest: "subscription_quest",
-                    status: "yes"
-                })
+        setInterval(() => {
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.particles.forEach(particle => {
+                ctx.beginPath();
+                ctx.arc(particle.position.x, particle.position.y, particle.diameter / 2, 0, 2 * Math.PI);
+                ctx.fill();
             });
-
-            // Обновляем баланс
-            updateCoins(250);
-        }
-    });
-});
-
-
-// Функция обновления монет
-function updateCoins(amount) {
-    sendCoinsToServer(amount).then(data => {
-        coins = data.new_coins; // Обновляем глобальную переменную coins
-        document.getElementById("coins-display").textContent = `${formatCoins(coins)} $LUCU`;
-        updateGameData();
-    }).catch(error => {
-        console.error("Ошибка обновления монет:", error);
-    });
-}
-
-// Функция отправки данных на сервер
-async function sendCoinsToServer(amount) {
-    const response = await fetch("/update-coins", { 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount })
-    });
-    return await response.json();
-}
-
-
-const leaderboardMenu = document.getElementById('leaderboard-menu');
-const leaderboardMenuContent = document.getElementById('leaderboard-menu-content');
-const leaderboardList = document.getElementById("leaderboard-list");
-const mostLucuBtn = document.getElementById("most-lucu");
-const bestLuckBtn = document.getElementById("best-luck");
-const placeBadge = document.getElementById("player-place-badge");
-const topSection = document.querySelector(".top-section");
-const trophyImage = document.querySelector(".trophy");
-const glowElement = document.querySelector(".glow");
-const leaderboardButton = document.querySelector('.menu-item img[alt="Leaderboard"]');
-
-
-let equippedSkin = 'classic';
-
-
-// Добавляем плавный скролл через requestAnimationFrame
-let lastScrollTop = 0;
-function handleScroll() {
-  let currentScroll = leaderboardList.scrollTop;
-  if (currentScroll > 20) {
-    leaderboardMenu.classList.add("scrolled");
-  } else {
-    leaderboardMenu.classList.remove("scrolled");
-  }
-  lastScrollTop = currentScroll;
-  requestAnimationFrame(handleScroll);
-}
-requestAnimationFrame(handleScroll);
-
-// Обработчик свайпа для скрытия меню при свайпе вниз
-let startTouchY = 0;
-topSection.addEventListener('touchstart', (e) => {
-  startTouchY = e.touches[0].clientY;
-});
-
-topSection.addEventListener('touchmove', (e) => {
-  const currentTouchY = e.touches[0].clientY;
-  if (currentTouchY > startTouchY + 50) {
-    leaderboardMenu.classList.add('hide');
-    leaderboardMenu.classList.remove('show');
-    setTimeout(() => {
-      leaderboardMenu.classList.add('hidden');
-      leaderboardMenu.classList.remove('hide');
-    }, 400);
-  }
-});
-
-// Открытие лидерборда
-leaderboardButton.addEventListener('click', () => {
-  leaderboardMenu.classList.remove('hide', 'hidden');
-  leaderboardMenu.classList.add('show');
-  loadLeaderboardCoins();
-});
-
-// Закрытие лидерборда при клике вне области меню
-leaderboardMenu.addEventListener('click', (e) => {
-  if (e.target === leaderboardMenu) {
-    leaderboardMenu.classList.add('hide');
-    leaderboardMenu.classList.remove('show');
-    setTimeout(() => {
-      leaderboardMenu.classList.add('hidden');
-      leaderboardMenu.classList.remove('hide');
-    }, 400);
-  }
-});
-
-// Функции для форматирования чисел (монеты, количество и т.д.)
-function formatCoins(value) {
-  if (value >= 1000) {
-    return (value / 1000).toFixed(1) + "K";
-  }
-  return value.toString();
-}
-
-function formatNumber(value) {
-  return Number(value).toLocaleString();
-}
-
-
-/****************************************************
- * ОБНОВЛЕНИЕ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (photo_url)
- ****************************************************/
-function updateUserProfile() {
-   const user = window.Telegram.WebApp.initDataUnsafe.user;
-   if (user) {
-     let photoUrl = user.photo_url || "pictures/cubics/классика/начальный-кубик.gif";
-
-     // Если Telegram-аватар в формате SVG, заменяем его на JPG (если требуется)
-     if (photoUrl.endsWith(".svg")) {
-       photoUrl = photoUrl.replace(".svg", ".jpg");
-     }
-
-     console.log("Используемый аватар:", photoUrl); // Логируем URL для проверки
-
-     fetch("https://backend12-production-1210.up.railway.app/update_profile", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({
-         user_id: user.id,
-         username: user.first_name + (user.last_name ? ' ' + user.last_name : ''),
-         photo_url: photoUrl
-       })
-     })
-     .then(response => response.json())
-     .then(data => console.log("Профиль обновлён:", data))
-     .catch(error => console.error("Ошибка обновления профиля:", error));
-   }
-}
-updateUserProfile();
-
-/****************************************************
- * FALLBACK-АВАТАРКА И КЛАСС ФОНА ДЛЯ ЛИДЕРОВ
- ****************************************************/
-async function getFallbackAvatar(player, index) {
-  const defaultAvatar = "pictures/cubics/классика/начальный-кубик.gif";
-  
-  // Проверяем наличие photo_url
-  let photoUrl = player?.photo_url;
-  console.log("Данные игрока:", player, "URL аватарки:", photoUrl);
-
-  // Если поле не задано или явно "undefined"/"null" — возвращаем дефолт
-  if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
-    return { src: defaultAvatar, bgClass: "" };
-  }
-
-  // Если это SVG или Telegram-ссылка — не делаем fetch, просто отдаем
-  // (fetch может отвалиться на приватных фотках Telegram)
-  if (photoUrl.toLowerCase().endsWith(".svg") || photoUrl.includes("t.me/")) {
-    return {
-      src: photoUrl,
-      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
-    };
-  }
-
-  // Для всех остальных случаев (сторонние ссылки, хостинги и т.д.)
-  try {
-    const response = await fetch(photoUrl);
-    if (!response.ok) {
-      console.warn(`Аватарка недоступна: статус ${response.status}. Используем дефолт.`);
-      return { src: defaultAvatar, bgClass: "" };
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    return {
-      src: objectUrl,
-      bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
-    };
-  } catch (error) {
-    console.error("Ошибка загрузки:", error);
-    return { src: defaultAvatar, bgClass: "" };
-  }
-}
-
-
-/****************************************************
- * ПЕРЕКЛЮЧЕНИЕ ТАБЛИЦ (Most $LUCU / Best LUCK)
- ****************************************************/
-mostLucuBtn.addEventListener("click", () => {
-  mostLucuBtn.classList.add("active");
-  bestLuckBtn.classList.remove("active");
-  loadLeaderboardCoins();
-});
-bestLuckBtn.addEventListener("click", () => {
-  bestLuckBtn.classList.add("active");
-  mostLucuBtn.classList.remove("active");
-  loadLeaderboardLuck();
-});
-
-/****************************************************
- * ЗАГРУЗКА ЛИДЕРБОРДА ПО МОНЕТАМ (COINS)
- * Слева – монеты, справа – информация об игроке (аватар, имя, место).
- ****************************************************/
-async function loadLeaderboardCoins() {
-  try {
-    const response = await fetch("https://backend12-production-1210.up.railway.app/leaderboard_coins");
-    if (!response.ok) {
-      throw new Error("Ошибка сети: " + response.status);
-    }
-    const data = await response.json();
-    leaderboardList.innerHTML = "";
-
-    const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
-    let currentUserIndex = -1;
-    if (currentUser) {
-      currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
-    }
-    placeBadge.textContent = (currentUserIndex >= 0)
-      ? `Your place #${currentUserIndex + 1}`
-      : "Your place #--";
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-      return;
+        }, 1000 / 60);
     }
 
-    // Для каждого игрока получаем аватар через getFallbackAvatar
-    for (let index = 0; index < data.length; index++) {
-      const player = data[index];
-      const avatar = await getFallbackAvatar(player, index);
-      const avatarSrc = avatar.src;
-      const isCurrentUser = currentUser && (player.user_id == currentUser.id);
-
-      const li = document.createElement("li");
-      li.classList.add("leaderboard-item");
-      if (isCurrentUser) {
-        li.classList.add("highlight");
-      }
-
-      li.innerHTML = `
-        <div class="leaderboard-item-content">
-          <div class="player-left">
-            <span class="player-coins">${formatCoins(player.coins)} $LUCU</span>
-          </div>
-    <div class="player-right">
-      <img src="${avatarSrc}" class="player-avatar" alt="Avatar" 
-           onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif'">
-      <div class="player-info">
-        <span class="player-name">${player.username}</span>
-        <span class="player-rank">#${index + 1}</span>
-      </div>
-    </div>
-  </div>
-      `;
-      leaderboardList.appendChild(li);
-    }
-  } catch (error) {
-    console.error("Ошибка загрузки лидерборда по монетам:", error);
-  }
-}
-
-/****************************************************
- * ЗАГРУЗКА ЛИДЕРБОРДА ПО УДАЧЕ (LUCK)
- * Слева – минимальное число, справа – информация об игроке (аватар, имя, место).
- ****************************************************/
-async function loadLeaderboardLuck() {
-  try {
-    const response = await fetch("https://backend12-production-1210.up.railway.app/leaderboard_luck");
-    if (!response.ok) {
-      throw new Error("Ошибка сети: " + response.status);
-    }
-    const data = await response.json();
-    leaderboardList.innerHTML = "";
-
-    const currentUser = window.Telegram.WebApp.initDataUnsafe.user;
-    let currentUserIndex = -1;
-    if (currentUser) {
-      currentUserIndex = data.findIndex(p => p.user_id == currentUser.id);
-    }
-    placeBadge.textContent = (currentUserIndex >= 0)
-      ? `Your place #${currentUserIndex + 1}`
-      : "Your place #--";
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      leaderboardList.innerHTML = '<li class="coming-soon">No data available</li>';
-      return;
-    }
-
-    for (let index = 0; index < data.length; index++) {
-      const player = data[index];
-      let luckValue = parseFloat(player.min_luck);
-      if (!isFinite(luckValue) || isNaN(luckValue)) {
-        luckValue = "N/A";
-      } else {
-        luckValue = formatNumber(luckValue);
-      }
-      const avatar = await getFallbackAvatar(player, index);
-      const avatarSrc = avatar.src;
-      const isCurrentUser = currentUser && (player.user_id == currentUser.id);
-
-      const li = document.createElement("li");
-      li.classList.add("leaderboard-item");
-      if (isCurrentUser) {
-        li.classList.add("highlight");
-      }
-
-      li.innerHTML = `
-        <div class="leaderboard-item-content">
-          <div class="player-left">
-            <span class="player-luck">${luckValue}</span>
-          </div>
-    <div class="player-right">
-      <img src="${avatarSrc}" class="player-avatar" alt="Avatar" 
-           onerror="this.onerror=null; this.src='pictures/cubics/классика/начальный-кубик.gif'">
-      <div class="player-info">
-        <span class="player-name">${player.username}</span>
-        <span class="player-rank">#${index + 1}</span>
-      </div>
-    </div>
-  </div>
-      `;
-      leaderboardList.appendChild(li);
-    }
-  } catch (error) {
-    console.error("Ошибка загрузки лидерборда по удаче:", error);
-  }
-}
-
-
-
-const cube = document.getElementById("cube");
-const coinsDisplay = document.getElementById("coins");
-const bestLuckDisplay = document.getElementById("bestLuck");
-const progressBar = document.querySelector("#progressBar div");
-let coins = 0;
-let bestLuck = Infinity;
-let isAnimating = false;
-
-const userId = tg.initDataUnsafe?.user?.id;
-
-// Получаем никнейм: если username отсутствует, используем first_name
-const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
-
-if (!userId) {
-   console.error("User ID не найден в Telegram Web App");
-}
-
-function getRandomInt(min, max) {
-   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function formatCoins(amount) {
- if (amount >= 1_000_000_000) {
-   return (Math.floor((amount / 1_000_000_000) * 10) / 10) + "B";
- } else if (amount >= 1_000_000) {
-   return (Math.floor((amount / 1_000_000) * 10) / 10) + "M";
- } else if (amount >= 1_000) {
-   return (Math.floor((amount / 1_000) * 10) / 10) + "K";
- } else {
-   return amount;
- }
-}
-
-
-function updateCoins(amount) {
-   // Отправляем на сервер только приращение, не изменяя локальную переменную coins сразу
-   sendCoinsToServer(amount).then(data => {
-      // Ожидаем, что сервер вернёт объект с полем new_coins
-      coins = data.new_coins; // обновляем глобальную переменную coins согласно серверу
-      coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-      // Обновляем UI, если нужно (например, если на сервере произошли другие изменения)
-      updateGameData();
-   });
-}
-
-function updateBestLuck() {
-   const min = 0.0000000000001;
-   const max = 1000;
-   let randomLuck = Math.random() * (max - min) + min;
-   if (bestLuck === null || randomLuck < bestLuck) {
-      bestLuck = randomLuck;
-      // Убираем мгновенное обновление отображения удачи:
-      // const formattedLuck = formatNumber(bestLuck);
-      // bestLuckDisplay.innerHTML = `Your Best MIN Luck: <span style="color: #F80000;">${formattedLuck}</span>`;
-      // adjustFontSizeToFit(bestLuckDisplay);
-
-      // Отправляем данные на сервер и после успешного ответа обновляем UI,
-      // который отобразит удачу согласно данным из базы.
-      sendLuckToServer().then(() => {
-         updateGameData();
-      });
-   }
-}
-
-function updateGameData() {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) {
-        console.error("User ID не найден");
-        return;
-    }
-
-    fetch(`https://backend12-production-1210.up.railway.app/get_user_data/${userId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Ошибка сети: " + response.status);
-            }
-            return response.json();
-        })
-        .then(data => {
-            const {
-                coins,
-                min_luck,
-                owned_skins = [],
-                equipped_skin = "classic"
-            } = data;
-
-            coinsDisplay.textContent = `${formatCoins(coins)} $LUCU`;
-
-            bestLuckDisplay.innerHTML = min_luck === Infinity
-                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                : `Your Best MIN number: <span style="color: #F80000;">${formatNumber(min_luck)}</span>`;
-
-            console.log("Данные игры обновлены:", data);
-
-            // Обновляем UI и локальное состояние
-            updateSkinsUI(owned_skins, equipped_skin);
-            equippedSkin = equipped_skin; // Синхронизируем локальную переменную с сервером
-
-            // Если скин отличается, экипируем его, но не отправляем на сервер при загрузке
-            if (equippedSkin !== equipped_skin) {
-                equipSkin(equipped_skin, false);
-            }
-        })
-        .catch(error => {
-            console.error("Ошибка при получении данных с сервера:", error);
+    resize(newSize, oldSize) {
+        this.canvas.width = newSize.x;
+        this.canvas.height = newSize.y;
+        this.size = newSize;
+        const ctx = this.canvas.getContext("2d");
+        ctx.fillStyle = "white";
+        this.particles.forEach(particle => {
+            particle.position.x = (particle.position.x / oldSize.x) * newSize.x;
+            particle.position.y = (particle.position.y / oldSize.y) * newSize.y;
         });
+    }
 }
 
-function updateSkinsUI(ownedSkins, equippedSkin) {
-    hasBoughtNegative = ownedSkins.includes("negative");
-    hasBoughtEmerald = ownedSkins.includes("Emerald");
-    hasBoughtPixel = ownedSkins.includes("Pixel");
+// ============================================================================
+// UI Управление
+// ============================================================================
 
-    buyNegativeButton.textContent = hasBoughtNegative ?
-        (equippedSkin === "negative" ? "Equipped" : "Equip") :
-        "Buy //5K $LUCU/";
-
-    buyEmeraldButton.textContent = hasBoughtEmerald ?
-        (equippedSkin === "Emerald" ? "Equipped" : "Equip") :
-        "Buy //10K $LUCU/";
-
-    buyPixelButton.textContent = hasBoughtPixel ?
-        (equippedSkin === "Pixel" ? "Equipped" : "Equip") :
-        "Buy //150K $LUCU/";
-
-    equipClassicButton.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
-}
-
-
-// Вызываем обновление данных при загрузке страницы
-updateGameData();
-
-function sendCoinsToServer(amount) {
-   if (!userId) {
-      console.error("User ID не найден");
-      return Promise.reject("User ID не найден");
-   }
-   // Определяем username, если он ещё не объявлен в глобальной области
-   const username =
-      window.Telegram.WebApp.initDataUnsafe?.user?.username ||
-      window.Telegram.WebApp.initDataUnsafe?.user?.first_name ||
-      "Unknown"; // на случай, если ни одно из полей не задано
-
-   return fetch("https://backend12-production-1210.up.railway.app/update_coins", {
-         method: "POST",
-         headers: {
-            "Content-Type": "application/json",
-         },
-         // Отправляем приращение монет и имя пользователя
-         body: JSON.stringify({
-            user_id: userId,
-            username: username,
-            coins: amount
-         })
-      })
-      .then(response => {
-         if (!response.ok) {
-            throw new Error(`Ошибка сети: ${response.status}`);
-         }
-         return response.json();
-      })
-      .then(data => {
-         console.log("Монеты обновлены на сервере", data);
-         return data; // data должна содержать новое значение монет, например, data.new_coins
-      })
-      .catch(error => {
-         console.error("Ошибка при отправке монет на сервер:", error);
-         throw error;
-      });
-}
-
-
-function sendLuckToServer() {
-   if (!userId) {
-      console.error("User ID не найден");
-      return Promise.reject("User ID не найден");
-   }
-
-   return fetch("https://backend12-production-1210.up.railway.app/update_luck", {
-         method: "POST",
-         headers: {
-            "Content-Type": "application/json",
-         },
-         // Отправляем удачу и имя пользователя
-         body: JSON.stringify({
-            user_id: userId,
-            username: username,
-            luck: bestLuck
-         })
-      })
-      .then(response => response.json())
-      .then(data => {
-         console.log("Удача обновлена на сервере", data);
-         return data;
-      })
-      .catch(error => {
-         console.error("Ошибка при отправке удачи на сервер:", error);
-         throw error;
-      });
-}
-
-window.addEventListener("load", updateGameData);
-
-function formatNumber(number) {
-   if (number >= 1) {
-      return number.toFixed(4);
-   }
-   return number.toPrecision(4);
-}
-
-function adjustFontSizeToFit(element) {
-   const parentWidth = element.parentElement.offsetWidth;
-   let fontSize = 35;
-   element.style.fontSize = `${fontSize}px`;
-   while (element.scrollWidth > parentWidth && fontSize > 5) {
-      fontSize -= 1;
-      element.style.fontSize = `${fontSize}px`;
-   }
-}
-
-function startProgress(duration) {
-   progressBar.style.transition = `width ${duration}s linear`;
-   progressBar.style.width = "100%";
-   setTimeout(() => {
-      progressBar.style.transition = "none";
-      progressBar.style.width = "0%";
-   }, duration * 1000);
-}
-const buyNegativeButton = document.getElementById('buy-negative');
-const buyEmeraldButton = document.getElementById('buy-Emerald');
-const buyPixelButton = document.getElementById('buy-Pixel'); // Исправлено
-const equipClassicButton = document.getElementById('equip-classic');
-
-let hasBoughtNegative = false;
-let hasBoughtEmerald = false;
-let hasBoughtPixel = false;
-
-const skinsMenu = document.getElementById('skins-menu');
-const skinsButton = document.querySelector('.menu-item img[alt="Skins"]');
-
-// Открытие меню
-skinsButton.addEventListener('click', () => {
-   skinsMenu.classList.remove('hidden'); // Делаем меню видимым
-   requestAnimationFrame(() => {
-       skinsMenu.classList.add('show'); // Запускаем анимацию появления
-   });
-});
-
-// Закрытие меню
-function closeSkinsMenu() {
-   skinsMenu.classList.add('hide'); // Запускаем анимацию вниз
-   skinsMenu.classList.remove('show'); // Убираем show
-   setTimeout(() => {
-       skinsMenu.classList.add('hidden'); // Полностью скрываем после анимации
-       skinsMenu.classList.remove('hide'); // Сбрасываем hide
-   }, 400); // Ждём завершения CSS-анимации
-}
-
-skinsMenu.addEventListener('click', (e) => {
-   if (e.target === skinsMenu) {
-       closeSkinsMenu();
-   }
-});
-
-
-// Покупка и экипировка Negative
-buyNegativeButton.addEventListener('click', () => {
-    if (!hasBoughtNegative) {
-        if (coins >= 5000) {
-            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, skin_type: 'negative', cost: 5000 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message && data.message.startsWith("✅")) {
-                    coins = data.new_coins;
-                    updateCoins(0);
-                    hasBoughtNegative = true;
-                    buyNegativeButton.textContent = 'Equip';
-                } else {
-                    alert("Purchase failed: " + data.message);
-                }
-            })
-            .catch(err => console.error("Error purchasing negative skin:", err));
-        } else {
-            alert("Not enough coins!");
+const UI = {
+    toggleMenu(menu, show) {
+        menu.classList.toggle("hidden", !show);
+        menu.classList.toggle("show", show);
+        if (!show) {
+            menu.classList.add("hide");
+            setTimeout(() => menu.classList.remove("hide"), 400);
         }
-    } else {
-        equipSkin('negative');
-    }
-});
+    },
 
-// Покупка и экипировка Emerald
-buyEmeraldButton.addEventListener('click', () => {
-    if (!hasBoughtEmerald) {
-        if (coins >= 10000) {
-            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, skin_type: 'Emerald', cost: 10000 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message && data.message.startsWith("✅")) {
-                    coins = data.new_coins;
-                    updateCoins(0);
-                    hasBoughtEmerald = true;
-                    buyEmeraldButton.textContent = 'Equip';
-                } else {
-                    alert("Purchase failed: " + data.message);
-                }
-            })
-            .catch(err => console.error("Error purchasing Emerald skin:", err));
-        } else {
-            alert("Not enough coins!");
-        }
-    } else {
-        equipSkin('Emerald');
-    }
-});
-
-// Покупка и экипировка Pixel
-buyPixelButton.addEventListener('click', () => {
-    if (!hasBoughtPixel) {
-        if (coins >= 150000) {
-            fetch('https://backend12-production-1210.up.railway.app/buy_skin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, skin_type: 'Pixel', cost: 150000 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message && data.message.startsWith("✅")) {
-                    coins = data.new_coins;
-                    updateCoins(0);
-                    hasBoughtPixel = true;
-                    buyPixelButton.textContent = 'Equip';
-                } else {
-                    alert("Purchase failed: " + data.message);
-                }
-            })
-            .catch(err => console.error("Error purchasing Pixel skin:", err));
-        } else {
-            alert("Not enough coins!");
-        }
-    } else {
-        equipSkin('Pixel');
-    }
-});
-
-// Экипировка Classic
-equipClassicButton.addEventListener('click', () => {
-    equipSkin('classic');
-});
-
-// Функция экипировки скина
-function equipSkin(type, sendToServer = true) {
-    if (equippedSkin === type) return;
-
-    equippedSkin = type; // Обновляем локальное состояние
-    cube.src = type === "negative" ? "pictures/cubics/негатив/начальный-кубик-негатив.gif" :
-               type === "Emerald" ? "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif" :
-               type === "Pixel" ? "pictures/cubics/пиксель/начальный-кубик-пиксель.gif" :
-               "pictures/cubics/классика/начальный-кубик.gif";
-
-    // Обновляем UI кнопок
-    updateSkinsUI(
-        [hasBoughtNegative && "negative", hasBoughtEmerald && "Emerald", hasBoughtPixel && "Pixel"].filter(Boolean),
-        equippedSkin
-    );
-
-    if (sendToServer) {
-        sendSkinToServer(type);
-    }
-}
-
-// Отправка скина на сервер
-function sendSkinToServer(skinType) {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) return;
-
-    fetch('https://backend12-production-1210.up.railway.app/update_skin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, skin_type: skinType })
-    })
-        .then(response => response.json())
-        .then(data => console.log("Skin updated on server:", data))
-        .catch(error => console.error("Error updating skin on server:", error));
-}
-
-// Обработчики событий для кнопок
-equipClassicButton.addEventListener('click', () => {
-    equipSkin('classic', true); // Всегда отправляем на сервер при выборе пользователем
-});
-
-// Функция обновления прогресса ачивки
-function updateAchievementProgress(rolls) {
-    const targetRolls = 123456;
-    const progress = Math.min((rolls / targetRolls) * 100, 100); // Процент выполнения
-    
-    const rollsAchievement = document.querySelector('#achievements-list .achievement-item:nth-child(2)');
-    const progressCircle = rollsAchievement.querySelector('.progress-circle');
-    const rewardText = rollsAchievement.querySelector('.achievement-reward');
-    
-    // Устанавливаем прогресс как CSS-переменную
-    progressCircle.style.setProperty('--progress', `${progress}%`);
-    
-    // Обновляем текст подписи
-    rewardText.textContent = rolls >= targetRolls 
-        ? "Achievement Completed! 123456 dice rolls made!"
-        : `Make ${formatNumber1(targetRolls - rolls)} more dice rolls to complete`;
-}
-
-// Форматирование чисел с разделителями тысяч
-function formatNumber1(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-
-
-let currentCube = null; // Для отслеживания текущего элемента кубика
-
-function rollCube() {
-    if (!currentCube) {
-        currentCube = document.getElementById('cube'); // Предполагается, что у кубика есть id="cube"
-    }
-
-    let isRainbow = Math.random() < 0.2;
-    document.body.className = isRainbow ? 'pink-gradient' : 'gray-gradient';
-
-    const skinConfig = {
-        'classic': {
-            default: 'pictures/cubics/классика/начальный-кубик.gif',
-            rainbow: 'pictures/cubics/классика/супер-начальный-кубик.gif'
-        },
-        'negative': {
-            default: 'pictures/cubics/негатив/начальный-кубик-негатив.gif',
-            rainbow: 'pictures/cubics/негатив/супер-начальный-кубик-негатив.gif'
-        },
-        'Emerald': {
-            default: 'pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif',
-            rainbow: 'pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif'
-        },
-        'Pixel': {
-            default: 'pictures/cubics/пиксель/начальный-кубик-пиксель.gif',
-            rainbow: 'pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif'
-        }
-    };
-
-    // Установка начального изображения с параметром для остановки анимации
-    currentCube.src = `${skinConfig[equippedSkin][isRainbow ? 'rainbow' : 'default']}?t=${Date.now()}`; // Добавляем timestamp для сброса анимации
-
-    // Удаляем старый обработчик, чтобы избежать накопления
-    currentCube.onclick = null;
-    currentCube.onclick = handleCubeClick.bind(null, isRainbow, skinConfig);
-}
-
-// Обработчик клика по кубику
-async function handleCubeClick(isRainbow, skinConfig) {
-    if (isAnimating) return;
-    isAnimating = true;
-
-    try {
-        startProgress(3);
-        const random = Math.random() * 100;
-        const outcome = getOutcome(random, equippedSkin, isRainbow);
-
-        // Плавная смена изображения
-        currentCube.style.opacity = '0';
-        await wait(150);
-
-        // Устанавливаем новое изображение и останавливаем анимацию после первого воспроизведения
-        currentCube.src = `${outcome.src}?t=${Date.now()}`; // Timestamp для сброса
-        currentCube.style.opacity = '1';
-
-        // Ждем завершения анимации GIF (3050мс)
-        await wait(3050);
-
-        // Останавливаем анимацию, заменив GIF на статичное изображение (предполагается, что есть PNG версия)
-        const staticSrc = outcome.src.replace('.gif', '.png'); // Предполагаем наличие статичной версии
-        currentCube.src = staticSrc;
-
-        // Асинхронное обновление данных на сервере (не ждем окончания анимации)
-        const serverData = await updateServerData();
-
-        // Обновляем UI после получения данных с сервера
-        updateAchievementProgress(serverData?.total_rolls || 0);
-        updateBestLuck();
-        updateCoins(outcome.coins);
-
-        // Плавный переход к начальному состоянию
-        currentCube.style.opacity = '0';
-        await wait(150);
-        currentCube.src = `${skinConfig[equippedSkin][isRainbow ? 'rainbow' : 'default']}?t=${Date.now()}`;
-        currentCube.style.opacity = '1';
-
-    } catch (error) {
-        console.error('Ошибка в процессе броска кубика:', error);
-    } finally {
-        isAnimating = false;
-        // Не вызываем rollCube() автоматически, даем пользователю контроль
-    }
-}
-
-// Вспомогательная функция для ожидания
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-// Функция получения результата броска (без изменений)
-function getOutcome(random, skin, isRainbow) {
-    const outcomes = {
-        'classic': {
-            default: [
-                { range: 40, src: 'pictures/cubics/классика/1-кубик.gif', coins: 1 },
-                { range: 65, src: 'pictures/cubics/классика/2-кубик.gif', coins: 2 },
-                { range: 80, src: 'pictures/cubics/классика/3-кубик.gif', coins: 3 },
-                { range: 90, src: 'pictures/cubics/классика/4-кубик.gif', coins: 4 },
-                { range: 97, src: 'pictures/cubics/классика/5-кубик.gif', coins: 5 },
-                { range: 100, src: 'pictures/cubics/классика/6-кубик.gif', coins: 6 }
-            ],
-            rainbow: [
-                { range: 40, src: 'pictures/cubics/классика/1-кубик.gif', coins: 2 },
-                { range: 65, src: 'pictures/cubics/классика/2-кубик.gif', coins: 4 },
-                { range: 80, src: 'pictures/cubics/классика/3-кубик.gif', coins: 6 },
-                { range: 90, src: 'pictures/cubics/классика/4-кубик.gif', coins: 8 },
-                { range: 97, src: 'pictures/cubics/классика/5-кубик.gif', coins: 10 },
-                { range: 100, src: 'pictures/cubics/классика/6-кубик.gif', coins: 12 }
-            ]
-        },
-        'negative': {
-            default: [
-                { range: 40, src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 2 },
-                { range: 65, src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 3 },
-                { range: 80, src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 4 },
-                { range: 90, src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 5 },
-                { range: 97, src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 6 },
-                { range: 100, src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 7 }
-            ],
-            rainbow: [
-                { range: 15, src: 'pictures/cubics/негатив/1-кубик-негатив.gif', coins: 4 },
-                { range: 45, src: 'pictures/cubics/негатив/2-кубик-негатив.gif', coins: 6 },
-                { range: 70, src: 'pictures/cubics/негатив/3-кубик-негатив.gif', coins: 8 },
-                { range: 85, src: 'pictures/cubics/негатив/4-кубик-негатив.gif', coins: 10 },
-                { range: 94, src: 'pictures/cubics/негатив/5-кубик-негатив.gif', coins: 12 },
-                { range: 100, src: 'pictures/cubics/негатив/6-кубик-негатив.gif', coins: 14 }
-            ]
-        },
-        'Emerald': {
-            default: [
-                { range: 40, src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 3 },
-                { range: 65, src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 4 },
-                { range: 80, src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 5 },
-                { range: 90, src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 6 },
-                { range: 97, src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 7 },
-                { range: 100, src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 8 }
-            ],
-            rainbow: [
-                { range: 15, src: 'pictures/cubics/перевернутый/1-кубик-перевернутый.gif', coins: 6 },
-                { range: 45, src: 'pictures/cubics/перевернутый/2-кубик-перевернутый.gif', coins: 8 },
-                { range: 70, src: 'pictures/cubics/перевернутый/3-кубик-перевернутый.gif', coins: 10 },
-                { range: 85, src: 'pictures/cubics/перевернутый/4-кубик-перевернутый.gif', coins: 12 },
-                { range: 94, src: 'pictures/cubics/перевернутый/5-кубик-перевернутый.gif', coins: 14 },
-                { range: 100, src: 'pictures/cubics/перевернутый/6-кубик-перевернутый.gif', coins: 16 }
-            ]
-        },
-        'Pixel': {
-            default: [
-                { range: 40, src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 10 },
-                { range: 65, src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 11 },
-                { range: 80, src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 12 },
-                { range: 90, src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 13 },
-                { range: 97, src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 14 },
-                { range: 100, src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 15 }
-            ],
-            rainbow: [
-                { range: 40, src: 'pictures/cubics/пиксель/1-кубик-пиксель.gif', coins: 20 },
-                { range: 65, src: 'pictures/cubics/пиксель/2-кубик-пиксель.gif', coins: 22 },
-                { range: 80, src: 'pictures/cubics/пиксель/3-кубик-пиксель.gif', coins: 24 },
-                { range: 90, src: 'pictures/cubics/пиксель/4-кубик-пиксель.gif', coins: 26 },
-                { range: 97, src: 'pictures/cubics/пиксель/5-кубик-пиксель.gif', coins: 28 },
-                { range: 100, src: 'pictures/cubics/пиксель/6-кубик-пиксель.gif', coins: 30 }
-            ]
-        }
-    };
-
-    const skinOutcomes = outcomes[skin][isRainbow ? 'rainbow' : 'default'];
-    return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
-}
-
-// Функция обновления данных на сервере (без изменений)
-async function updateServerData() {
-    const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id;
-    if (!userId) return null;
-
-    try {
-        const response = await fetch("https://backend12-production-1210.up.railway.app/update_rolls", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                user_id: userId,
-                rolls_increment: 1
-            })
+    addSwipeHandler(menu, onSwipeDown) {
+        let startY;
+        menu.addEventListener("touchstart", e => startY = e.touches[0].clientY);
+        menu.addEventListener("touchmove", e => {
+            const deltaY = e.touches[0].clientY - startY;
+            if (deltaY > 50) onSwipeDown();
         });
-        return await response.json();
-    } catch (error) {
-        console.error("Ошибка при обновлении счетчика прокруток:", error);
-        return null;
     }
-}
-
-// Инициализация
-rollCube();
-// Подключение TON Connect
-const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-   manifestUrl: 'https://suspect147.github.io/LUCU/manifest.json',
-   buttonRootId: 'ton-connect'
-});
-
-tonConnectUI.uiOptions = {
-   twaReturnUrl: 'https://t.me/LuckyCubesbot'
 };
 
-const profileButton = document.getElementById("profile-button");
-const profileMenu = document.getElementById("profile-menu");
-const profileName = document.getElementById("profile-name");
+// ============================================================================
+// Игра (Game)
+// ============================================================================
 
-// Получаем имя пользователя из Telegram API
-const userName = tg.initDataUnsafe?.user?.username || "NoName";
-profileName.textContent = `Hello, ${userName}`;
+const Game = {
+    elements: {
+        cube: document.getElementById("cube"),
+        coinsDisplay: document.getElementById("coins") || document.getElementById("coins-display"),
+        bestLuckDisplay: document.getElementById("bestLuck"),
+        progressBar: document.querySelector("#progressBar div")
+    },
+    state: {
+        coins: 0,
+        bestLuck: Infinity,
+        isAnimating: false,
+        equippedSkin: CONFIG.DEFAULT_SKIN
+    },
 
+    init() {
+        this.elements.cube.addEventListener("click", () => this.rollCube());
+        this.updateGameData();
+    },
 
-// Функция открытия меню
-profileButton.addEventListener("click", () => {
-  profileMenu.classList.remove("hide", "hidden");
-  requestAnimationFrame(() => {
-    profileMenu.classList.add("show");
-  });
-});
+    async rollCube() {
+        if (this.state.isAnimating) return;
+        this.state.isAnimating = true;
 
-// Функция закрытия меню с зеркальной анимацией
-function closeProfileMenu() {
-  profileMenu.classList.add("hide");
-  profileMenu.classList.remove("show");
-  setTimeout(() => {
-    profileMenu.classList.add("hidden");
-    profileMenu.classList.remove("hide");
-  }, 400);
-}
+        const isRainbow = Math.random() < 0.2;
+        document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
+        const skinConfig = this.getSkinConfig();
+        this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
 
-profileMenu.addEventListener("click", (e) => {
-  if (e.target === profileMenu) {
-    closeProfileMenu();
-  }
-});
+        try {
+            this.startProgress(CONFIG.PROGRESS_DURATION);
+            const random = Math.random() * 100;
+            const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
 
-// Добавляем поддержку свайпа вниз
-profileMenu.addEventListener("touchstart", (e) => {
-  startY = e.touches[0].clientY;
-  isSwiping = true;
-});
+            this.elements.cube.style.opacity = "0";
+            await Utils.wait(150);
+            this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
+            this.elements.cube.style.opacity = "1";
 
-profileMenu.addEventListener("touchmove", (e) => {
-  if (!isSwiping) return;
-  const moveY = e.touches[0].clientY;
-  const diffY = moveY - startY;
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
+            this.elements.cube.src = outcome.src.replace(".gif", ".png");
 
-  if (diffY > 50) { // Если свайп вниз больше 50px
-    isSwiping = false;
-    closeProfileMenu();
-  }
-});
+            const serverData = await this.updateServerData();
+            this.updateAchievementProgress(serverData?.total_rolls || 0);
+            this.updateBestLuck(random);
+            this.updateCoins(outcome.coins);
 
-profileMenu.addEventListener("touchend", () => {
-  isSwiping = false;
-});
+            this.elements.cube.style.opacity = "0";
+            await Utils.wait(150);
+            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            this.elements.cube.style.opacity = "1";
+        } catch (error) {
+            console.error("Ошибка при броске кубика:", error);
+        } finally {
+            this.state.isAnimating = false;
+        }
+    },
 
+    startProgress(duration) {
+        this.elements.progressBar.style.transition = `width ${duration}s linear`;
+        this.elements.progressBar.style.width = "100%";
+        setTimeout(() => {
+            this.elements.progressBar.style.transition = "none";
+            this.elements.progressBar.style.width = "0%";
+        }, duration * 1000);
+    },
 
-
-// Применяем режим полного экрана для мини-приложения
-window.Telegram.WebApp.expand();
-window.Telegram.WebApp.requestFullscreen(); // Используем requestFullscreen()
-
-// Настройка темы
-tg.expand(); // Открыть приложение на весь экран
-
-document.addEventListener("DOMContentLoaded", async () => {
-   const friendMenu = document.getElementById("friend-menu");
-   const friendButton = document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById("open-friend-menu");
-   const referralInput = document.getElementById("referral-link");
-   const copyButton = document.getElementById("copy-referral");
-   const shareButton = document.getElementById("share-link");
-   const friendsCountElement = document.querySelector(".friends-count");
-
-   const telegram = window.Telegram?.WebApp;
-   const userId = telegram?.initDataUnsafe?.user?.id || "unknown";
-   const urlParams = new URLSearchParams(window.location.search);
-   const referrerId = urlParams.get("start");
-
-if (referrerId && userId && referrerId !== userId) {
-    // Проверяем, точно ли premium === true
-    const isPremium = Boolean(telegram?.initDataUnsafe?.user?.premium);
-    const bonusCoins = isPremium ? 1000 : 100;
-
-    try {
-        const response = await fetch("https://backend12-production-1210.up.railway.app/update_coins", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
+    getSkinConfig() {
+        return {
+            classic: {
+                default: "pictures/cubics/классика/начальный-кубик.gif",
+                rainbow: "pictures/cubics/классика/супер-начальный-кубик.gif"
             },
-            body: JSON.stringify({
-                user_id: userId,
-                coins: bonusCoins
-            })
-        });
-        const result = await response.json();
-        console.log(`Referral bonus added: ${bonusCoins} coins`, result);
-    } catch (error) {
-        console.error("Failed to update coins:", error);
+            negative: {
+                default: "pictures/cubics/негатив/начальный-кубик-негатив.gif",
+                rainbow: "pictures/cubics/негатив/супер-начальный-кубик-негатив.gif"
+            },
+            Emerald: {
+                default: "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
+                rainbow: "pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif"
+            },
+            Pixel: {
+                default: "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
+                rainbow: "pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif"
+            }
+        };
+    },
+
+    getOutcome(random, skin, isRainbow) {
+        const outcomes = {
+            classic: {
+                default: [
+                    { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 1 },
+                    { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 2 },
+                    { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 3 },
+                    { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 4 },
+                    { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 5 },
+                    { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 6 }
+                ],
+                rainbow: [
+                    { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 2 },
+                    { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 4 },
+                    { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 6 },
+                    { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 8 },
+                    { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 10 },
+                    { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 12 }
+                ]
+            },
+            negative: {
+                default: [
+                    { range: 40, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 2 },
+                    { range: 65, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 3 },
+                    { range: 80, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 4 },
+                    { range: 90, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 5 },
+                    { range: 97, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 6 },
+                    { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 7 }
+                ],
+                rainbow: [
+                    { range: 15, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 4 },
+                    { range: 45, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 6 },
+                    { range: 70, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 8 },
+                    { range: 85, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 10 },
+                    { range: 94, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 12 },
+                    { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 14 }
+                ]
+            },
+            Emerald: {
+                default: [
+                    { range: 40, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 3 },
+                    { range: 65, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 4 },
+                    { range: 80, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 5 },
+                    { range: 90, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 6 },
+                    { range: 97, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 7 },
+                    { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 8 }
+                ],
+                rainbow: [
+                    { range: 15, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 6 },
+                    { range: 45, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 8 },
+                    { range: 70, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 10 },
+                    { range: 85, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 12 },
+                    { range: 94, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 14 },
+                    { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 16 }
+                ]
+            },
+            Pixel: {
+                default: [
+                    { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 10 },
+                    { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 11 },
+                    { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 12 },
+                    { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 13 },
+                    { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 14 },
+                    { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 15 }
+                ],
+                rainbow: [
+                    { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 20 },
+                    { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 22 },
+                    { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 24 },
+                    { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 26 },
+                    { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 28 },
+                    { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 30 }
+                ]
+            }
+        };
+        const skinOutcomes = outcomes[skin][isRainbow ? "rainbow" : "default"];
+        return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
+    },
+
+    async updateServerData() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) return null;
+        return await API.updateRolls(userId);
+    },
+
+    async updateCoins(amount) {
+        const userId = tg.initDataUnsafe?.user?.id;
+        const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
+        const data = await API.updateCoins(userId, amount, username);
+        this.state.coins = data.new_coins;
+        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+        this.updateGameData();
+    },
+
+    async updateBestLuck(random) {
+        if (random < this.state.bestLuck) {
+            this.state.bestLuck = random;
+            const userId = tg.initDataUnsafe?.user?.id;
+            const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
+            await API.updateLuck(userId, this.state.bestLuck, username);
+            this.updateGameData();
+        }
+    },
+
+    async updateGameData() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) return;
+
+        const data = await API.getUserData(userId);
+        this.state.coins = data.coins;
+        this.state.bestLuck = data.min_luck;
+        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+
+        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+        Skins.updateUI(data.owned_skins, this.state.equippedSkin);
+    },
+
+    updateAchievementProgress(rolls) {
+        const targetRolls = 123456;
+        const progress = Math.min((rolls / targetRolls) * 100, 100);
+        const achievement = document.querySelector("#achievements-list .achievement-item:nth-child(2)");
+        achievement.querySelector(".progress-circle").style.setProperty("--progress", `${progress}%`);
+        achievement.querySelector(".achievement-reward").textContent = rolls >= targetRolls
+            ? "Achievement Completed! 123456 dice rolls made!"
+            : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
     }
-}
+};
 
+// ============================================================================
+// Скины (Skins)
+// ============================================================================
 
+const Skins = {
+    elements: {
+        buyNegative: document.getElementById("buy-negative"),
+        buyEmerald: document.getElementById("buy-Emerald"),
+        buyPixel: document.getElementById("buy-Pixel"),
+        equipClassic: document.getElementById("equip-classic"),
+        menu: document.getElementById("skins-menu"),
+        button: document.querySelector('.menu-item img[alt="Skins"]')
+    },
 
-   async function updateFriendsCount() {
-       try {
-           const response = await fetch(`https://backend12-production-1210.up.railway.app/get_referral_count/${userId}`);
-           const data = await response.json();
-           friendsCountElement.textContent = `Your friends: ${data.referral_count}`;
-       } catch (error) {
-           console.error("Failed to fetch referral count:", error);
-           friendsCountElement.textContent = "Your friends: 0";
-       }
-   }
+    state: {
+        hasBoughtNegative: false,
+        hasBoughtEmerald: false,
+        hasBoughtPixel: false
+    },
 
-   if (friendMenu && friendButton && referralInput && copyButton && friendsCountElement && shareButton) {
-       const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
-       referralInput.value = referralLink;
+    init() {
+        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
 
-       // Функция открытия меню
-       friendButton.addEventListener('click', () => {
-           friendMenu.classList.remove('hide', 'hidden');
-           friendMenu.classList.add('show');
-           updateFriendsCount();
-       });
+        this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
+        this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
+        this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
+        this.elements.equipClassic.addEventListener("click", () => this.equip("classic"));
+    },
 
-       // Функция закрытия меню с зеркальной анимацией
-       friendMenu.addEventListener('click', (e) => {
-           if (e.target === friendMenu) {
-               closeFriendMenu();
-           }
-       });
+    async handleSkin(type) {
+        const cost = CONFIG.SKIN_PRICES[type];
+        const key = `hasBought${type}`;
+        if (!this.state[key]) {
+            if (Game.state.coins >= cost) {
+                const data = await API.buySkin(tg.initDataUnsafe?.user?.id, type, cost);
+                if (data.message?.startsWith("✅")) {
+                    Game.state.coins = data.new_coins;
+                    this.state[key] = true;
+                    this.updateUI();
+                } else {
+                    alert(`Purchase failed: ${data.message}`);
+                }
+            } else {
+                alert("Not enough coins!");
+            }
+        } else {
+            this.equip(type);
+        }
+    },
 
-       let startY;
+    equip(type) {
+        if (Game.state.equippedSkin === type) return;
+        Game.state.equippedSkin = type;
+        Game.elements.cube.src = {
+            negative: "pictures/cubics/негатив/начальный-кубик-негатив.gif",
+            Emerald: "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
+            Pixel: "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
+            classic: "pictures/cubics/классика/начальный-кубик.gif"
+        }[type];
+        this.updateUI();
+        API.updateSkin(tg.initDataUnsafe?.user?.id, type);
+    },
 
-       // Обработчик начала свайпа
-       friendMenu.addEventListener("touchstart", (e) => {
-           startY = e.touches[0].clientY;
-       });
+    updateUI(ownedSkins = [], equippedSkin = Game.state.equippedSkin) {
+        this.state.hasBoughtNegative = ownedSkins.includes("negative");
+        this.state.hasBoughtEmerald = ownedSkins.includes("Emerald");
+        this.state.hasBoughtPixel = ownedSkins.includes("Pixel");
 
-       // Обработчик движения пальцем
-       friendMenu.addEventListener("touchmove", (e) => {
-           const deltaY = e.touches[0].clientY - startY;
-           if (deltaY > 50) { // Если свайп вниз больше 50px
-               closeFriendMenu();
-           }
-       });
+        this.elements.buyNegative.textContent = this.state.hasBoughtNegative
+            ? (equippedSkin === "negative" ? "Equipped" : "Equip")
+            : "Buy //5K $LUCU/";
+        this.elements.buyEmerald.textContent = this.state.hasBoughtEmerald
+            ? (equippedSkin === "Emerald" ? "Equipped" : "Equip")
+            : "Buy //10K $LUCU/";
+        this.elements.buyPixel.textContent = this.state.hasBoughtPixel
+            ? (equippedSkin === "Pixel" ? "Equipped" : "Equip")
+            : "Buy //150K $LUCU/";
+        this.elements.equipClassic.textContent = equippedSkin === "classic" ? "Equipped" : "Equip";
+    }
+};
 
-       function closeFriendMenu() {
-           friendMenu.classList.add("hide");
-           friendMenu.classList.remove("show");
-           setTimeout(() => {
-               friendMenu.classList.add("hidden");
-               friendMenu.classList.remove("hide");
-           }, 400);
-       }
+// ============================================================================
+// Квесты (Quests)
+// ============================================================================
 
-       copyButton.addEventListener("click", () => {
-           copyToClipboard(referralInput.value);
-       });
+const Quests = {
+    elements: {
+        menu: document.getElementById("quests-menu"),
+        button: document.querySelector('.menu-item img[alt="Quests"]'),
+        subscribeButton: document.querySelector(".quest-item .quest-btn"),
+        questsTab: document.getElementById("quests-tab"),
+        achievementsTab: document.getElementById("achievements-tab"),
+        questsList: document.getElementById("quests-list"),
+        achievementsList: document.getElementById("achievements-list")
+    },
 
-       shareButton.addEventListener("click", () => {
-           const shareText = "Want to try your luck? Check out this game and join me!";
-           const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
-           telegram?.openTelegramLink(telegramLink);
-       });
+    init() {
+        this.elements.button.addEventListener("click", async () => {
+            await this.loadQuestStatus();
+            UI.toggleMenu(this.elements.menu, true);
+        });
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
 
-       function copyToClipboard(text) {
-           fallbackCopy(text);
-       }
+        this.elements.subscribeButton.addEventListener("click", () => this.handleSubscription());
+        this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
+        this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
+    },
 
-       function fallbackCopy(text) {
-           const tempTextArea = document.createElement("textarea");
-           tempTextArea.value = text;
-           tempTextArea.style.position = "absolute";
-           tempTextArea.style.left = "-9999px";
-           document.body.appendChild(tempTextArea);
-           tempTextArea.select();
+    async loadQuestStatus() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) return;
 
-           try {
-               if (document.execCommand("copy")) {
-                   showCopySuccess();
-               } else {
-                   throw new Error("execCommand failed");
-               }
-           } catch (err) {
-               console.error("Fallback copy failed:", err);
-           }
+        const data = await API.getUserData(userId);
+        const isSubscribed = data?.quests?.subscription_quest === "yes";
+        if (isSubscribed) {
+            this.elements.subscribeButton.textContent = "✔️";
+            this.elements.subscribeButton.classList.add("completed");
+            this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
+            this.elements.subscribeButton.style.cursor = "default";
+            this.elements.subscribeButton.disabled = true;
+        }
+    },
 
-           document.body.removeChild(tempTextArea);
-       }
+    async handleSubscription() {
+        if (this.elements.subscribeButton.classList.contains("completed")) return;
 
-       function showCopySuccess() {
-           copyButton.textContent = "Copied!";
-           setTimeout(() => {
-               copyButton.textContent = "Copy";
-           }, 1500);
-       }
-   }
+        window.open(`https://t.me/${CONFIG.CHANNEL_USERNAME}`, "_blank");
+        const userId = tg.initDataUnsafe?.user?.id;
+        const isSubscribed = await API.checkTelegramSubscription(userId, CONFIG.CHANNEL_USERNAME);
+
+        if (isSubscribed) {
+            this.elements.subscribeButton.textContent = "✔️";
+            this.elements.subscribeButton.classList.add("completed");
+            this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
+            this.elements.subscribeButton.style.cursor = "default";
+            this.elements.subscribeButton.disabled = true;
+
+            await API.updateQuest(userId, "subscription_quest", "yes");
+            Game.updateCoins(250);
+        }
+    },
+
+    switchTab(tab) {
+        this.elements.questsTab.classList.toggle("active", tab === "quests");
+        this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
+        this.elements.questsList.classList.toggle("hidden", tab !== "quests");
+        this.elements.achievementsList.classList.toggle("hidden", tab !== "achievements");
+        if (tab === "achievements") Game.updateAchievementProgress((await API.getUserData(tg.initDataUnsafe?.user?.id))?.rolls || 0);
+    }
+};
+
+// ============================================================================
+// Лидерборд (Leaderboard)
+// ============================================================================
+
+const Leaderboard = {
+    elements: {
+        menu: document.getElementById("leaderboard-menu"),
+        button: document.querySelector('.menu-item img[alt="Leaderboard"]'),
+        list: document.getElementById("leaderboard-list"),
+        mostLucuBtn: document.getElementById("most-lucu"),
+        bestLuckBtn: document.getElementById("best-luck"),
+        placeBadge: document.getElementById("player-place-badge"),
+        topSection: document.querySelector(".top-section")
+    },
+
+    init() {
+        this.elements.button.addEventListener("click", () => {
+            UI.toggleMenu(this.elements.menu, true);
+            this.load("coins");
+        });
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.topSection, () => UI.toggleMenu(this.elements.menu, false));
+
+        this.elements.mostLucuBtn.addEventListener("click", () => {
+            this.elements.mostLucuBtn.classList.add("active");
+            this.elements.bestLuckBtn.classList.remove("active");
+            this.load("coins");
+        });
+        this.elements.bestLuckBtn.addEventListener("click", () => {
+            this.elements.bestLuckBtn.classList.add("active");
+            this.elements.mostLucuBtn.classList.remove("active");
+            this.load("luck");
+        });
+
+        this.elements.list.addEventListener("scroll", () => {
+            this.elements.menu.classList.toggle("scrolled", this.elements.list.scrollTop > 20);
+        });
+    },
+
+    async load(type) {
+        const data = await API.getLeaderboard(type);
+        this.elements.list.innerHTML = "";
+
+        const userId = tg.initDataUnsafe?.user?.id;
+        const userIndex = data.findIndex(p => p.user_id == userId);
+        this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
+
+        if (!data?.length) {
+            this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
+            return;
+        }
+
+        for (let i = 0; i < data.length; i++) {
+            const player = data[i];
+            const avatar = await this.getAvatar(player, i);
+            const isCurrentUser = userId && player.user_id == userId;
+
+            const li = document.createElement("li");
+            li.classList.add("leaderboard-item");
+            if (isCurrentUser) li.classList.add("highlight");
+
+            const value = type === "coins" ? Utils.formatCoins(player.coins) + " $LUCU" : Utils.formatNumber(player.min_luck) || "N/A";
+            li.innerHTML = `
+                <div class="leaderboard-item-content">
+                    <div class="player-left">
+                        <span class="player-${type}">${value}</span>
+                    </div>
+                    <div class="player-right">
+                        <img src="${avatar.src}" class="player-avatar" alt="Avatar" 
+                             onerror="this.src='${CONFIG.FALLBACK_AVATAR}'">
+                        <div class="player-info">
+                            <span class="player-name">${player.username}</span>
+                            <span class="player-rank">#${i + 1}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            this.elements.list.appendChild(li);
+        }
+    },
+
+    async getAvatar(player, index) {
+        let photoUrl = player?.photo_url;
+        if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
+            return { src: CONFIG.FALLBACK_AVATAR, bgClass: "" };
+        }
+
+        if (photoUrl.endsWith(".svg") || photoUrl.includes("t.me/")) {
+            return {
+                src: photoUrl,
+                bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
+            };
+        }
+
+        try {
+            const response = await fetch(photoUrl);
+            if (!response.ok) return { src: CONFIG.FALLBACK_AVATAR, bgClass: "" };
+            const blob = await response.blob();
+            return {
+                src: URL.createObjectURL(blob),
+                bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
+            };
+        } catch {
+            return { src: CONFIG.FALLBACK_AVATAR, bgClass: "" };
+        }
+    }
+};
+
+// ============================================================================
+// Профиль (Profile)
+// ============================================================================
+
+const Profile = {
+    elements: {
+        menu: document.getElementById("profile-menu"),
+        button: document.getElementById("profile-button"),
+        name: document.getElementById("profile-name")
+    },
+
+    init() {
+        this.elements.name.textContent = `Hello, ${tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "NoName"}`;
+        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            API.updateProfile(
+                user.id,
+                `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
+                user.photo_url || CONFIG.FALLBACK_AVATAR
+            );
+        }
+    }
+};
+
+// ============================================================================
+// Друзья (Friends)
+// ============================================================================
+
+const Friends = {
+    elements: {
+        menu: document.getElementById("friend-menu"),
+        button: document.querySelector('.menu-item img[alt="Friend"]') || document.getElementById("open-friend-menu"),
+        referralInput: document.getElementById("referral-link"),
+        copyButton: document.getElementById("copy-referral"),
+        shareButton: document.getElementById("share-link"),
+        friendsCount: document.querySelector(".friends-count")
+    },
+
+    init() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
+        this.elements.referralInput.value = referralLink;
+
+        this.elements.button.addEventListener("click", () => {
+            UI.toggleMenu(this.elements.menu, true);
+            this.updateFriendsCount();
+        });
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+
+        this.elements.copyButton.addEventListener("click", () => {
+            Utils.copyToClipboard(referralLink);
+            this.elements.copyButton.textContent = "Copied!";
+            setTimeout(() => this.elements.copyButton.textContent = "Copy", 1500);
+        });
+
+        this.elements.shareButton.addEventListener("click", () => {
+            const shareText = "Want to try your luck? Check out this game and join me!";
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`);
+        });
+
+        const referrerId = new URLSearchParams(window.location.search).get("start");
+        if (referrerId && userId && referrerId !== userId) {
+            const bonus = tg.initDataUnsafe?.user?.premium ? CONFIG.REFERRAL_BONUS.premium : CONFIG.REFERRAL_BONUS.default;
+            API.updateCoins(userId, bonus, tg.initDataUnsafe?.user?.first_name);
+        }
+    },
+
+    async updateFriendsCount() {
+        const data = await API.getReferralCount(tg.initDataUnsafe?.user?.id);
+        this.elements.friendsCount.textContent = `Your friends: ${data.referral_count || 0}`;
+    }
+};
+
+// ============================================================================
+// Инициализация Particle System
+// ============================================================================
+
+const Particles = {
+    init() {
+        const canvas = document.getElementById(CONFIG.CANVAS_ID);
+        if (!canvas) return;
+
+        const particleSystem = new ParticleSystem(canvas, {
+            x: window.innerWidth,
+            y: window.innerHeight
+        });
+
+        Object.assign(particleSystem, {
+            amount: 100,
+            diameter: { min: 1, max: 3 },
+            life: { min: 3, max: 7 },
+            speed: { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } }
+        });
+
+        particleSystem.init();
+
+        window.addEventListener("resize", () => {
+            const oldSize = { x: particleSystem.size.x, y: particleSystem.size.y };
+            particleSystem.resize({ x: window.innerWidth, y: window.innerHeight }, oldSize);
+        });
+    }
+};
+
+// ============================================================================
+// Инициализация приложения
+// ============================================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    Particles.init();
+    Game.init();
+    Skins.init();
+    Quests.init();
+    Leaderboard.init();
+    Profile.init();
+    Friends.init();
+
+    tg.expand();
+    tg.requestFullscreen();
+    tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
 });
