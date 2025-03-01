@@ -647,29 +647,30 @@ const Quests = {
         }
     },
 
-    switchTab: async function(tab) {  // Добавляем async, так как будем работать с await
-    this.elements.questsTab.classList.toggle("active", tab === "quests");
-    this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
-    this.elements.questsList.classList.toggle("hidden", tab !== "quests");
-    this.elements.achievementsList.classList.toggle("hidden", tab !== "achievements");
+    async switchTab(tab) {  // Исправленный метод
+        this.elements.questsTab.classList.toggle("active", tab === "quests");
+        this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
+        this.elements.questsList.classList.toggle("hidden", tab !== "quests");
+        this.elements.achievementsList.classList.toggle("hidden", tab !== "achievements");
 
-    if (tab === "achievements") {
-        try {
-            const userId = tg.initDataUnsafe?.user?.id;
-            if (!userId) {
+        if (tab === "achievements") {
+            try {
+                const userId = tg.initDataUnsafe?.user?.id;
+                if (!userId) {
+                    Game.updateAchievementProgress(0);
+                    return;
+                }
+                
+                const userData = await API.getUserData(userId);
+                const rolls = userData?.rolls || 0;
+                Game.updateAchievementProgress(rolls);
+            } catch (error) {
+                console.error("Ошибка при загрузке данных для достижений:", error);
                 Game.updateAchievementProgress(0);
-                return;
             }
-            
-            const userData = await API.getUserData(userId);
-            const rolls = userData?.rolls || 0;
-            Game.updateAchievementProgress(rolls);
-        } catch (error) {
-            console.error("Ошибка при загрузке данных для достижений:", error);
-            Game.updateAchievementProgress(0); // Фallback на случай ошибки
         }
     }
-},
+};
 
 // ============================================================================
 // Лидерборд (Leaderboard)
