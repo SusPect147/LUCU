@@ -1087,8 +1087,6 @@ function formatNumber1(num) {
 
 
 
-// Глобальная переменная для контроля состояния
-let isAnimating = false;
 let currentCube = null; // Для отслеживания текущего элемента кубика
 
 function rollCube() {
