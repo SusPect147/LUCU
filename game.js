@@ -292,6 +292,10 @@ const UI = {
 // Игра (Game) - Исправленный раздел с немедленным показом результата
 // ============================================================================
 
+// ============================================================================
+// Игра (Game) - Исправленный раздел с немедленным показом результата и без задержек
+// ============================================================================
+
 const Game = {
     elements: {
         cube: null,
@@ -348,10 +352,8 @@ const Game = {
 
             const skinConfig = this.getSkinConfig();
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
-            this.elements.cube.src = initialSkin;
-            console.log("Установлен начальный скин:", initialSkin);
 
-            // Запускаем прогресс-бар на 2 секунды
+            // Запускаем прогресс-бар на 3 секунды (как в вашем исправлении)
             this.startProgress(3000);
 
             // Немедленно показываем результат после клика
@@ -360,13 +362,16 @@ const Game = {
             this.elements.cube.src = outcome.src;
             console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
 
+            // Ждём 3 секунды (синхронно с прогресс-баром)
+            await Utils.wait(3000);
+
             // Обновляем данные
             const serverData = await this.updateServerData();
             this.updateAchievementProgress(serverData?.total_rolls || 0);
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин
+            // Возвращаем начальный скин без дополнительной задержки
             this.elements.cube.src = initialSkin;
             console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
             document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient";
@@ -549,7 +554,7 @@ const Game = {
 
             const skinConfig = this.getSkinConfig();
             this.elements.cube.src = `${skinConfig[this.state.equippedSkin].default}?t=${Date.now()}`;
-            console.log("Синхронизирован equippedSkin:", this.state.equippedSkin);
+            console.log("Установлен начальный скин:", this.elements.cube.src);
 
             this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
             this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
