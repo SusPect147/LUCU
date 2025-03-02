@@ -291,10 +291,10 @@ const UI = {
 
 const Game = {
     elements: {
-        cube: document.getElementById("cube"),
-        coinsDisplay: document.getElementById("coins") || document.getElementById("coins-display"),
-        bestLuckDisplay: document.getElementById("bestLuck"),
-        progressBar: document.querySelector("#progressBar div")
+        cube: null,
+        coinsDisplay: null,
+        bestLuckDisplay: null,
+        progressBar: null
     },
     state: {
         coins: 0,
@@ -304,191 +304,212 @@ const Game = {
     },
 
     init() {
+        this.elements.cube = document.getElementById("cube");
+        this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
+        this.elements.bestLuckDisplay = document.getElementById("bestLuck");
+        this.elements.progressBar = document.querySelector("#progressBar div");
+
+        if (!this.elements.cube || !this.elements.coinsDisplay || !this.elements.bestLuckDisplay || !this.elements.progressBar) {
+            console.error("Не удалось найти один или несколько элементов DOM");
+            return;
+        }
+
+        // Привязываем rollCube как начальную точку для клика
         this.elements.cube.addEventListener("click", () => this.rollCube());
         this.updateGameData();
     },
 
-// Подготовка кубика перед броском
-rollCube() {
-    if (this.state.isAnimating) return; // Проверяем, не идет ли уже анимация
+    // Подготовка кубика и запуск анимации по клику
+    rollCube() {
+        if (this.state.isAnimating) return;
 
-    let isRainbow = Math.random() < 0.2;
-    document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
+        const isRainbow = Math.random() < 0.2;
+        document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
 
-    const skinConfig = this.getSkinConfig();
-    this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
-
-    // Удаляем старый обработчик и добавляем новый
-    this.elements.cube.onclick = null;
-    this.elements.cube.onclick = this.handleCubeClick.bind(this, isRainbow, skinConfig);
-},
-
-// Обработчик клика по кубику
-async handleCubeClick(isRainbow, skinConfig) {
-    if (this.state.isAnimating) return;
-    this.state.isAnimating = true;
-
-    try {
-        this.startProgress(CONFIG.PROGRESS_DURATION); // Запускаем прогресс-бар
-        const random = Math.random() * 100;
-        const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
-
-        // Плавная смена изображения
-        this.elements.cube.style.opacity = "0";
-        await Utils.wait(150);
-
-        // Устанавливаем результат броска
-        this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
-        this.elements.cube.style.opacity = "1";
-
-        // Ждем завершения анимации (аналог 3050мс из второго кода)
-        await Utils.wait(CONFIG.ANIMATION_DURATION);
-
-        // Останавливаем анимацию, заменяя GIF на PNG
-        const staticSrc = outcome.src.replace(".gif", ".png");
-        this.elements.cube.src = staticSrc;
-
-        // Обновляем данные на сервере
-        const serverData = await this.updateServerData();
-        this.updateAchievementProgress(serverData?.total_rolls || 0);
-        this.updateBestLuck(random);
-        this.updateCoins(outcome.coins);
-
-        // Плавный возврат к начальному состоянию
-        this.elements.cube.style.opacity = "0";
-        await Utils.wait(150);
+        const skinConfig = this.getSkinConfig();
         this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
-        this.elements.cube.style.opacity = "1";
-    } catch (error) {
-        console.error("Ошибка при броске кубика:", error);
-    } finally {
-        this.state.isAnimating = false;
-        // Не вызываем rollCube повторно, оставляем контроль пользователю
-    }
-},
 
-startProgress(duration) {
-    this.elements.progressBar.style.transition = `width ${duration}s linear`;
-    this.elements.progressBar.style.width = "100%";
-    setTimeout(() => {
-        this.elements.progressBar.style.transition = "none";
-        this.elements.progressBar.style.width = "0%";
-    }, duration * 1000);
-},
+        // Вызываем handleCubeClick напрямую после подготовки
+        this.handleCubeClick(isRainbow, skinConfig);
+    },
 
-getSkinConfig() {
-    return {
-        classic: {
-            default: "pictures/cubics/классика/начальный-кубик.gif",
-            rainbow: "pictures/cubics/классика/супер-начальный-кубик.gif"
-        },
-        negative: {
-            default: "pictures/cubics/негатив/начальный-кубик-негатив.gif",
-            rainbow: "pictures/cubics/негатив/супер-начальный-кубик-негатив.gif"
-        },
-        Emerald: {
-            default: "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
-            rainbow: "pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif"
-        },
-        Pixel: {
-            default: "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
-            rainbow: "pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif"
+    // Обработчик броска кубика
+    async handleCubeClick(isRainbow, skinConfig) {
+        if (this.state.isAnimating) return;
+        this.state.isAnimating = true;
+
+        try {
+            this.startProgress(CONFIG.PROGRESS_DURATION); // Запускаем прогресс-бар
+            const random = Math.random() * 100;
+            const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
+
+            // Плавная смена изображения
+            this.elements.cube.style.opacity = "0";
+            await Utils.wait(150);
+
+            // Устанавливаем результат броска
+            this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
+            this.elements.cube.style.opacity = "1";
+
+            // Ждем завершения анимации
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
+
+            // Останавливаем анимацию, заменяя GIF на PNG
+            const staticSrc = outcome.src.replace(".gif", ".png");
+            this.elements.cube.src = staticSrc;
+
+            // Обновляем данные на сервере
+            const serverData = await this.updateServerData();
+            this.updateAchievementProgress(serverData?.total_rolls || 0);
+            await this.updateBestLuck(random);
+            await this.updateCoins(outcome.coins);
+
+            // Плавный возврат к начальному состоянию
+            this.elements.cube.style.opacity = "0";
+            await Utils.wait(150);
+            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            this.elements.cube.style.opacity = "1";
+        } catch (error) {
+            console.error("Ошибка при броске кубика:", error);
+        } finally {
+            this.state.isAnimating = false;
         }
-    };
-},
+    },
 
-getOutcome(random, skin, isRainbow) {
-    const outcomes = {
-        classic: {
-            default: [
-                { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 1 },
-                { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 2 },
-                { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 3 },
-                { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 4 },
-                { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 5 },
-                { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 6 }
-            ],
-            rainbow: [
-                { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 2 },
-                { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 4 },
-                { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 6 },
-                { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 8 },
-                { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 10 },
-                { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 12 }
-            ]
-        },
-        negative: {
-            default: [
-                { range: 40, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 2 },
-                { range: 65, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 3 },
-                { range: 80, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 4 },
-                { range: 90, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 5 },
-                { range: 97, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 6 },
-                { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 7 }
-            ],
-            rainbow: [
-                { range: 15, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 4 },
-                { range: 45, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 6 },
-                { range: 70, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 8 },
-                { range: 85, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 10 },
-                { range: 94, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 12 },
-                { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 14 }
-            ]
-        },
-        Emerald: {
-            default: [
-                { range: 40, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 3 },
-                { range: 65, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 4 },
-                { range: 80, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 5 },
-                { range: 90, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 6 },
-                { range: 97, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 7 },
-                { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 8 }
-            ],
-            rainbow: [
-                { range: 15, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 6 },
-                { range: 45, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 8 },
-                { range: 70, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 10 },
-                { range: 85, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 12 },
-                { range: 94, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 14 },
-                { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 16 }
-            ]
-        },
-        Pixel: {
-            default: [
-                { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 10 },
-                { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 11 },
-                { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 12 },
-                { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 13 },
-                { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 14 },
-                { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 15 }
-            ],
-            rainbow: [
-                { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 20 },
-                { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 22 },
-                { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 24 },
-                { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 26 },
-                { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 28 },
-                { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 30 }
-            ]
-        }
-    };
-    const skinOutcomes = outcomes[skin][isRainbow ? "rainbow" : "default"];
-    return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
-},
+    startProgress(duration) {
+        this.elements.progressBar.style.transition = `width ${duration}s linear`;
+        this.elements.progressBar.style.width = "100%";
+        setTimeout(() => {
+            this.elements.progressBar.style.transition = "none";
+            this.elements.progressBar.style.width = "0%";
+        }, duration * 1000);
+    },
+
+    getSkinConfig() {
+        return {
+            classic: {
+                default: "pictures/cubics/классика/начальный-кубик.gif",
+                rainbow: "pictures/cubics/классика/супер-начальный-кубик.gif"
+            },
+            negative: {
+                default: "pictures/cubics/негатив/начальный-кубик-негатив.gif",
+                rainbow: "pictures/cubics/негатив/супер-начальный-кубик-негатив.gif"
+            },
+            Emerald: {
+                default: "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
+                rainbow: "pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif"
+            },
+            Pixel: {
+                default: "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
+                rainbow: "pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif"
+            }
+        };
+    },
+
+    getOutcome(random, skin, isRainbow) {
+        const outcomes = {
+            classic: {
+                default: [
+                    { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 1 },
+                    { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 2 },
+                    { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 3 },
+                    { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 4 },
+                    { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 5 },
+                    { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 6 }
+                ],
+                rainbow: [
+                    { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 2 },
+                    { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 4 },
+                    { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 6 },
+                    { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 8 },
+                    { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 10 },
+                    { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 12 }
+                ]
+            },
+            negative: {
+                default: [
+                    { range: 40, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 2 },
+                    { range: 65, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 3 },
+                    { range: 80, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 4 },
+                    { range: 90, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 5 },
+                    { range: 97, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 6 },
+                    { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 7 }
+                ],
+                rainbow: [
+                    { range: 15, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 4 },
+                    { range: 45, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 6 },
+                    { range: 70, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 8 },
+                    { range: 85, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 10 },
+                    { range: 94, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 12 },
+                    { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 14 }
+                ]
+            },
+            Emerald: {
+                default: [
+                    { range: 40, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 3 },
+                    { range: 65, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 4 },
+                    { range: 80, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 5 },
+                    { range: 90, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 6 },
+                    { range: 97, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 7 },
+                    { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 8 }
+                ],
+                rainbow: [
+                    { range: 15, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 6 },
+                    { range: 45, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 8 },
+                    { range: 70, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 10 },
+                    { range: 85, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 12 },
+                    { range: 94, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 14 },
+                    { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 16 }
+                ]
+            },
+            Pixel: {
+                default: [
+                    { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 10 },
+                    { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 11 },
+                    { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 12 },
+                    { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 13 },
+                    { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 14 },
+                    { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 15 }
+                ],
+                rainbow: [
+                    { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 20 },
+                    { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 22 },
+                    { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 24 },
+                    { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 26 },
+                    { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 28 },
+                    { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 30 }
+                ]
+            }
+        };
+        const skinOutcomes = outcomes[skin][isRainbow ? "rainbow" : "default"];
+        return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
+    },
 
     async updateServerData() {
         const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return null;
-        return await API.updateRolls(userId);
+        if (!userId) {
+            console.error("Не удалось получить userId из Telegram Web App");
+            return null;
+        }
+        try {
+            return await API.updateRolls(userId);
+        } catch (error) {
+            console.error("Ошибка при обновлении rolls на сервере:", error);
+            return null;
+        }
     },
 
     async updateCoins(amount) {
         const userId = tg.initDataUnsafe?.user?.id;
         const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
-        const data = await API.updateCoins(userId, amount, username);
-        this.state.coins = data.new_coins;
-        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-        this.updateGameData();
+        try {
+            const data = await API.updateCoins(userId, amount, username);
+            this.state.coins = data.new_coins;
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+        } catch (error) {
+            console.error("Ошибка при обновлении монет:", error);
+            this.elements.coinsDisplay.textContent = "Error";
+        }
     },
 
     async updateBestLuck(random) {
@@ -496,8 +517,12 @@ getOutcome(random, skin, isRainbow) {
             this.state.bestLuck = random;
             const userId = tg.initDataUnsafe?.user?.id;
             const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
-            await API.updateLuck(userId, this.state.bestLuck, username);
-            this.updateGameData();
+            try {
+                await API.updateLuck(userId, this.state.bestLuck, username);
+                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            } catch (error) {
+                console.error("Ошибка при обновлении лучшей удачи:", error);
+            }
         }
     },
 
@@ -505,16 +530,20 @@ getOutcome(random, skin, isRainbow) {
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) return;
 
-        const data = await API.getUserData(userId);
-        this.state.coins = data.coins;
-        this.state.bestLuck = data.min_luck;
-        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+        try {
+            const data = await API.getUserData(userId);
+            this.state.coins = data.coins;
+            this.state.bestLuck = data.min_luck;
+            this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
 
-        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
-            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-        Skins.updateUI(data.owned_skins, this.state.equippedSkin);
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            Skins.updateUI(data.owned_skins, this.state.equippedSkin);
+        } catch (error) {
+            console.error("Ошибка при обновлении игровых данных:", error);
+        }
     },
 
     updateAchievementProgress(rolls) {
