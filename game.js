@@ -359,9 +359,10 @@ init() {
             // Запускаем прогресс-бар
             this.startProgress(3100);
 
-            // Меняем фон во время анимации кубика с небольшой задержкой для плавности
-            await Utils.wait(100);
-            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
+            // Плавно меняем фон
+            await Utils.wait(100); // Небольшая задержка для синхронизации
+            document.body.classList.remove("pink-gradient", "gray-gradient"); // Удаляем оба класса
+            document.body.classList.add(isRainbow ? "pink-gradient" : "gray-gradient"); // Добавляем нужный
 
             // Ждем окончания анимации
             await Utils.wait(2400); // 2500 - 100 = 2400
@@ -372,8 +373,13 @@ init() {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин
+            // Возвращаем начальный скин и убираем rainbow фон, если он был
             this.elements.cube.src = initialSkin;
+            if (isRainbow) {
+                await Utils.wait(500); // Ждем завершения анимации фона
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
+            }
             console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
