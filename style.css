@@ -46,6 +46,32 @@ body.pink-gradient {
   background-blend-mode: multiply;
   transition: background 0.5s ease-in-out, background-image 0.5s ease-in-out;
 }
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease-out;
+}
+
+#loading-cube {
+    width: 100px; /* или другой размер по вашему желанию */
+    height: 100px;
+    margin-bottom: 20px;
+}
+
+#loading-text {
+    color: white;
+    font-size: 24px;
+    font-family: Arial, sans-serif;
+}
 /* --- Фон и анимации модального окна --- */
 #quests-menu {
   position: fixed;
@@ -318,26 +344,7 @@ body.pink-gradient {
   }
 }
 
-/* Экран загрузки */
-.loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #000428, #004e92);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 1s ease-in-out;
-}
 
-.loading-gif {
-  width: 120px;
-  height: 120px;
-  animation: pulse 1.5s infinite alternate;
-}
 
 @keyframes pulse {
   from {
@@ -350,11 +357,6 @@ body.pink-gradient {
   }
 }
 
-.loading-text {
-  margin-top: 20px;
-  font-size: 18px;
-  font-weight: bold;
-}
 
 .progress {
   margin-top: 10px;
