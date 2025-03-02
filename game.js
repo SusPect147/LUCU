@@ -1010,7 +1010,7 @@ function loadImages(imageUrls) {
     const totalCount = imageUrls.length;
 
     const promises = imageUrls.map(url => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {  // Убираем reject, чтобы ошибки не прерывали процесс
             const img = new Image();
             img.src = url;
             img.onload = () => {
@@ -1021,28 +1021,26 @@ function loadImages(imageUrls) {
             };
             img.onerror = () => {
                 console.error(`Ошибка загрузки изображения: ${url}`);
-                loadedCount++; // Продолжаем считать даже при ошибке
+                loadedCount++;
                 const progress = Math.round((loadedCount / totalCount) * 100);
                 loadingText.textContent = `Loading ${progress}%`;
-                resolve(url); // Разрешаем промис, чтобы не прерывать загрузку
+                resolve(url); // Продолжаем даже при ошибке
             };
         });
     });
     return Promise.all(promises);
 }
 
-// Список всех изображений, которые нужно загрузить (включая скины и кубики)
+// Список всех изображений, которые нужно загрузить
 function getAllGameImages() {
     const skinConfig = Game.getSkinConfig();
     const images = [];
 
-    // Добавляем начальные скины
     for (const skin in skinConfig) {
         images.push(skinConfig[skin].default);
         images.push(skinConfig[skin].rainbow);
     }
 
-    // Полная структура outcomes
     const outcomes = {
         classic: {
             default: [
@@ -1118,16 +1116,13 @@ function getAllGameImages() {
         }
     };
 
-    // Добавляем все изображения результатов для каждого скина
     for (const skin in outcomes) {
         outcomes[skin].default.forEach(outcome => images.push(outcome.src));
         outcomes[skin].rainbow.forEach(outcome => images.push(outcome.src));
     }
 
-    // Добавляем запасной аватар
     images.push(CONFIG.FALLBACK_AVATAR);
-
-    return [...new Set(images)]; // Удаляем дубликаты
+    return [...new Set(images)];
 }
 
 // Функция для запуска игры после клика
@@ -1148,16 +1143,27 @@ function startGame() {
 async function initializeApp() {
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
-    
+    const loadingCube = document.getElementById('loading-cube');
+    const playerInfo = document.getElementById('player-info');
+    const playerCoins = document.getElementById('player-coins');
+    const playerBestLuck = document.getElementById('player-best-luck');
+
+    if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
+        console.error('Не удалось найти элементы экрана загрузки');
+        document.body.innerHTML = '<p>Error: Loading screen elements not found</p>';
+        return;
+    }
+
     // Показываем экран загрузки
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
+    loadingCube.style.display = 'block'; // Убеждаемся, что кубик виден
 
     try {
         // 1. Загружаем конфигурацию
         await loadConfig();
 
-        // 2. Инициализируем базовые компоненты (без UI пока)
+        // 2. Инициализируем частицы
         Particles.init();
 
         // 3. Собираем список всех изображений
@@ -1168,21 +1174,39 @@ async function initializeApp() {
         await loadImages(imageUrls);
         console.log('Все изображения загружены');
 
-        // 5. Показываем приглашение для входа в игру
+        // 5. Загружаем данные игрока (без полной инициализации UI)
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (userId) {
+            const data = await API.getUserData(userId);
+            Game.state.coins = data.coins || 0;
+            Game.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+            Game.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+
+            // Устанавливаем скин на кубик загрузки
+            const skinConfig = Game.getSkinConfig();
+            loadingCube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
+
+            // Обновляем информацию игрока
+            playerCoins.textContent = `Coins: ${Utils.formatCoins(Game.state.coins)} $LUCU`;
+            playerBestLuck.textContent = `Best Luck: ${Game.state.bestLuck === Infinity ? 'N/A' : Utils.formatNumber(Game.state.bestLuck)}`;
+            playerInfo.classList.remove('hidden');
+        }
+
+        // 6. Показываем приглашение для входа
         loadingText.textContent = 'Press to enter the game';
 
-        // 6. Ждем клика пользователя
+        // 7. Ждем клика пользователя
         await new Promise(resolve => {
             loadingScreen.addEventListener('click', () => {
                 resolve();
-            }, { once: true }); // Слушатель срабатывает только один раз
+            }, { once: true });
         });
 
-        // 7. Скрываем экран загрузки с анимацией и запускаем игру
+        // 8. Плавно скрываем экран загрузки и запускаем игру
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-            startGame(); // Запускаем игру после скрытия экрана
+            startGame(); // Запускаем игру после скрытия
         }, 500); // Соответствует времени transition в CSS
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
