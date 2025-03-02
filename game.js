@@ -289,7 +289,7 @@ const UI = {
 };
 
 // ============================================================================
-// Игра (Game) - Исправленный раздел с анимацией и консолью
+// Игра (Game) - Исправленный раздел с немедленным показом результата
 // ============================================================================
 
 const Game = {
@@ -329,6 +329,7 @@ const Game = {
             event.preventDefault();
             return;
         }
+        console.log("Клик зарегистрирован, начало rollCube");
         this.rollCube();
     },
 
@@ -348,21 +349,18 @@ const Game = {
             const skinConfig = this.getSkinConfig();
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
             this.elements.cube.src = initialSkin;
-            console.log("Установлен начальный скин");
+            console.log("Установлен начальный скин:", initialSkin);
 
-            // Запускаем прогресс-бар на 3050 мс
-            this.startProgress(3050);
+            // Запускаем прогресс-бар на 2 секунды
+            this.startProgress(2000);
 
-            // Ждём 1 секунду для начального скина
-            await Utils.wait(1000);
-
-            // Выполняем бросок и показываем результат
+            // Немедленно показываем результат после клика
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
             this.elements.cube.src = outcome.src;
             console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
 
-            // Ждём 1 секунду для результата
+            // Ждём 1 секунду для отображения результата
             await Utils.wait(1000);
 
             // Обновляем данные
@@ -371,17 +369,18 @@ const Game = {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин и завершаем цикл
+            // Возвращаем начальный скин
             this.elements.cube.src = initialSkin;
             console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
             document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient";
 
-            // Оставшиеся 1050 мс для общего времени 3050 мс
-            await Utils.wait(1050);
+            // Ждём ещё 1 секунду для завершения цикла
+            await Utils.wait(1000);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
         } finally {
             this.state.isAnimating = false;
+            console.log("Анимация завершена, готов к новому клику");
         }
     },
 
