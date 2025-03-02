@@ -289,7 +289,7 @@ const UI = {
 };
 
 // ============================================================================
-// Игра (Game)
+// Игра (Game) - Обновленный раздел с интеграцией первого кода
 // ============================================================================
 
 const Game = {
@@ -317,63 +317,61 @@ const Game = {
             return;
         }
 
-        // Привязываем rollCube как начальную точку для клика
         this.elements.cube.addEventListener("click", () => this.rollCube());
         this.updateGameData();
     },
 
-    // Подготовка кубика и запуск анимации по клику
-    rollCube() {
+    async rollCube() {
         if (this.state.isAnimating) return;
 
-        const isRainbow = Math.random() < 0.2;
-        document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
+        try {
+            const isRainbow = Math.random() < 0.2;
+            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
 
-        const skinConfig = this.getSkinConfig();
-        this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            const skinConfig = this.getSkinConfig();
+            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
 
-        // Вызываем handleCubeClick напрямую после подготовки
-        this.handleCubeClick(isRainbow, skinConfig);
+            await this.handleCubeClick(isRainbow, skinConfig);
+        } catch (error) {
+            console.error("Ошибка в rollCube:", error);
+            this.state.isAnimating = false;
+        }
     },
 
-    // Обработчик броска кубика
     async handleCubeClick(isRainbow, skinConfig) {
         if (this.state.isAnimating) return;
         this.state.isAnimating = true;
 
         try {
-            this.startProgress(CONFIG.PROGRESS_DURATION); // Запускаем прогресс-бар
+            this.startProgress(CONFIG.PROGRESS_DURATION);
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
 
-            // Плавная смена изображения
+            // Плавный переход анимации
+            this.elements.cube.style.transition = "opacity 0.15s";
             this.elements.cube.style.opacity = "0";
             await Utils.wait(150);
 
-            // Устанавливаем результат броска
             this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
             this.elements.cube.style.opacity = "1";
 
-            // Ждем завершения анимации
-            await Utils.wait(CONFIG.ANIMATION_DURATION);
+            await Utils.wait(2000); // Время анимации кубика
 
-            // Останавливаем анимацию, заменяя GIF на PNG
-            const staticSrc = outcome.src.replace(".gif", ".png");
-            this.elements.cube.src = staticSrc;
-
-            // Обновляем данные на сервере
+            // Обновление данных
             const serverData = await this.updateServerData();
             this.updateAchievementProgress(serverData?.total_rolls || 0);
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Плавный возврат к начальному состоянию
+            // Возврат к начальному состоянию
             this.elements.cube.style.opacity = "0";
             await Utils.wait(150);
             this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
             this.elements.cube.style.opacity = "1";
+
+            await Utils.wait(1150); // Задержка перед следующим броском
         } catch (error) {
-            console.error("Ошибка при броске кубика:", error);
+            console.error("Ошибка в handleCubeClick:", error);
         } finally {
             this.state.isAnimating = false;
         }
@@ -484,6 +482,7 @@ const Game = {
                 ]
             }
         };
+
         const skinOutcomes = outcomes[skin][isRainbow ? "rainbow" : "default"];
         return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
     },
