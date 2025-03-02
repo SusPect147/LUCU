@@ -336,7 +336,7 @@ init() {
         this.rollCube();
     },
 
-    async rollCube() {
+        async rollCube() {
         if (this.state.isAnimating) {
             console.log("Повторный вызов rollCube заблокирован");
             return;
@@ -350,22 +350,26 @@ init() {
             const skinConfig = this.getSkinConfig();
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
 
-            // Немедленно показываем результат после клика
+            // 1. Сначала запускаем анимацию кубика с промежуточным изображением
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
-            this.elements.cube.src = outcome.src;
-            console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
+            // Показываем промежуточное изображение (например, кубик 1)
+            this.elements.cube.src = skinConfig[this.state.equippedSkin].default;
+            console.log("Начало анимации с промежуточным кубиком:", this.elements.cube.src);
 
             // Запускаем прогресс-бар
             this.startProgress(3100);
 
-            // Плавно меняем фон
-            await Utils.wait(100); // Небольшая задержка для синхронизации
-            document.body.classList.remove("pink-gradient", "gray-gradient"); // Удаляем оба класса
-            document.body.classList.add(isRainbow ? "pink-gradient" : "gray-gradient"); // Добавляем нужный
+            // 2. Ждем почти до конца анимации и плавно меняем фон
+            await Utils.wait(2000); // Ждем 2 секунды перед сменой фона
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(isRainbow ? "pink-gradient" : "gray-gradient");
+            console.log("Смена фона на", isRainbow ? "радужный" : "серый");
 
-            // Ждем окончания анимации
-            await Utils.wait(2400); // 2500 - 100 = 2400
+            // 3. Показываем финальный результат (радужный кубик если isRainbow)
+            await Utils.wait(400); // Даем фону плавно проявиться
+            this.elements.cube.src = outcome.src;
+            console.log("Показ финального кубика:", outcome.src);
 
             // Обновляем данные
             const serverData = await this.updateServerData();
@@ -373,14 +377,19 @@ init() {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин и убираем rainbow фон, если он был
-            this.elements.cube.src = initialSkin;
+            // Если был радужный фон, плавно возвращаем черно-серый
             if (isRainbow) {
-                await Utils.wait(500); // Ждем завершения анимации фона
+                await Utils.wait(500); // Ждем перед возвратом фона
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
+                console.log("Возврат к черно-серому фону");
             }
-            console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
+
+            // Возвращаем начальный скин
+            await Utils.wait(200);
+            this.elements.cube.src = initialSkin;
+            console.log("Возврат к начальному скину:", initialSkin);
+
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
         } finally {
