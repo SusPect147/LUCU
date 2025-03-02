@@ -289,7 +289,7 @@ const UI = {
 };
 
 // ============================================================================
-// Игра (Game) - Исправленный раздел с анимацией
+// Игра (Game) - Исправленный раздел с анимацией 3050 мс
 // ============================================================================
 
 const Game = {
@@ -318,7 +318,6 @@ const Game = {
             return;
         }
 
-        // Очищаем и устанавливаем слушатель один раз
         this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
         this.updateGameData();
@@ -327,7 +326,7 @@ const Game = {
     handleClick(event) {
         if (this.state.isAnimating) {
             console.log("Клик проигнорирован: анимация уже выполняется");
-            event.preventDefault(); // Предотвращаем повторные события
+            event.preventDefault();
             return;
         }
         this.rollCube();
@@ -340,34 +339,27 @@ const Game = {
         }
 
         this.state.isAnimating = true;
-        console.log("Начало броска, equippedSkin:", this.state.equippedSkin);
+        console.log("Начало броска, установлен начальный скин, equippedSkin:", this.state.equippedSkin);
 
         try {
             const isRainbow = Math.random() < 0.2;
             this.state.currentRainbow = isRainbow;
             document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
-            console.log("Фон установлен:", document.body.className);
 
             const skinConfig = this.getSkinConfig();
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
             this.elements.cube.src = initialSkin;
-            console.log("Установлен начальный скин:", initialSkin);
 
-            // Запускаем прогресс-бар на 2 секунды
-            this.startProgress(2000);
+            // Запускаем прогресс-бар на 3050 мс
+            this.startProgress(3050);
 
-            // Выполняем бросок
+            // Выполняем бросок (без показа результата на кубике)
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
-            const resultSkin = outcome.src.replace(".gif", ".png"); // Используем PNG для результата
+            console.log("Установлен результат (внутренне):", outcome.src, "coins:", outcome.coins);
 
-            // Ждём 1 секунду и показываем результат
-            await Utils.wait(1000);
-            this.elements.cube.src = resultSkin;
-            console.log("Установлен результат:", resultSkin);
-
-            // Ждём ещё 1 секунду для отображения результата
-            await Utils.wait(1000);
+            // Ждём 3050 мс для полной анимации начального скина
+            await Utils.wait(3050);
 
             // Обновляем данные
             const serverData = await this.updateServerData();
@@ -375,7 +367,7 @@ const Game = {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин
+            // Возвращаем начальный скин (без перезапуска)
             this.elements.cube.src = initialSkin;
             console.log("Возвращён начальный скин:", initialSkin);
             document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient";
