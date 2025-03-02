@@ -308,6 +308,7 @@ const Game = {
     },
 
 init() {
+        // Инициализация только для элементов и событий, данные уже загружены
         this.elements.cube = document.getElementById("cube");
         this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
         this.elements.bestLuckDisplay = document.getElementById("bestLuck");
@@ -318,12 +319,10 @@ init() {
             return;
         }
 
-        // Устанавливаем переход для body
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
-
         this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
-        this.updateGameData();
+        // updateGameData не вызываем здесь, так как данные уже загружены
     },
 
     handleClick(event) {
@@ -547,6 +546,7 @@ init() {
         }
     },
 
+   // Оставляем updateGameData для динамического обновления во время игры
     async updateGameData() {
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) return;
@@ -1010,7 +1010,7 @@ function loadImages(imageUrls) {
     const totalCount = imageUrls.length;
 
     const promises = imageUrls.map(url => {
-        return new Promise((resolve) => {  // Убираем reject, чтобы ошибки не прерывали процесс
+        return new Promise((resolve) => {
             const img = new Image();
             img.src = url;
             img.onload = () => {
@@ -1024,7 +1024,7 @@ function loadImages(imageUrls) {
                 loadedCount++;
                 const progress = Math.round((loadedCount / totalCount) * 100);
                 loadingText.textContent = `Loading ${progress}%`;
-                resolve(url); // Продолжаем даже при ошибке
+                resolve(url);
             };
         });
     });
@@ -1125,9 +1125,62 @@ function getAllGameImages() {
     return [...new Set(images)];
 }
 
-// Функция для запуска игры после клика
+// Функция для предварительной загрузки данных игры
+async function preloadGameData() {
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return;
+
+    try {
+        const data = await API.getUserData(userId);
+        Game.state.coins = data.coins || 0;
+        Game.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+        Game.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+
+        const skinConfig = Game.getSkinConfig();
+        const cube = document.getElementById('cube');
+        const coinsDisplay = document.getElementById('coins') || document.getElementById('coins-display');
+        const bestLuckDisplay = document.getElementById('bestLuck');
+
+        if (cube) {
+            cube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
+        }
+        if (coinsDisplay) {
+            coinsDisplay.textContent = `${Utils.formatCoins(Game.state.coins)} $LUCU`;
+        }
+        if (bestLuckDisplay) {
+            bestLuckDisplay.innerHTML = Game.state.bestLuck === Infinity
+                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(Game.state.bestLuck)}</span>`;
+        }
+
+        Skins.state.ownedSkins = data.owned_skins || [];
+        Skins.state.equippedSkin = Game.state.equippedSkin;
+    } catch (error) {
+        console.error('Ошибка при предварительной загрузке данных игры:', error);
+    }
+}
+
+// Функция для запуска игры
 function startGame() {
-    Game.init();
+    const gameContent = document.getElementById('game-content');
+    if (gameContent) {
+        gameContent.style.display = 'block';
+    }
+
+    // Инициализируем только оставшиеся части, не трогая уже загруженные данные
+    Game.elements.cube = document.getElementById("cube");
+    Game.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
+    Game.elements.bestLuckDisplay = document.getElementById("bestLuck");
+    Game.elements.progressBar = document.querySelector("#progressBar div");
+
+    if (!Game.elements.cube || !Game.elements.coinsDisplay || !Game.elements.bestLuckDisplay || !Game.elements.progressBar) {
+        console.error("Не удалось найти один или несколько элементов DOM");
+        return;
+    }
+
+    document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
+    Game.elements.cube.addEventListener("click", Game.handleClick.bind(Game));
+
     Skins.init();
     Quests.init();
     Leaderboard.init();
@@ -1154,10 +1207,9 @@ async function initializeApp() {
         return;
     }
 
-    // Показываем экран загрузки
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
-    loadingCube.style.display = 'block'; // Убеждаемся, что кубик виден
+    loadingCube.style.display = 'block';
 
     try {
         // 1. Загружаем конфигурацию
@@ -1174,40 +1226,32 @@ async function initializeApp() {
         await loadImages(imageUrls);
         console.log('Все изображения загружены');
 
-        // 5. Загружаем данные игрока (без полной инициализации UI)
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (userId) {
-            const data = await API.getUserData(userId);
-            Game.state.coins = data.coins || 0;
-            Game.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
-            Game.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+        // 5. Предварительно загружаем данные игры
+        await preloadGameData();
 
-            // Устанавливаем скин на кубик загрузки
-            const skinConfig = Game.getSkinConfig();
-            loadingCube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
+        // 6. Обновляем экран загрузки с данными игрока
+        const skinConfig = Game.getSkinConfig();
+        loadingCube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
+        playerCoins.textContent = `Coins: ${Utils.formatCoins(Game.state.coins)} $LUCU`;
+        playerBestLuck.textContent = `Best Luck: ${Game.state.bestLuck === Infinity ? 'N/A' : Utils.formatNumber(Game.state.bestLuck)}`;
+        playerInfo.classList.remove('hidden');
 
-            // Обновляем информацию игрока
-            playerCoins.textContent = `Coins: ${Utils.formatCoins(Game.state.coins)} $LUCU`;
-            playerBestLuck.textContent = `Best Luck: ${Game.state.bestLuck === Infinity ? 'N/A' : Utils.formatNumber(Game.state.bestLuck)}`;
-            playerInfo.classList.remove('hidden');
-        }
-
-        // 6. Показываем приглашение для входа
+        // 7. Показываем приглашение для входа
         loadingText.textContent = 'Press to enter the game';
 
-        // 7. Ждем клика пользователя
+        // 8. Ждем клика пользователя
         await new Promise(resolve => {
             loadingScreen.addEventListener('click', () => {
                 resolve();
             }, { once: true });
         });
 
-        // 8. Плавно скрываем экран загрузки и запускаем игру
+        // 9. Плавно скрываем экран загрузки и запускаем игру
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-            startGame(); // Запускаем игру после скрытия
-        }, 500); // Соответствует времени transition в CSS
+            startGame();
+        }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
         loadingText.textContent = 'Error loading game. Please refresh.';
