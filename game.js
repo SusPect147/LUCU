@@ -307,7 +307,7 @@ const Game = {
         currentRainbow: false
     },
 
-    init() {
+init() {
         this.elements.cube = document.getElementById("cube");
         this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
         this.elements.bestLuckDisplay = document.getElementById("bestLuck");
@@ -318,8 +318,8 @@ const Game = {
             return;
         }
 
-        // Добавляем плавный переход для фона
-        document.body.style.transition = "background 0.5s ease-in-out";
+        // Устанавливаем переход для body
+        document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
 
         this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
@@ -359,12 +359,12 @@ const Game = {
             // Запускаем прогресс-бар
             this.startProgress(3100);
 
-            // Меняем фон во время анимации кубика (после начала анимации)
-            await Utils.wait(100); // Небольшая задержка для плавности
+            // Меняем фон во время анимации кубика с небольшой задержкой для плавности
+            await Utils.wait(100);
             document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
 
-            // Ждём окончания анимации
-            await Utils.wait(2400); // 2500 - 100 = 2400, чтобы синхронизировать с прогресс-баром
+            // Ждем окончания анимации
+            await Utils.wait(2400); // 2500 - 100 = 2400
 
             // Обновляем данные
             const serverData = await this.updateServerData();
@@ -372,9 +372,8 @@ const Game = {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин и фон после анимации
+            // Возвращаем начальный скин
             this.elements.cube.src = initialSkin;
-            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
             console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
@@ -383,7 +382,6 @@ const Game = {
             console.log("Анимация завершена, готов к новому клику");
         }
     },
-
     startProgress(duration) {
         if (!this.elements.progressBar) {
             console.error("Прогресс-бар не найден в DOM");
