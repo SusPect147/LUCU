@@ -352,16 +352,13 @@ const Game = {
             console.log("Установлен начальный скин:", initialSkin);
 
             // Запускаем прогресс-бар на 2 секунды
-            this.startProgress(2000);
+            this.startProgress(3000);
 
             // Немедленно показываем результат после клика
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
             this.elements.cube.src = outcome.src;
             console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
-
-            // Ждём 1 секунду для отображения результата
-            await Utils.wait(1000);
 
             // Обновляем данные
             const serverData = await this.updateServerData();
@@ -373,9 +370,6 @@ const Game = {
             this.elements.cube.src = initialSkin;
             console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
             document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient";
-
-            // Ждём ещё 1 секунду для завершения цикла
-            await Utils.wait(1000);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
         } finally {
