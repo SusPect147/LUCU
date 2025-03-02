@@ -1019,7 +1019,6 @@ function loadImages(imageUrls) {
 // Список всех изображений, которые нужно загрузить (включая скины и кубики)
 function getAllGameImages() {
     const skinConfig = Game.getSkinConfig();
-    const outcomes = Game.getOutcome(0, CONFIG.DEFAULT_SKIN, false); // Для получения структуры outcomes
     const images = [];
 
     // Добавляем начальные скины
@@ -1027,6 +1026,82 @@ function getAllGameImages() {
         images.push(skinConfig[skin].default);
         images.push(skinConfig[skin].rainbow);
     }
+
+    // Полная структура outcomes из Game.getOutcome
+    const outcomes = {
+        classic: {
+            default: [
+                { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 1 },
+                { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 2 },
+                { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 3 },
+                { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 4 },
+                { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 5 },
+                { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 6 }
+            ],
+            rainbow: [
+                { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 2 },
+                { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 4 },
+                { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 6 },
+                { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 8 },
+                { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 10 },
+                { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 12 }
+            ]
+        },
+        negative: {
+            default: [
+                { range: 40, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 2 },
+                { range: 65, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 3 },
+                { range: 80, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 4 },
+                { range: 90, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 5 },
+                { range: 97, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 6 },
+                { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 7 }
+            ],
+            rainbow: [
+                { range: 15, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 4 },
+                { range: 45, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 6 },
+                { range: 70, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 8 },
+                { range: 85, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 10 },
+                { range: 94, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 12 },
+                { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 14 }
+            ]
+        },
+        Emerald: {
+            default: [
+                { range: 40, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 3 },
+                { range: 65, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 4 },
+                { range: 80, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 5 },
+                { range: 90, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 6 },
+                { range: 97, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 7 },
+                { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 8 }
+            ],
+            rainbow: [
+                { range: 15, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 6 },
+                { range: 45, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 8 },
+                { range: 70, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 10 },
+                { range: 85, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 12 },
+                { range: 94, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 14 },
+                { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 16 }
+            ]
+        },
+        Pixel: {
+            default: [
+                { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 10 },
+                { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 11 },
+                { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 12 },
+                { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 13 },
+                { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 14 },
+                { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 15 }
+            ],
+            rainbow: [
+                { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 20 },
+                { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 22 },
+                { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 24 },
+                { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 26 },
+                { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 28 },
+                { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 30 }
+            ]
+        }
+    };
 
     // Добавляем все изображения результатов для каждого скина
     for (const skin in outcomes) {
