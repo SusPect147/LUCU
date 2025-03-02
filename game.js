@@ -1003,17 +1003,38 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await loadConfig();
-    Particles.init();
-    Game.init();
-    Skins.init();
-    Quests.init();
-    Leaderboard.init();
-    Profile.init();
-    Friends.init();
+async function initializeApp() {
+    const loadingScreen = document.getElementById('loading-screen');
+    
+    // Показываем экран загрузки
+    loadingScreen.style.display = 'flex';
+    
+    try {
+        // Последовательная загрузка всех компонентов
+        await loadConfig();
+        Particles.init();
+        Game.init();
+        Skins.init();
+        Quests.init();
+        Leaderboard.init();
+        Profile.init();
+        Friends.init();
 
-    tg.expand();
-    tg.requestFullscreen();
-    tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+        tg.expand();
+        tg.requestFullscreen();
+        tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+
+        // После успешной загрузки скрываем экран с анимацией
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 500); // соответствует времени transition в CSS
+    } catch (error) {
+        console.error('Ошибка инициализации приложения:', error);
+        loadingScreen.innerHTML = '<p>Error loading game</p>';
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await initializeApp();
 });
