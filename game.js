@@ -957,7 +957,7 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     await loadConfig();
     Particles.init();
     Game.init();
