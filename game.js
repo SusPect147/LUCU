@@ -7,6 +7,7 @@ const CONFIG = {
     DEFAULT_SKIN: "classic",
     ANIMATION_DURATION: 3050,
     PROGRESS_DURATION: 3,
+    API_BASE_URL: "https://backend12-production-1210.up.railway.app", // Начальное значение
     SKIN_PRICES: {
         negative: 5000,
         Emerald: 10000,
@@ -16,17 +17,19 @@ const CONFIG = {
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
 };
 
-// Загрузка конфигурации с сервера
 async function loadConfig() {
-    const response = await fetch(`${CONFIG.API_BASE_URL}/get_config`);
-    const data = await response.json();
-    Object.assign(CONFIG, {
-        API_BASE_URL: data.API_BASE_URL,
-        TELEGRAM_BOT_TOKEN: data.TELEGRAM_BOT_TOKEN,
-        CHANNEL_USERNAME: data.CHANNEL_USERNAME
-    });
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/get_config`);
+        const data = await response.json();
+        Object.assign(CONFIG, {
+            API_BASE_URL: data.API_BASE_URL,
+            TELEGRAM_BOT_TOKEN: data.TELEGRAM_BOT_TOKEN,
+            CHANNEL_USERNAME: data.CHANNEL_USERNAME
+        });
+    } catch (error) {
+        console.error("Ошибка загрузки конфигурации:", error);
+    }
 }
-
 
 const tg = window.Telegram?.WebApp;
 const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
