@@ -317,9 +317,8 @@ const Game = {
             return;
         }
 
-        // Не устанавливаем начальный src для cube здесь, ждём данных с сервера
         this.elements.cube.addEventListener("click", () => this.rollCube());
-        this.updateGameData(); // Загружаем данные и устанавливаем скин
+        this.updateGameData();
     },
 
     async rollCube() {
@@ -344,20 +343,15 @@ const Game = {
         this.state.isAnimating = true;
 
         try {
-            this.startProgress(CONFIG.PROGRESS_DURATION); // 3 секунды
+            this.startProgress(CONFIG.PROGRESS_DURATION); // 3 секунды прогресс-бара
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
 
-            // Плавный переход к анимации броска
-            this.elements.cube.style.transition = "opacity 0.15s";
-            this.elements.cube.style.opacity = "0";
-            await Utils.wait(150);
-
+            // Убираем плавный переход, мгновенно меняем src
             this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
-            this.elements.cube.style.opacity = "1";
 
-            // Ждём окончания прогресс-бара (3 секунды - 150 мс перехода = 2850 мс)
-            await Utils.wait(3000);
+            // Уменьшаем время ожидания до 1000 мс (1 секунда) для быстрого показа результата
+            await Utils.wait(1000);
 
             // Обновление данных
             const serverData = await this.updateServerData();
@@ -365,11 +359,8 @@ const Game = {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Плавный возврат к начальному состоянию
-            this.elements.cube.style.opacity = "0";
-            await Utils.wait(150);
+            // Мгновенно возвращаем начальный скин без перехода
             this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
-            this.elements.cube.style.opacity = "1";
         } catch (error) {
             console.error("Ошибка в handleCubeClick:", error);
         } finally {
@@ -538,7 +529,6 @@ const Game = {
             this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
             this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
 
-            // Устанавливаем начальный скин кубика после получения данных
             const skinConfig = this.getSkinConfig();
             this.elements.cube.src = `${skinConfig[this.state.equippedSkin].default}?t=${Date.now()}`;
 
@@ -547,11 +537,10 @@ const Game = {
                 ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
                 : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
             
-            // Передаём актуальные данные в Skins.updateUI
             Skins.updateUI(data.owned_skins || [], this.state.equippedSkin);
         } catch (error) {
             console.error("Ошибка при обновлении игровых данных:", error);
-            this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`; // Фallback
+            this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`;
         }
     },
 
