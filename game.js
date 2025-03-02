@@ -289,11 +289,7 @@ const UI = {
 };
 
 // ============================================================================
-// Игра (Game) - Исправленный раздел
-// ============================================================================
-
-// ============================================================================
-// Игра (Game) - Исправленный раздел
+// Игра (Game) - Исправленный раздел с анимацией и прогресс-баром
 // ============================================================================
 
 const Game = {
@@ -308,7 +304,7 @@ const Game = {
         bestLuck: Infinity,
         isAnimating: false,
         equippedSkin: CONFIG.DEFAULT_SKIN,
-        currentRainbow: false // Для фона
+        currentRainbow: false
     },
 
     init() {
@@ -322,7 +318,6 @@ const Game = {
             return;
         }
 
-        // Удаляем старый слушатель и добавляем новый
         this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
         this.updateGameData();
@@ -331,6 +326,8 @@ const Game = {
     handleClick() {
         if (!this.state.isAnimating) {
             this.rollCube();
+        } else {
+            console.log("Клик проигнорирован: анимация уже выполняется");
         }
     },
 
@@ -352,12 +349,18 @@ const Game = {
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
             this.elements.cube.src = initialSkin;
 
+            // Запускаем прогресс-бар
+            this.startProgress(3050); // 2 секунды для прогресс-бара
+
             // Выполняем бросок
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
 
-            // Показываем результат
+            // Ждём 1 секунду перед показом результата
+            await Utils.wait(1000);
             this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
+
+            // Ждём ещё 1 секунду для отображения результата
             await Utils.wait(1000);
 
             // Обновляем данные
@@ -368,7 +371,7 @@ const Game = {
 
             // Возвращаем начальный скин
             this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
-            document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient"; // Сохраняем фон
+            document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient";
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
         } finally {
@@ -378,12 +381,20 @@ const Game = {
     },
 
     startProgress(duration) {
-        this.elements.progressBar.style.transition = `width ${duration}s linear`;
+        if (!this.elements.progressBar) {
+            console.error("Прогресс-бар не найден в DOM");
+            return;
+        }
+
+        console.log(`Запуск прогресс-бара на ${duration} мс`);
+        this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
+
         setTimeout(() => {
             this.elements.progressBar.style.transition = "none";
             this.elements.progressBar.style.width = "0%";
-        }, duration * 1000);
+            console.log("Прогресс-бар сброшен");
+        }, duration);
     },
 
     getSkinConfig() {
@@ -528,7 +539,7 @@ const Game = {
         }
     },
 
-async updateGameData() {
+    async updateGameData() {
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) return;
 
@@ -547,7 +558,6 @@ async updateGameData() {
                 ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
                 : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
             
-            // Передаём owned_skins и equipped_skin в Skins.updateUI для полной синхронизации
             Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
         } catch (error) {
             console.error("Ошибка при обновлении игровых данных:", error);
