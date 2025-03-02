@@ -303,7 +303,8 @@ const Game = {
         coins: 0,
         bestLuck: Infinity,
         isAnimating: false,
-        equippedSkin: CONFIG.DEFAULT_SKIN
+        equippedSkin: CONFIG.DEFAULT_SKIN,
+        isRainbow: false // Добавляем состояние для фона
     },
 
     init() {
@@ -317,54 +318,54 @@ const Game = {
             return;
         }
 
-        this.elements.cube.addEventListener("click", () => this.rollCube());
+        // Убираем дублирующиеся слушатели событий
+        this.elements.cube.removeEventListener("click", this.rollCube.bind(this));
+        this.elements.cube.addEventListener("click", this.rollCube.bind(this));
         this.updateGameData();
     },
 
     async rollCube() {
         if (this.state.isAnimating) return;
 
+        this.state.isAnimating = true; // Устанавливаем сразу, чтобы избежать дубликатов
         try {
-            const isRainbow = Math.random() < 0.2;
-            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
+            this.state.isRainbow = Math.random() < 0.2;
+            document.body.className = this.state.isRainbow ? "pink-gradient" : "gray-gradient";
 
             const skinConfig = this.getSkinConfig();
-            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][this.state.isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
 
-            await this.handleCubeClick(isRainbow, skinConfig);
+            await this.handleCubeClick(skinConfig);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
+        } finally {
             this.state.isAnimating = false;
         }
     },
 
-    async handleCubeClick(isRainbow, skinConfig) {
-        if (this.state.isAnimating) return;
-        this.state.isAnimating = true;
-
+    async handleCubeClick(skinConfig) {
         try {
             this.startProgress(CONFIG.PROGRESS_DURATION); // 3 секунды прогресс-бара
             const random = Math.random() * 100;
-            const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
+            const outcome = this.getOutcome(random, this.state.equippedSkin, this.state.isRainbow);
 
-            // Убираем плавный переход, мгновенно меняем src
+            // Мгновенно показываем результат
             this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
 
-            // Уменьшаем время ожидания до 1000 мс (1 секунда) для быстрого показа результата
+            // Ждём 1 секунду для отображения результата
             await Utils.wait(1000);
 
-            // Обновление данных
+            // Обновляем данные
             const serverData = await this.updateServerData();
             this.updateAchievementProgress(serverData?.total_rolls || 0);
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Мгновенно возвращаем начальный скин без перехода
-            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            // Возвращаем начальный скин, сохраняя фон
+            this.elements.cube.src = `${skinConfig[this.state.equippedSkin][this.state.isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            document.body.className = this.state.isRainbow ? "pink-gradient" : "gray-gradient"; // Восстанавливаем фон
         } catch (error) {
             console.error("Ошибка в handleCubeClick:", error);
-        } finally {
-            this.state.isAnimating = false;
         }
     },
 
@@ -558,7 +559,7 @@ const Game = {
 };
 
 // ============================================================================
-// Скины (Skins) - Исправленный раздел
+// Скины (Skins) - Исправленный раздел для синхронизации
 // ============================================================================
 
 const Skins = {
@@ -600,6 +601,8 @@ const Skins = {
                     Game.state.coins = data.new_coins;
                     this.state[key] = true;
                     this.updateUI(data.owned_skins, Game.state.equippedSkin);
+                    // Синхронизируем скин после покупки
+                    await Game.updateGameData();
                 } else {
                     alert(`Purchase failed: ${data.message}`);
                 }
@@ -611,13 +614,15 @@ const Skins = {
         }
     },
 
-    equip(type) {
+    async equip(type) {
         if (Game.state.equippedSkin === type) return;
         Game.state.equippedSkin = type;
         const skinConfig = Game.getSkinConfig();
         Game.elements.cube.src = `${skinConfig[type].default}?t=${Date.now()}`;
         this.updateUI();
-        API.updateSkin(tg.initDataUnsafe?.user?.id, type);
+        await API.updateSkin(tg.initDataUnsafe?.user?.id, type);
+        // Синхронизируем данные после экипировки
+        await Game.updateGameData();
     },
 
     updateUI(ownedSkins = [], equippedSkin = Game.state.equippedSkin) {
