@@ -289,7 +289,7 @@ const UI = {
 };
 
 // ============================================================================
-// Игра (Game) - Обновленный раздел с интеграцией первого кода
+// Игра (Game) - Исправленный раздел
 // ============================================================================
 
 const Game = {
@@ -317,8 +317,9 @@ const Game = {
             return;
         }
 
+        // Не устанавливаем начальный src для cube здесь, ждём данных с сервера
         this.elements.cube.addEventListener("click", () => this.rollCube());
-        this.updateGameData();
+        this.updateGameData(); // Загружаем данные и устанавливаем скин
     },
 
     async rollCube() {
@@ -343,11 +344,11 @@ const Game = {
         this.state.isAnimating = true;
 
         try {
-            this.startProgress(CONFIG.PROGRESS_DURATION);
+            this.startProgress(CONFIG.PROGRESS_DURATION); // 3 секунды
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
 
-            // Плавный переход анимации
+            // Плавный переход к анимации броска
             this.elements.cube.style.transition = "opacity 0.15s";
             this.elements.cube.style.opacity = "0";
             await Utils.wait(150);
@@ -355,7 +356,8 @@ const Game = {
             this.elements.cube.src = `${outcome.src}?t=${Date.now()}`;
             this.elements.cube.style.opacity = "1";
 
-            await Utils.wait(2000); // Время анимации кубика
+            // Ждём окончания прогресс-бара (3 секунды - 150 мс перехода = 2850 мс)
+            await Utils.wait(2850);
 
             // Обновление данных
             const serverData = await this.updateServerData();
@@ -363,13 +365,11 @@ const Game = {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возврат к начальному состоянию
+            // Плавный возврат к начальному состоянию
             this.elements.cube.style.opacity = "0";
             await Utils.wait(150);
             this.elements.cube.src = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
             this.elements.cube.style.opacity = "1";
-
-            await Utils.wait(1150); // Задержка перед следующим броском
         } catch (error) {
             console.error("Ошибка в handleCubeClick:", error);
         } finally {
@@ -534,17 +534,24 @@ const Game = {
 
         try {
             const data = await API.getUserData(userId);
-            this.state.coins = data.coins;
-            this.state.bestLuck = data.min_luck;
+            this.state.coins = data.coins || 0;
+            this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
             this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+
+            // Устанавливаем начальный скин кубика после получения данных
+            const skinConfig = this.getSkinConfig();
+            this.elements.cube.src = `${skinConfig[this.state.equippedSkin].default}?t=${Date.now()}`;
 
             this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
             this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
                 ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
                 : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            Skins.updateUI(data.owned_skins, this.state.equippedSkin);
+            
+            // Передаём актуальные данные в Skins.updateUI
+            Skins.updateUI(data.owned_skins || [], this.state.equippedSkin);
         } catch (error) {
             console.error("Ошибка при обновлении игровых данных:", error);
+            this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`; // Фallback
         }
     },
 
@@ -552,15 +559,17 @@ const Game = {
         const targetRolls = 123456;
         const progress = Math.min((rolls / targetRolls) * 100, 100);
         const achievement = document.querySelector("#achievements-list .achievement-item:nth-child(2)");
-        achievement.querySelector(".progress-circle").style.setProperty("--progress", `${progress}%`);
-        achievement.querySelector(".achievement-reward").textContent = rolls >= targetRolls
-            ? "Achievement Completed! 123456 dice rolls made!"
-            : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
+        if (achievement) {
+            achievement.querySelector(".progress-circle").style.setProperty("--progress", `${progress}%`);
+            achievement.querySelector(".achievement-reward").textContent = rolls >= targetRolls
+                ? "Achievement Completed! 123456 dice rolls made!"
+                : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
+        }
     }
 };
 
 // ============================================================================
-// Скины (Skins)
+// Скины (Skins) - Исправленный раздел
 // ============================================================================
 
 const Skins = {
@@ -594,14 +603,14 @@ const Skins = {
 
     async handleSkin(type) {
         const cost = CONFIG.SKIN_PRICES[type];
-        const key = `hasBought${type}`;
+        const key = `hasBought${type.charAt(0).toUpperCase() + type.slice(1)}`;
         if (!this.state[key]) {
             if (Game.state.coins >= cost) {
                 const data = await API.buySkin(tg.initDataUnsafe?.user?.id, type, cost);
                 if (data.message?.startsWith("✅")) {
                     Game.state.coins = data.new_coins;
                     this.state[key] = true;
-                    this.updateUI();
+                    this.updateUI(data.owned_skins, Game.state.equippedSkin);
                 } else {
                     alert(`Purchase failed: ${data.message}`);
                 }
@@ -616,12 +625,8 @@ const Skins = {
     equip(type) {
         if (Game.state.equippedSkin === type) return;
         Game.state.equippedSkin = type;
-        Game.elements.cube.src = {
-            negative: "pictures/cubics/негатив/начальный-кубик-негатив.gif",
-            Emerald: "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
-            Pixel: "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
-            classic: "pictures/cubics/классика/начальный-кубик.gif"
-        }[type];
+        const skinConfig = Game.getSkinConfig();
+        Game.elements.cube.src = `${skinConfig[type].default}?t=${Date.now()}`;
         this.updateUI();
         API.updateSkin(tg.initDataUnsafe?.user?.id, type);
     },
