@@ -1003,14 +1003,29 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
-// Функция для загрузки изображений
+// Функция для загрузки изображений с прогрессом
 function loadImages(imageUrls) {
+    const loadingText = document.getElementById('loading-text');
+    let loadedCount = 0;
+    const totalCount = imageUrls.length;
+
     const promises = imageUrls.map(url => {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.src = url;
-            img.onload = () => resolve(url);
-            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+            img.onload = () => {
+                loadedCount++;
+                const progress = Math.round((loadedCount / totalCount) * 100);
+                loadingText.textContent = `Loading ${progress}%`;
+                resolve(url);
+            };
+            img.onerror = () => {
+                console.error(`Ошибка загрузки изображения: ${url}`);
+                loadedCount++; // Продолжаем считать даже при ошибке
+                const progress = Math.round((loadedCount / totalCount) * 100);
+                loadingText.textContent = `Loading ${progress}%`;
+                resolve(url); // Разрешаем промис, чтобы не прерывать загрузку
+            };
         });
     });
     return Promise.all(promises);
@@ -1027,7 +1042,7 @@ function getAllGameImages() {
         images.push(skinConfig[skin].rainbow);
     }
 
-    // Полная структура outcomes из Game.getOutcome
+    // Полная структура outcomes
     const outcomes = {
         classic: {
             default: [
@@ -1115,12 +1130,28 @@ function getAllGameImages() {
     return [...new Set(images)]; // Удаляем дубликаты
 }
 
+// Функция для запуска игры после клика
+function startGame() {
+    Game.init();
+    Skins.init();
+    Quests.init();
+    Leaderboard.init();
+    Profile.init();
+    Friends.init();
+
+    tg.expand();
+    tg.requestFullscreen();
+    tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+}
+
 // Обновленная функция инициализации приложения
 async function initializeApp() {
     const loadingScreen = document.getElementById('loading-screen');
+    const loadingText = document.getElementById('loading-text');
     
     // Показываем экран загрузки
     loadingScreen.style.display = 'flex';
+    loadingText.textContent = 'Loading 0%';
 
     try {
         // 1. Загружаем конфигурацию
@@ -1137,31 +1168,28 @@ async function initializeApp() {
         await loadImages(imageUrls);
         console.log('Все изображения загружены');
 
-        // 5. Инициализируем оставшиеся компоненты, которые зависят от UI
-        Game.init();
-        Skins.init();
-        Quests.init();
-        Leaderboard.init();
-        Profile.init();
-        Friends.init();
+        // 5. Показываем приглашение для входа в игру
+        loadingText.textContent = 'Press to enter the game';
 
-        // 6. Настраиваем Telegram Web App
-        tg.expand();
-        tg.requestFullscreen();
-        tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+        // 6. Ждем клика пользователя
+        await new Promise(resolve => {
+            loadingScreen.addEventListener('click', () => {
+                resolve();
+            }, { once: true }); // Слушатель срабатывает только один раз
+        });
 
-        // 7. Скрываем экран загрузки с анимацией
+        // 7. Скрываем экран загрузки с анимацией и запускаем игру
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
+            startGame(); // Запускаем игру после скрытия экрана
         }, 500); // Соответствует времени transition в CSS
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
-        loadingScreen.innerHTML = '<p>Error loading game. Please try again.</p>';
+        loadingText.textContent = 'Error loading game. Please refresh.';
     }
 }
 
-// Обновляем слушатель события DOMContentLoaded
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeApp();
 });
