@@ -5,11 +5,8 @@
 const CONFIG = {
     CANVAS_ID: "particleCanvas",
     DEFAULT_SKIN: "classic",
-    ANIMATION_DURATION: 3050, // ms
-    PROGRESS_DURATION: 3,     // seconds
-    API_BASE_URL: "https://backend12-production-1210.up.railway.app",
-    TELEGRAM_BOT_TOKEN: "7551355568:AAEWx4fUrqfzGXqpsH2skkXr6wVS9-h6UTU",
-    CHANNEL_USERNAME: "luckycubesCHANNEL",
+    ANIMATION_DURATION: 3050,
+    PROGRESS_DURATION: 3,
     SKIN_PRICES: {
         negative: 5000,
         Emerald: 10000,
@@ -18,6 +15,18 @@ const CONFIG = {
     REFERRAL_BONUS: { default: 100, premium: 1000 },
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
 };
+
+// Загрузка конфигурации с сервера
+async function loadConfig() {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/get_config`);
+    const data = await response.json();
+    Object.assign(CONFIG, {
+        API_BASE_URL: data.API_BASE_URL,
+        TELEGRAM_BOT_TOKEN: data.TELEGRAM_BOT_TOKEN,
+        CHANNEL_USERNAME: data.CHANNEL_USERNAME
+    });
+}
+
 
 const tg = window.Telegram?.WebApp;
 const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -920,6 +929,7 @@ const Particles = {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+    await loadConfig();
     Particles.init();
     Game.init();
     Skins.init();
