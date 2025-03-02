@@ -1003,16 +1003,66 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
+// Функция для загрузки изображений
+function loadImages(imageUrls) {
+    const promises = imageUrls.map(url => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+        });
+    });
+    return Promise.all(promises);
+}
+
+// Список всех изображений, которые нужно загрузить (включая скины и кубики)
+function getAllGameImages() {
+    const skinConfig = Game.getSkinConfig();
+    const outcomes = Game.getOutcome(0, CONFIG.DEFAULT_SKIN, false); // Для получения структуры outcomes
+    const images = [];
+
+    // Добавляем начальные скины
+    for (const skin in skinConfig) {
+        images.push(skinConfig[skin].default);
+        images.push(skinConfig[skin].rainbow);
+    }
+
+    // Добавляем все изображения результатов для каждого скина
+    for (const skin in outcomes) {
+        outcomes[skin].default.forEach(outcome => images.push(outcome.src));
+        outcomes[skin].rainbow.forEach(outcome => images.push(outcome.src));
+    }
+
+    // Добавляем запасной аватар
+    images.push(CONFIG.FALLBACK_AVATAR);
+
+    return [...new Set(images)]; // Удаляем дубликаты
+}
+
+// Обновленная функция инициализации приложения
 async function initializeApp() {
     const loadingScreen = document.getElementById('loading-screen');
     
     // Показываем экран загрузки
     loadingScreen.style.display = 'flex';
-    
+
     try {
-        // Последовательная загрузка всех компонентов
+        // 1. Загружаем конфигурацию
         await loadConfig();
+
+        // 2. Инициализируем базовые компоненты (без UI пока)
         Particles.init();
+
+        // 3. Собираем список всех изображений
+        const imageUrls = getAllGameImages();
+        console.log('Загружаем изображения:', imageUrls);
+
+        // 4. Ждем загрузки всех изображений
+        await loadImages(imageUrls);
+        console.log('Все изображения загружены');
+
+        // 5. Инициализируем оставшиеся компоненты, которые зависят от UI
         Game.init();
         Skins.init();
         Quests.init();
@@ -1020,21 +1070,23 @@ async function initializeApp() {
         Profile.init();
         Friends.init();
 
+        // 6. Настраиваем Telegram Web App
         tg.expand();
         tg.requestFullscreen();
         tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
 
-        // После успешной загрузки скрываем экран с анимацией
+        // 7. Скрываем экран загрузки с анимацией
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-        }, 500); // соответствует времени transition в CSS
+        }, 500); // Соответствует времени transition в CSS
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
-        loadingScreen.innerHTML = '<p>Error loading game</p>';
+        loadingScreen.innerHTML = '<p>Error loading game. Please try again.</p>';
     }
 }
 
+// Обновляем слушатель события DOMContentLoaded
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeApp();
 });
