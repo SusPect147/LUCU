@@ -354,7 +354,7 @@ const Game = {
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
 
             // Запускаем прогресс-бар на 3 секунды (как в вашем исправлении)
-            this.startProgress(3000);
+            this.startProgress(3100);
 
             // Немедленно показываем результат после клика
             const random = Math.random() * 100;
@@ -363,7 +363,7 @@ const Game = {
             console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
 
             // Ждём 3 секунды (синхронно с прогресс-баром)
-            await Utils.wait(3000);
+            await Utils.wait(2500);
 
             // Обновляем данные
             const serverData = await this.updateServerData();
