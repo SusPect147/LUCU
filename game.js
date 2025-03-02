@@ -357,7 +357,7 @@ const Game = {
             this.elements.cube.style.opacity = "1";
 
             // Ждём окончания прогресс-бара (3 секунды - 150 мс перехода = 2850 мс)
-            await Utils.wait(2850);
+            await Utils.wait(3000);
 
             // Обновление данных
             const serverData = await this.updateServerData();
