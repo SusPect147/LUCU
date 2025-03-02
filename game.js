@@ -292,10 +292,6 @@ const UI = {
 // Игра (Game) - Исправленный раздел с немедленным показом результата
 // ============================================================================
 
-// ============================================================================
-// Игра (Game) - Исправленный раздел с немедленным показом результата и без задержек
-// ============================================================================
-
 const Game = {
     elements: {
         cube: null,
@@ -321,6 +317,9 @@ const Game = {
             console.error("Не удалось найти один или несколько элементов DOM");
             return;
         }
+
+        // Добавляем плавный переход для фона
+        document.body.style.transition = "background 0.5s ease-in-out";
 
         this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
@@ -348,13 +347,8 @@ const Game = {
         try {
             const isRainbow = Math.random() < 0.2;
             this.state.currentRainbow = isRainbow;
-            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
-
             const skinConfig = this.getSkinConfig();
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
-
-            // Запускаем прогресс-бар на 3 секунды (как в вашем исправлении)
-            this.startProgress(3100);
 
             // Немедленно показываем результат после клика
             const random = Math.random() * 100;
@@ -362,8 +356,15 @@ const Game = {
             this.elements.cube.src = outcome.src;
             console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
 
-            // Ждём 3 секунды (синхронно с прогресс-баром)
-            await Utils.wait(2500);
+            // Запускаем прогресс-бар
+            this.startProgress(3100);
+
+            // Меняем фон во время анимации кубика (после начала анимации)
+            await Utils.wait(100); // Небольшая задержка для плавности
+            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
+
+            // Ждём окончания анимации
+            await Utils.wait(2400); // 2500 - 100 = 2400, чтобы синхронизировать с прогресс-баром
 
             // Обновляем данные
             const serverData = await this.updateServerData();
@@ -371,10 +372,10 @@ const Game = {
             await this.updateBestLuck(random);
             await this.updateCoins(outcome.coins);
 
-            // Возвращаем начальный скин без дополнительной задержки
+            // Возвращаем начальный скин и фон после анимации
             this.elements.cube.src = initialSkin;
+            document.body.className = isRainbow ? "pink-gradient" : "gray-gradient";
             console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
-            document.body.className = this.state.currentRainbow ? "pink-gradient" : "gray-gradient";
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
         } finally {
