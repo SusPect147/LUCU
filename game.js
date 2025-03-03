@@ -96,11 +96,20 @@ const Utils = {
 
 const API = {
     async fetch(url, options = {}) {
+        const initData = tg.initData;
+        const headers = {
+            "Content-Type": "application/json",
+            "X-Telegram-Init-Data": initData
+        };
+
         const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
             ...options
         });
-        if (!response.ok) throw new Error(`Network error: ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Network error: ${response.status} - ${errorText}`);
+        }
         return response.json();
     },
 
@@ -111,7 +120,7 @@ const API = {
     updateCoins(userId, amount, username) {
         return this.fetch("/update_coins", {
             method: "POST",
-            body: JSON.stringify({ user_id: userId, coins: amount, username })
+            body: JSON.stringify({ user_id: userId, action: "roll" })
         });
     },
 
@@ -173,6 +182,7 @@ const API = {
         return data.ok && ["member", "administrator", "creator"].includes(data.result.status);
     }
 };
+
 
 // ============================================================================
 // Частицы (Particle System)
@@ -307,8 +317,7 @@ const Game = {
         currentRainbow: false
     },
 
-init() {
-        // Инициализация только для элементов и событий, данные уже загружены
+    init() {
         this.elements.cube = document.getElementById("cube");
         this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
         this.elements.bestLuckDisplay = document.getElementById("bestLuck");
@@ -322,7 +331,6 @@ init() {
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
         this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
-        // updateGameData не вызываем здесь, так как данные уже загружены
     },
 
     handleClick(event) {
@@ -349,44 +357,43 @@ init() {
             const skinConfig = this.getSkinConfig();
             const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
 
-            // Немедленно показываем результат после клика
             const random = Math.random() * 100;
             const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
             this.elements.cube.src = outcome.src;
-            console.log("Начало броска, изменение на кубик-1, кубик-2 и так далее:", outcome.src);
+            console.log("Начало броска:", outcome.src);
 
-            // Запускаем прогресс-бар
             this.startProgress(3100);
 
-            // Плавно меняем фон
-            await Utils.wait(100); // Небольшая задержка для синхронизации
-            document.body.classList.remove("pink-gradient", "gray-gradient"); // Удаляем оба класса
-            document.body.classList.add(isRainbow ? "pink-gradient" : "gray-gradient"); // Добавляем нужный
+            await Utils.wait(100);
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(isRainbow ? "pink-gradient" : "gray-gradient");
 
-            // Ждем окончания анимации
-            await Utils.wait(2400); // 2500 - 100 = 2400
+            await Utils.wait(2400);
 
-            // Обновляем данные
             const serverData = await this.updateServerData();
+            if (!serverData) throw new Error("Failed to update rolls");
+
             this.updateAchievementProgress(serverData?.total_rolls || 0);
             await this.updateBestLuck(random);
-            await this.updateCoins(outcome.coins);
+            await this.updateCoins(); // Сервер решает, сколько монет добавить
 
-            // Возвращаем начальный скин и убираем rainbow фон, если он был
             this.elements.cube.src = initialSkin;
             if (isRainbow) {
-                await Utils.wait(500); // Ждем завершения анимации фона
+                await Utils.wait(500);
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
             }
-            console.log("Конец броска, начисление монет, цикл идет заново, coins:", outcome.coins);
+            console.log("Конец броска, coins:", this.state.coins);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
+            this.elements.coinsDisplay.textContent = "Error";
+            this.elements.cube.src = this.getSkinConfig()[this.state.equippedSkin].default;
         } finally {
             this.state.isAnimating = false;
-            console.log("Анимация завершена, готов к новому клику");
+            console.log("Анимация завершена");
         }
     },
+
     startProgress(duration) {
         if (!this.elements.progressBar) {
             console.error("Прогресс-бар не найден в DOM");
@@ -519,11 +526,11 @@ init() {
         }
     },
 
-    async updateCoins(amount) {
+    async updateCoins() {
         const userId = tg.initDataUnsafe?.user?.id;
         const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
         try {
-            const data = await API.updateCoins(userId, amount, username);
+            const data = await API.updateCoins(userId, null, username);
             this.state.coins = data.new_coins;
             this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
         } catch (error) {
@@ -546,7 +553,6 @@ init() {
         }
     },
 
-   // Оставляем updateGameData для динамического обновления во время игры
     async updateGameData() {
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) return;
@@ -1192,8 +1198,14 @@ function startGame() {
     tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
 }
 
-// Обновленная функция инициализации приложения
 async function initializeApp() {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) {
+        console.error("Это приложение должно запускаться в Telegram Web App");
+        document.body.innerHTML = "<p>Please open this app in Telegram</p>";
+        return;
+    }
+
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
     const loadingCube = document.getElementById('loading-cube');
@@ -1212,41 +1224,25 @@ async function initializeApp() {
     loadingCube.style.display = 'block';
 
     try {
-        // 1. Загружаем конфигурацию
         await loadConfig();
-
-        // 2. Инициализируем частицы
         Particles.init();
-
-        // 3. Собираем список всех изображений
         const imageUrls = getAllGameImages();
         console.log('Загружаем изображения:', imageUrls);
-
-        // 4. Ждем загрузки всех изображений
         await loadImages(imageUrls);
         console.log('Все изображения загружены');
-
-        // 5. Предварительно загружаем данные игры
         await preloadGameData();
 
-        // 6. Обновляем экран загрузки с данными игрока
         const skinConfig = Game.getSkinConfig();
         loadingCube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
         playerCoins.textContent = `Coins: ${Utils.formatCoins(Game.state.coins)} $LUCU`;
         playerBestLuck.textContent = `Best Luck: ${Game.state.bestLuck === Infinity ? 'N/A' : Utils.formatNumber(Game.state.bestLuck)}`;
         playerInfo.classList.remove('hidden');
 
-        // 7. Показываем приглашение для входа
         loadingText.textContent = 'Press to enter the game';
-
-        // 8. Ждем клика пользователя
         await new Promise(resolve => {
-            loadingScreen.addEventListener('click', () => {
-                resolve();
-            }, { once: true });
+            loadingScreen.addEventListener('click', () => resolve(), { once: true });
         });
 
-        // 9. Плавно скрываем экран загрузки и запускаем игру
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
@@ -1255,6 +1251,7 @@ async function initializeApp() {
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
         loadingText.textContent = 'Error loading game. Please refresh.';
+        loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
     }
 }
 
