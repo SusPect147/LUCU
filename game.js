@@ -95,28 +95,42 @@ const Utils = {
 // ============================================================================
 
 const API = {
-    async fetch(url, options = {}) {
-        const initData = tg.initData;
-        if (!initData) {
-            console.error("Telegram initData отсутствует!");
-            throw new Error("Telegram initData is missing");
-        }
-        const headers = {
-            "Content-Type": "application/json",
-            "X-Telegram-Init-Data": initData
-        };
+   async fetch(url, options = {}, retries = 2) {
+    const initData = tg.initData;
+    if (!initData) {
+        console.error("Telegram initData отсутствует!");
+        throw new Error("Telegram initData is missing");
+    }
+    const headers = {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData
+    };
 
-        const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
-            headers: headers,
-            ...options
-        });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Network error: ${response.status} - ${errorText}`);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            console.log(`Sending request to ${url} with initData: ${initData}`);
+            const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
+                headers: headers,
+                ...options
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Attempt ${attempt + 1} failed: ${response.status} - ${errorText}`);
+                if (attempt === retries) {
+                    throw new Error(`Network error: ${response.status} - ${errorText}`);
+                }
+                await Utils.wait(1000 * (attempt + 1)); // Exponential backoff
+                continue;
+            }
+            return await response.json();
+        } catch (error) {
+            if (attempt === retries) {
+                console.error(`All ${retries + 1} attempts failed for ${url}: ${error.message}`);
+                throw error;
+            }
         }
-        return response.json();
-    },
-
+    }
+},
     getUserData(userId) {
         return this.fetch(`/get_user_data/${userId}`);
     },
@@ -313,13 +327,14 @@ const Game = {
         bestLuckDisplay: null,
         progressBar: null
     },
-    state: {
-        coins: 0,
-        bestLuck: Infinity,
-        isAnimating: false,
-        equippedSkin: CONFIG.DEFAULT_SKIN,
-        currentRainbow: false
-    },
+state: {
+    coins: 0,
+    bestLuck: Infinity,
+    isAnimating: false,
+    equippedSkin: CONFIG.DEFAULT_SKIN,
+    currentRainbow: false,
+    rolls: 0 // Add rolls to track locally
+},
 
     init() {
         this.elements.cube = document.getElementById("cube");
@@ -517,18 +532,20 @@ const Game = {
     },
 
     async updateServerData() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) {
-            console.error("Не удалось получить userId из Telegram Web App");
-            return null;
-        }
-        try {
-            return await API.updateRolls(userId);
-        } catch (error) {
-            console.error("Ошибка при обновлении rolls на сервере:", error);
-            return null;
-        }
-    },
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) {
+        console.error("Не удалось получить userId из Telegram Web App");
+        return { total_rolls: Game.state.rolls || 0 };
+    }
+    try {
+        const response = await API.updateRolls(userId);
+        Game.state.rolls = response.total_rolls; // Store locally
+        return response;
+    } catch (error) {
+        console.error("Ошибка при обновлении rolls на сервере:", error);
+        return { total_rolls: Game.state.rolls || 0 }; // Fallback to local state
+    }
+},
 
     async updateCoins(outcomeCoins) {
         const userId = tg.initDataUnsafe?.user?.id;
@@ -558,31 +575,31 @@ const Game = {
     },
 
     async updateGameData() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return;
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return;
 
-        try {
-            const data = await API.getUserData(userId);
-            this.state.coins = data.coins || 0;
-            this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
-            this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+    try {
+        const data = await API.getUserData(userId);
+        this.state.coins = data.coins || 0;
+        this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+        this.state.rolls = data.rolls || 0; // Fetch and store rolls
 
-            const skinConfig = this.getSkinConfig();
-            this.elements.cube.src = `${skinConfig[this.state.equippedSkin].default}?t=${Date.now()}`;
-            console.log("Установлен начальный скин:", this.elements.cube.src);
+        const skinConfig = this.getSkinConfig();
+        this.elements.cube.src = `${skinConfig[this.state.equippedSkin].default}?t=${Date.now()}`;
+        console.log("Установлен начальный скин:", this.elements.cube.src);
 
-            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
-                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            
-            Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
-        } catch (error) {
-            console.error("Ошибка при обновлении игровых данных:", error);
-            this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`;
-        }
-    },
-
+        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+        
+        Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
+    } catch (error) {
+        console.error("Ошибка при обновлении игровых данных:", error);
+        this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`;
+    }
+},
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
         const progress = Math.min((rolls / targetRolls) * 100, 100);
