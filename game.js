@@ -97,6 +97,10 @@ const Utils = {
 const API = {
     async fetch(url, options = {}) {
         const initData = tg.initData;
+        if (!initData) {
+            console.error("Telegram initData отсутствует!");
+            throw new Error("Telegram initData is missing");
+        }
         const headers = {
             "Content-Type": "application/json",
             "X-Telegram-Init-Data": initData
@@ -120,7 +124,7 @@ const API = {
     updateCoins(userId, amount, username) {
         return this.fetch("/update_coins", {
             method: "POST",
-            body: JSON.stringify({ user_id: userId, action: "roll" })
+            body: JSON.stringify({ user_id: userId, amount, action: "roll" })
         });
     },
 
@@ -375,7 +379,7 @@ const Game = {
 
             this.updateAchievementProgress(serverData?.total_rolls || 0);
             await this.updateBestLuck(random);
-            await this.updateCoins(); // Сервер решает, сколько монет добавить
+            await this.updateCoins(outcome.coins); // Передаём количество монет из outcome
 
             this.elements.cube.src = initialSkin;
             if (isRainbow) {
@@ -526,11 +530,11 @@ const Game = {
         }
     },
 
-    async updateCoins() {
+    async updateCoins(outcomeCoins) {
         const userId = tg.initDataUnsafe?.user?.id;
         const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
         try {
-            const data = await API.updateCoins(userId, null, username);
+            const data = await API.updateCoins(userId, outcomeCoins, username);
             this.state.coins = data.new_coins;
             this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
         } catch (error) {
