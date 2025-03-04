@@ -95,42 +95,42 @@ const Utils = {
 // ============================================================================
 
 const API = {
-   async fetch(url, options = {}, retries = 2) {
-    const initData = tg.initData;
-    if (!initData) {
-        console.error("Telegram initData отсутствует!");
-        throw new Error("Telegram initData is missing");
-    }
-    const headers = {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData
-    };
+    async fetch(url, options = {}, retries = 2) {
+        const initData = tg.initData;
+        if (!initData) {
+            console.error("Telegram initData отсутствует!");
+            throw new Error("Telegram initData is missing");
+        }
+        const headers = {
+            "Content-Type": "application/json",
+            "X-Telegram-Init-Data": initData
+        };
 
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-            console.log(`Sending request to ${url} with initData: ${initData}`);
-            const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
-                headers: headers,
-                ...options
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`Attempt ${attempt + 1} failed: ${response.status} - ${errorText}`);
-                if (attempt === retries) {
-                    throw new Error(`Network error: ${response.status} - ${errorText}`);
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            try {
+                console.log(`Sending request to ${url} with initData: ${initData}`);
+                const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
+                    headers: headers,
+                    ...options
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Attempt ${attempt + 1} failed: ${response.status} - ${errorText}`);
+                    if (attempt === retries) {
+                        throw new Error(`Network error: ${response.status} - ${errorText}`);
+                    }
+                    await Utils.wait(1000 * (attempt + 1));
+                    continue;
                 }
-                await Utils.wait(1000 * (attempt + 1)); // Exponential backoff
-                continue;
-            }
-            return await response.json();
-        } catch (error) {
-            if (attempt === retries) {
-                console.error(`All ${retries + 1} attempts failed for ${url}: ${error.message}`);
-                throw error;
+                return await response.json();
+            } catch (error) {
+                if (attempt === retries) {
+                    console.error(`All ${retries + 1} attempts failed for ${url}: ${error.message}`);
+                    throw error;
+                }
             }
         }
-    }
-},
+    },
     getUserData(userId) {
         return this.fetch(`/get_user_data/${userId}`);
     },
