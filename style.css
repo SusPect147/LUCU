@@ -22,9 +22,19 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
-              linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
-              linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
+  background: radial-gradient(
+                circle at 10% 90%,  /* центр слева снизу */
+                #808080 0%,        /* серый */
+                #1a1a1a 60%,       /* темный */
+                #000000 100%       /* черный */
+            ), 
+            radial-gradient(
+                circle at 90% 10%,  /* центр справа сверху */
+                #808080 0%,        /* серый */
+                #1a1a1a 60%,       /* темный */
+                #000000 100%       /* черный */
+            );
+  background-blend-mode: overlay;
   font-family: Arial, sans-serif;
   transition: background 0.5s ease-in-out, background-image 0.5s ease-in-out;
   position: relative;
@@ -32,18 +42,37 @@ body {
 
 /* Gray-gradient как базовый фон */
 body.gray-gradient {
-  background: linear-gradient(217deg, rgb(22, 22, 22) 0%, rgba(0, 0, 0, 0.89) 70.71%),
-              linear-gradient(127deg, rgb(5, 23, 27) 0%, rgba(0, 0, 0, 0) 70.71%),
-              linear-gradient(336deg, rgb(22, 22, 24) 0%, rgba(0, 0, 0, 0) 70.71%);
+    background: radial-gradient(
+                circle at 10% 90%,  /* центр слева снизу */
+                #808080 0%,        /* серый */
+                #1a1a1a 60%,       /* темный */
+                #000000 100%       /* черный */
+            ), 
+            radial-gradient(
+                circle at 90% 10%,  /* центр справа сверху */
+                #808080 0%,        /* серый */
+                #1a1a1a 60%,       /* темный */
+                #000000 100%       /* черный */
+            );
+  background-blend-mode: overlay;
   transition: background 0.5s ease-in-out, background-image 0.5s ease-in-out;
 }
 
 /* Pink-gradient для радужного эффекта */
 body.pink-gradient {
-  background: linear-gradient(217deg, rgb(77, 7, 7), rgba(49, 4, 4, 0.493) 70.71%),
-              linear-gradient(127deg, rgb(7, 54, 7), rgba(6, 51, 6, 0.219) 70.71%),
-              linear-gradient(336deg, rgb(9, 9, 73), rgba(7, 7, 68, 0.288) 70.71%);
-  background-blend-mode: multiply;
+    background: radial-gradient(
+                circle at 10% 90%,  /* центр слева снизу */
+                #808080 0%,        /* серый */
+                #1a1a1a 60%,       /* темный */
+                #000000 100%       /* черный */
+            ), 
+            radial-gradient(
+                circle at 90% 10%,  /* центр справа сверху */
+                #808080 0%,        /* серый */
+                #1a1a1a 60%,       /* темный */
+                #000000 100%       /* черный */
+            );
+  background-blend-mode: overlay;
   transition: background 0.5s ease-in-out, background-image 0.5s ease-in-out;
 }
 #loading-screen {
