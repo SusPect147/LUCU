@@ -97,12 +97,14 @@ const API = {
                 });
                 if (!response.ok) {
                     const errorText = await response.text();
+                    console.error(`Fetch failed: ${response.status} - ${errorText}`);
                     if (attempt === retries) throw new Error(`Network error: ${response.status} - ${errorText}`);
                     await Utils.wait(1000 * (attempt + 1));
                     continue;
                 }
                 return await response.json();
             } catch (error) {
+                console.error(`Fetch attempt ${attempt + 1} failed: ${error.message}`);
                 if (attempt === retries) throw error;
             }
         }
@@ -265,7 +267,6 @@ const Game = {
     },
 
    async rollCube() {
-    // Предотвращаем повторный вызов, если анимация уже идёт
     if (this.state.isAnimating) {
         console.log("rollCube: Анимация уже в процессе, вызов отклонён");
         return;
@@ -274,83 +275,54 @@ const Game = {
     this.state.isAnimating = true;
 
     try {
-        // Получаем userId из Telegram Web App
         const userId = tg?.initDataUnsafe?.user?.id;
-        if (!userId) {
-            throw new Error("User ID отсутствует в данных Telegram");
-        }
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-        // Логируем запрос для диагностики
         console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
 
-        // Отправляем запрос к API, преобразуя userId в строку
         const response = await API.fetch("/roll_cube", {
             method: "POST",
-            body: JSON.stringify({ user_id: String(userId) }) // Принудительно строка
+            body: JSON.stringify({ user_id: String(userId) })
         });
 
-        // Проверяем, что ответ содержит все ожидаемые поля
-        const { outcome_src, coins, luck, total_rolls, equipped_skin, is_rainbow } = response;
-        if (!outcome_src || coins === undefined || luck === undefined || total_rolls === undefined || !equipped_skin) {
+        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
             throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
 
-        // Обновляем изображение кубика с результатом броска
-        this.elements.cube.src = outcome_src;
-
-        // Запускаем прогресс-бар
+        this.elements.cube.src = response.outcome_src;
         this.startProgress(3100);
-
-        // Ждём начала анимации
         await Utils.wait(100);
 
-        // Обновляем фон в зависимости от результата (rainbow или нет)
         document.body.classList.remove("pink-gradient", "gray-gradient");
-        document.body.classList.add(is_rainbow ? "pink-gradient" : "gray-gradient");
+        document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
 
-        // Ждём основную часть анимации
         await Utils.wait(2400);
 
-        // Обновляем состояние игры
-        this.state.coins = coins;
-        this.state.bestLuck = luck;
-        this.state.rolls = total_rolls;
+        this.state.coins = response.coins;
+        this.state.bestLuck = response.luck;
+        this.state.rolls = response.total_rolls;
 
-        // Обновляем UI
-        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(coins)} $LUCU`;
-        this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(luck)}</span>`;
-        this.updateAchievementProgress(total_rolls);
+        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+        this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(response.luck)}</span>`;
+        this.updateAchievementProgress(response.total_rolls);
 
-        // Обновляем изображение кубика в зависимости от скина и результата
         const skinConfig = this.getSkinConfig();
-        if (!skinConfig[equipped_skin]) {
-            throw new Error(`Неизвестный скин: ${equipped_skin}`);
-        }
-        const cubeVariant = is_rainbow ? "rainbow" : "default";
-        this.elements.cube.src = `${skinConfig[equipped_skin][cubeVariant]}?t=${Date.now()}`;
+        const cubeVariant = response.is_rainbow ? "rainbow" : "default";
+        this.elements.cube.src = `${skinConfig[response.equipped_skin][cubeVariant]}?t=${Date.now()}`;
 
-        // Завершаем анимацию для rainbow-результата
-        if (is_rainbow) {
+        if (response.is_rainbow) {
             await Utils.wait(500);
             document.body.classList.remove("pink-gradient");
             document.body.classList.add("gray-gradient");
         }
 
-        console.log("rollCube: Бросок успешно завершён", { coins, luck, total_rolls });
+        console.log("rollCube: Бросок успешно завершён", response);
     } catch (error) {
-        // Логируем ошибку с деталями
         console.error("Ошибка в rollCube:", error.message || error);
-
-        // Обновляем UI при ошибке
         this.elements.coinsDisplay.textContent = "Error";
-        const defaultSkinConfig = this.getSkinConfig()[this.state.equippedSkin]?.default;
-        if (defaultSkinConfig) {
-            this.elements.cube.src = `${defaultSkinConfig}?t=${Date.now()}`;
-        } else {
-            console.error("rollCube: Не удалось загрузить дефолтный скин для", this.state.equippedSkin);
-        }
+        const defaultSkin = this.getSkinConfig()[this.state.equippedSkin]?.default || CONFIG.FALLBACK_AVATAR;
+        this.elements.cube.src = `${defaultSkin}?t=${Date.now()}`;
     } finally {
-        // Сбрасываем флаг анимации
         this.state.isAnimating = false;
         console.log("rollCube: Анимация завершена");
     }
@@ -679,7 +651,8 @@ const Profile = {
         name: document.getElementById("profile-name")
     },
 
-init() {
+// Обновление профиля
+Profile.init = function() {
     this.elements.name.textContent = `Hello, ${tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "NoName"}`;
     this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
     this.elements.menu.addEventListener("click", e => {
@@ -692,15 +665,13 @@ init() {
         API.fetch("/update_profile", {
             method: "POST",
             body: JSON.stringify({
-                user_id: String(user.id),  // Преобразуем в строку
+                user_id: String(user.id),
                 username: `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
                 photo_url: user.photo_url || CONFIG.FALLBACK_AVATAR
             })
-        }).catch(error => {
-            console.error("Ошибка в update_profile:", error);
-        });
+        }).then(() => console.log("Profile updated successfully"))
+          .catch(error => console.error("Ошибка в update_profile:", error));
     }
-}
 };
 
 // ============================================================================
