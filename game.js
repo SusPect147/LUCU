@@ -354,7 +354,7 @@ const Game = {
         this.state.isAnimating = false;
         console.log("rollCube: Анимация завершена");
     }
-}
+},
 
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
