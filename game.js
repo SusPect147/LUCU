@@ -7,13 +7,7 @@ const CONFIG = {
     DEFAULT_SKIN: "classic",
     ANIMATION_DURATION: 3050,
     PROGRESS_DURATION: 3,
-    API_BASE_URL: "https://backend12-production-1210.up.railway.app", // Начальное значение
-    SKIN_PRICES: {
-        negative: 5000,
-        Emerald: 10000,
-        Pixel: 150000
-    },
-    REFERRAL_BONUS: { default: 100, premium: 1000 },
+    API_BASE_URL: "https://backend12-production-1210.up.railway.app",
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
 };
 
@@ -38,18 +32,10 @@ const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
 });
 
 // ============================================================================
-// Утилиты
+// Утилиты (только для UI)
 // ============================================================================
 
 const Utils = {
-    getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    },
-
-    getRandomInRange(range) {
-        return Math.random() * (range.max - range.min) + range.min;
-    },
-
     formatCoins(amount) {
         if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
         if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
@@ -97,10 +83,7 @@ const Utils = {
 const API = {
     async fetch(url, options = {}, retries = 2) {
         const initData = tg.initData;
-        if (!initData) {
-            console.error("Telegram initData отсутствует!");
-            throw new Error("Telegram initData is missing");
-        }
+        if (!initData) throw new Error("Telegram initData is missing");
         const headers = {
             "Content-Type": "application/json",
             "X-Telegram-Init-Data": initData
@@ -108,99 +91,23 @@ const API = {
 
         for (let attempt = 0; attempt <= retries; attempt++) {
             try {
-                console.log(`Sending request to ${url} with initData: ${initData}`);
                 const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
                     headers: headers,
                     ...options
                 });
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`Attempt ${attempt + 1} failed: ${response.status} - ${errorText}`);
-                    if (attempt === retries) {
-                        throw new Error(`Network error: ${response.status} - ${errorText}`);
-                    }
+                    if (attempt === retries) throw new Error(`Network error: ${response.status} - ${errorText}`);
                     await Utils.wait(1000 * (attempt + 1));
                     continue;
                 }
                 return await response.json();
             } catch (error) {
-                if (attempt === retries) {
-                    console.error(`All ${retries + 1} attempts failed for ${url}: ${error.message}`);
-                    throw error;
-                }
+                if (attempt === retries) throw error;
             }
         }
-    },
-    getUserData(userId) {
-        return this.fetch(`/get_user_data/${userId}`);
-    },
-
-    updateCoins(userId, amount, username) {
-        return this.fetch("/update_coins", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, amount, action: "roll" })
-        });
-    },
-
-    updateLuck(userId, luck, username) {
-        return this.fetch("/update_luck", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, luck, username })
-        });
-    },
-
-    updateSkin(userId, skinType) {
-        return this.fetch("/update_skin", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, skin_type: skinType })
-        });
-    },
-
-    buySkin(userId, skinType, cost) {
-        return this.fetch("/buy_skin", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, skin_type: skinType, cost })
-        });
-    },
-
-    updateRolls(userId) {
-        return this.fetch("/update_rolls", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, rolls_increment: 1 })
-        });
-    },
-
-    updateQuest(userId, quest, status) {
-        return this.fetch("/update_quest", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, quest, status })
-        });
-    },
-
-    updateProfile(userId, username, photoUrl) {
-        return this.fetch("/update_profile", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId, username, photo_url: photoUrl })
-        });
-    },
-
-    getLeaderboard(type) {
-        return this.fetch(`/leaderboard_${type}`);
-    },
-
-    getReferralCount(userId) {
-        return this.fetch(`/get_referral_count/${userId}`);
-    },
-
-    async checkTelegramSubscription(userId, channel) {
-        const response = await fetch(
-            `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=@${channel}&user_id=${userId}`
-        );
-        const data = await response.json();
-        return data.ok && ["member", "administrator", "creator"].includes(data.result.status);
     }
 };
-
 
 // ============================================================================
 // Частицы (Particle System)
@@ -237,22 +144,22 @@ class ParticleSystem {
         this.size = size;
         this.particles = new Map();
         this.lastId = 0;
-        this.amount = 0;
-        this.diameter = { min: 0, max: 0 };
-        this.life = { min: 0, max: 0 };
-        this.speed = { x: { min: 0, max: 0 }, y: { min: 0, max: 0 } };
+        this.amount = 100;
+        this.diameter = { min: 1, max: 3 };
+        this.life = { min: 3, max: 7 };
+        this.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } };
         this.canvas.width = size.x;
         this.canvas.height = size.y;
     }
 
     createParticle() {
         const particle = new Particle(this.lastId.toString(), this);
-        particle.position.x = Utils.getRandomInRange({ min: 0, max: this.size.x });
-        particle.position.y = Utils.getRandomInRange({ min: 0, max: this.size.y });
-        particle.diameter = Utils.getRandomInRange(this.diameter);
-        particle.life = Utils.getRandomInRange(this.life);
-        particle.speed.x = Utils.getRandomInRange(this.speed.x);
-        particle.speed.y = Utils.getRandomInRange(this.speed.y);
+        particle.position.x = Math.random() * this.size.x;
+        particle.position.y = Math.random() * this.size.y;
+        particle.diameter = Math.random() * (this.diameter.max - this.diameter.min) + this.diameter.min;
+        particle.life = Math.random() * (this.life.max - this.life.min) + this.life.min;
+        particle.speed.x = Math.random() * (this.speed.x.max - this.speed.x.min) + this.speed.x.min;
+        particle.speed.y = Math.random() * (this.speed.y.max - this.speed.y.min) + this.speed.y.min;
         this.particles.set(this.lastId.toString(), particle);
         this.lastId++;
     }
@@ -261,9 +168,7 @@ class ParticleSystem {
         const ctx = this.canvas.getContext("2d");
         ctx.fillStyle = "white";
 
-        for (let i = 0; i < this.amount; i++) {
-            this.createParticle();
-        }
+        for (let i = 0; i < this.amount; i++) this.createParticle();
 
         setInterval(() => {
             if (this.particles.size < this.amount) this.createParticle();
@@ -317,7 +222,7 @@ const UI = {
 };
 
 // ============================================================================
-//      Игра (Game) - Исправленный раздел с немедленным показом результата
+// Игра (Game)
 // ============================================================================
 
 const Game = {
@@ -327,14 +232,13 @@ const Game = {
         bestLuckDisplay: null,
         progressBar: null
     },
-state: {
-    coins: 0,
-    bestLuck: Infinity,
-    isAnimating: false,
-    equippedSkin: CONFIG.DEFAULT_SKIN,
-    currentRainbow: false,
-    rolls: 0 // Add rolls to track locally
-},
+    state: {
+        coins: 0,
+        bestLuck: Infinity,
+        isAnimating: false,
+        equippedSkin: CONFIG.DEFAULT_SKIN,
+        rolls: 0
+    },
 
     init() {
         this.elements.cube = document.getElementById("cube");
@@ -348,85 +252,68 @@ state: {
         }
 
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
-        this.elements.cube.removeEventListener("click", this.handleClick);
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
+        this.updateGameData();
     },
 
     handleClick(event) {
         if (this.state.isAnimating) {
-            console.log("Клик проигнорирован: анимация уже выполняется");
             event.preventDefault();
             return;
         }
-        console.log("Клик зарегистрирован, начало rollCube");
         this.rollCube();
     },
 
     async rollCube() {
-        if (this.state.isAnimating) {
-            console.log("Повторный вызов rollCube заблокирован");
-            return;
-        }
-
+        if (this.state.isAnimating) return;
         this.state.isAnimating = true;
 
         try {
-            const isRainbow = Math.random() < 0.2;
-            this.state.currentRainbow = isRainbow;
-            const skinConfig = this.getSkinConfig();
-            const initialSkin = `${skinConfig[this.state.equippedSkin][isRainbow ? "rainbow" : "default"]}`;
+            const userId = tg.initDataUnsafe?.user?.id;
+            const response = await API.fetch("/roll_cube", {
+                method: "POST",
+                body: JSON.stringify({ user_id: userId })
+            });
 
-            const random = Math.random() * 100;
-            const outcome = this.getOutcome(random, this.state.equippedSkin, isRainbow);
-            this.elements.cube.src = outcome.src;
-            console.log("Начало броска:", outcome.src);
+            const { outcome_src, coins, luck, total_rolls, equipped_skin, is_rainbow } = response;
 
+            this.elements.cube.src = outcome_src;
             this.startProgress(3100);
 
             await Utils.wait(100);
             document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(isRainbow ? "pink-gradient" : "gray-gradient");
+            document.body.classList.add(is_rainbow ? "pink-gradient" : "gray-gradient");
 
             await Utils.wait(2400);
 
-            const serverData = await this.updateServerData();
-            if (!serverData) throw new Error("Failed to update rolls");
+            this.state.coins = coins;
+            this.state.bestLuck = luck;
+            this.state.rolls = total_rolls;
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(coins)} $LUCU`;
+            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(luck)}</span>`;
+            this.updateAchievementProgress(total_rolls);
 
-            this.updateAchievementProgress(serverData?.total_rolls || 0);
-            await this.updateBestLuck(random);
-            await this.updateCoins(outcome.coins); // Передаём количество монет из outcome
-
-            this.elements.cube.src = initialSkin;
-            if (isRainbow) {
+            this.elements.cube.src = `${this.getSkinConfig()[equipped_skin][is_rainbow ? "rainbow" : "default"]}?t=${Date.now()}`;
+            if (is_rainbow) {
                 await Utils.wait(500);
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
             }
-            console.log("Конец броска, coins:", this.state.coins);
         } catch (error) {
             console.error("Ошибка в rollCube:", error);
             this.elements.coinsDisplay.textContent = "Error";
-            this.elements.cube.src = this.getSkinConfig()[this.state.equippedSkin].default;
+            this.elements.cube.src = `${this.getSkinConfig()[this.state.equippedSkin].default}?t=${Date.now()}`;
         } finally {
             this.state.isAnimating = false;
-            console.log("Анимация завершена");
         }
     },
 
     startProgress(duration) {
-        if (!this.elements.progressBar) {
-            console.error("Прогресс-бар не найден в DOM");
-            return;
-        }
-
-        console.log(`Запуск прогресс-бара на ${duration} мс`);
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
-
         setTimeout(() => {
             this.elements.progressBar.style.transition = "none";
             this.elements.progressBar.style.width = "0%";
-            console.log("Прогресс-бар сброшен");
         }, duration);
     },
 
@@ -451,155 +338,29 @@ state: {
         };
     },
 
-    getOutcome(random, skin, isRainbow) {
-        const outcomes = {
-            classic: {
-                default: [
-                    { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 1 },
-                    { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 2 },
-                    { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 3 },
-                    { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 4 },
-                    { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 5 },
-                    { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 6 }
-                ],
-                rainbow: [
-                    { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 2 },
-                    { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 4 },
-                    { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 6 },
-                    { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 8 },
-                    { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 10 },
-                    { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 12 }
-                ]
-            },
-            negative: {
-                default: [
-                    { range: 40, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 2 },
-                    { range: 65, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 3 },
-                    { range: 80, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 4 },
-                    { range: 90, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 5 },
-                    { range: 97, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 6 },
-                    { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 7 }
-                ],
-                rainbow: [
-                    { range: 15, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 4 },
-                    { range: 45, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 6 },
-                    { range: 70, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 8 },
-                    { range: 85, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 10 },
-                    { range: 94, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 12 },
-                    { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 14 }
-                ]
-            },
-            Emerald: {
-                default: [
-                    { range: 40, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 3 },
-                    { range: 65, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 4 },
-                    { range: 80, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 5 },
-                    { range: 90, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 6 },
-                    { range: 97, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 7 },
-                    { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 8 }
-                ],
-                rainbow: [
-                    { range: 15, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 6 },
-                    { range: 45, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 8 },
-                    { range: 70, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 10 },
-                    { range: 85, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 12 },
-                    { range: 94, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 14 },
-                    { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 16 }
-                ]
-            },
-            Pixel: {
-                default: [
-                    { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 10 },
-                    { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 11 },
-                    { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 12 },
-                    { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 13 },
-                    { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 14 },
-                    { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 15 }
-                ],
-                rainbow: [
-                    { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 20 },
-                    { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 22 },
-                    { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 24 },
-                    { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 26 },
-                    { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 28 },
-                    { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 30 }
-                ]
-            }
-        };
-
-        const skinOutcomes = outcomes[skin][isRainbow ? "rainbow" : "default"];
-        return skinOutcomes.find(outcome => random < outcome.range) || skinOutcomes[skinOutcomes.length - 1];
-    },
-
-    async updateServerData() {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) {
-        console.error("Не удалось получить userId из Telegram Web App");
-        return { total_rolls: Game.state.rolls || 0 };
-    }
-    try {
-        const response = await API.updateRolls(userId);
-        Game.state.rolls = response.total_rolls; // Store locally
-        return response;
-    } catch (error) {
-        console.error("Ошибка при обновлении rolls на сервере:", error);
-        return { total_rolls: Game.state.rolls || 0 }; // Fallback to local state
-    }
-},
-
-    async updateCoins(outcomeCoins) {
-        const userId = tg.initDataUnsafe?.user?.id;
-        const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
-        try {
-            const data = await API.updateCoins(userId, outcomeCoins, username);
-            this.state.coins = data.new_coins;
-            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-        } catch (error) {
-            console.error("Ошибка при обновлении монет:", error);
-            this.elements.coinsDisplay.textContent = "Error";
-        }
-    },
-
-    async updateBestLuck(random) {
-        if (random < this.state.bestLuck) {
-            this.state.bestLuck = random;
-            const userId = tg.initDataUnsafe?.user?.id;
-            const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name;
-            try {
-                await API.updateLuck(userId, this.state.bestLuck, username);
-                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            } catch (error) {
-                console.error("Ошибка при обновлении лучшей удачи:", error);
-            }
-        }
-    },
-
     async updateGameData() {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) return;
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) return;
 
-    try {
-        const data = await API.getUserData(userId);
-        this.state.coins = data.coins || 0;
-        this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
-        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
-        this.state.rolls = data.rolls || 0; // Fetch and store rolls
+        try {
+            const data = await API.fetch(`/get_user_data/${userId}`);
+            this.state.coins = data.coins || 0;
+            this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+            this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+            this.state.rolls = data.rolls || 0;
 
-        const skinConfig = this.getSkinConfig();
-        this.elements.cube.src = `${skinConfig[this.state.equippedSkin].default}?t=${Date.now()}`;
-        console.log("Установлен начальный скин:", this.elements.cube.src);
+            this.elements.cube.src = `${this.getSkinConfig()[this.state.equippedSkin].default}?t=${Date.now()}`;
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
+        } catch (error) {
+            console.error("Ошибка при обновлении игровых данных:", error);
+            this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`;
+        }
+    },
 
-        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
-            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-        
-        Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
-    } catch (error) {
-        console.error("Ошибка при обновлении игровых данных:", error);
-        this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`;
-    }
-},
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
         const progress = Math.min((rolls / targetRolls) * 100, 100);
@@ -612,8 +373,9 @@ state: {
         }
     }
 };
+
 // ============================================================================
-// Скины (Skins) - Исправленный раздел для синхронизации
+// Скины (Skins)
 // ============================================================================
 
 const Skins = {
@@ -627,16 +389,12 @@ const Skins = {
     },
 
     state: {
-        ownedSkins: [], // Храним актуальный список купленных скинов
-        equippedSkin: CONFIG.DEFAULT_SKIN // Текущий выбранный скин
+        ownedSkins: [],
+        equippedSkin: CONFIG.DEFAULT_SKIN
     },
 
     init() {
-        this.elements.button.addEventListener("click", () => {
-            UI.toggleMenu(this.elements.menu, true);
-            // При открытии меню обновляем UI для уверенности
-            this.syncSkins(this.state.ownedSkins, this.state.equippedSkin);
-        });
+        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
@@ -649,48 +407,28 @@ const Skins = {
     },
 
     async handleSkin(type) {
-        const cost = CONFIG.SKIN_PRICES[type] || 0; // Для "classic" стоимость 0
-        const isOwned = this.state.ownedSkins.includes(type) || type === "classic"; // "classic" всегда доступен
-
-        if (!isOwned) {
-            // Покупка скина
-            if (Game.state.coins >= cost) {
-                const data = await API.buySkin(tg.initDataUnsafe?.user?.id, type, cost);
-                if (data.message?.startsWith("✅")) {
-                    Game.state.coins = data.new_coins;
-                    this.state.ownedSkins = data.owned_skins;
-                    this.equip(type); // Автоматически экипируем после покупки
-                } else {
-                    alert(`Purchase failed: ${data.message}`);
-                }
-            } else {
-                alert("Not enough coins!");
-            }
-        } else {
-            // Экипировка уже купленного скина
-            this.equip(type);
-        }
-    },
-
-    async equip(type) {
-        if (this.state.equippedSkin === type) return;
-
-        this.state.equippedSkin = type;
-        const skinConfig = Game.getSkinConfig();
-        Game.elements.cube.src = `${skinConfig[type].default}?t=${Date.now()}`;
-        this.updateUI();
-
-        // Синхронизируем с сервером
+        const userId = tg.initDataUnsafe?.user?.id;
         try {
-            await API.updateSkin(tg.initDataUnsafe?.user?.id, type);
-            console.log(`Скин ${type} успешно экипирован`);
+            const response = await API.fetch("/handle_skin", {
+                method: "POST",
+                body: JSON.stringify({ user_id: userId, skin_type: type })
+            });
+            if (response.success) {
+                this.state.ownedSkins = response.owned_skins;
+                this.state.equippedSkin = response.equipped_skin;
+                this.updateUI();
+                Game.state.coins = response.new_coins;
+                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+                Game.elements.cube.src = `${Game.getSkinConfig()[type].default}?t=${Date.now()}`;
+            } else {
+                alert(response.message);
+            }
         } catch (error) {
-            console.error("Ошибка при экипировке скина:", error);
+            console.error("Ошибка обработки скина:", error);
         }
     },
 
     syncSkins(ownedSkins, equippedSkin) {
-        // Синхронизируем локальное состояние с данными сервера
         this.state.ownedSkins = ownedSkins;
         this.state.equippedSkin = equippedSkin;
         this.updateUI();
@@ -710,8 +448,6 @@ const Skins = {
             ? (equipped === "Pixel" ? "Equipped" : "Equip")
             : "Buy //150K $LUCU/";
         this.elements.equipClassic.textContent = equipped === "classic" ? "Equipped" : "Equip";
-
-        console.log("UI обновлён, ownedSkins:", owned, "equippedSkin:", equipped);
     }
 };
 
@@ -749,7 +485,7 @@ const Quests = {
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) return;
 
-        const data = await API.getUserData(userId);
+        const data = await API.fetch(`/get_user_data/${userId}`);
         const isSubscribed = data?.quests?.subscription_quest === "yes";
         if (isSubscribed) {
             this.elements.subscribeButton.textContent = "✔️";
@@ -765,41 +501,38 @@ const Quests = {
 
         window.open(`https://t.me/${CONFIG.CHANNEL_USERNAME}`, "_blank");
         const userId = tg.initDataUnsafe?.user?.id;
-        const isSubscribed = await API.checkTelegramSubscription(userId, CONFIG.CHANNEL_USERNAME);
+        try {
+            const response = await API.fetch("/check_subscription", {
+                method: "POST",
+                body: JSON.stringify({ user_id: userId })
+            });
+            if (response.success) {
+                this.elements.subscribeButton.textContent = "✔️";
+                this.elements.subscribeButton.classList.add("completed");
+                this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
+                this.elements.subscribeButton.style.cursor = "default";
+                this.elements.subscribeButton.disabled = true;
 
-        if (isSubscribed) {
-            this.elements.subscribeButton.textContent = "✔️";
-            this.elements.subscribeButton.classList.add("completed");
-            this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
-            this.elements.subscribeButton.style.cursor = "default";
-            this.elements.subscribeButton.disabled = true;
-
-            await API.updateQuest(userId, "subscription_quest", "yes");
-            Game.updateCoins(250);
+                const questResponse = await API.fetch("/update_quest", {
+                    method: "POST",
+                    body: JSON.stringify({ user_id: userId, quest: "subscription_quest", status: "yes" })
+                });
+                Game.state.coins = questResponse.new_coins;
+                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
+            }
+        } catch (error) {
+            console.error("Ошибка проверки подписки:", error);
         }
     },
 
-    async switchTab(tab) {  // Исправленный метод
+    async switchTab(tab) {
         this.elements.questsTab.classList.toggle("active", tab === "quests");
         this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
         this.elements.questsList.classList.toggle("hidden", tab !== "quests");
         this.elements.achievementsList.classList.toggle("hidden", tab !== "achievements");
 
         if (tab === "achievements") {
-            try {
-                const userId = tg.initDataUnsafe?.user?.id;
-                if (!userId) {
-                    Game.updateAchievementProgress(0);
-                    return;
-                }
-                
-                const userData = await API.getUserData(userId);
-                const rolls = userData?.rolls || 0;
-                Game.updateAchievementProgress(rolls);
-            } catch (error) {
-                console.error("Ошибка при загрузке данных для достижений:", error);
-                Game.updateAchievementProgress(0);
-            }
+            Game.updateAchievementProgress(Game.state.rolls);
         }
     }
 };
@@ -846,7 +579,7 @@ const Leaderboard = {
     },
 
     async load(type) {
-        const data = await API.getLeaderboard(type);
+        const data = await API.fetch(`/leaderboard_${type}`);
         this.elements.list.innerHTML = "";
 
         const userId = tg.initDataUnsafe?.user?.id;
@@ -860,7 +593,6 @@ const Leaderboard = {
 
         for (let i = 0; i < data.length; i++) {
             const player = data[i];
-            const avatar = await this.getAvatar(player, i);
             const isCurrentUser = userId && player.user_id == userId;
 
             const li = document.createElement("li");
@@ -874,7 +606,7 @@ const Leaderboard = {
                         <span class="player-${type}">${value}</span>
                     </div>
                     <div class="player-right">
-                        <img src="${avatar.src}" class="player-avatar" alt="Avatar" 
+                        <img src="${player.photo_url || CONFIG.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
                              onerror="this.src='${CONFIG.FALLBACK_AVATAR}'">
                         <div class="player-info">
                             <span class="player-name">${player.username}</span>
@@ -884,32 +616,6 @@ const Leaderboard = {
                 </div>
             `;
             this.elements.list.appendChild(li);
-        }
-    },
-
-    async getAvatar(player, index) {
-        let photoUrl = player?.photo_url;
-        if (!photoUrl || photoUrl === "undefined" || photoUrl === "null") {
-            return { src: CONFIG.FALLBACK_AVATAR, bgClass: "" };
-        }
-
-        if (photoUrl.endsWith(".svg") || photoUrl.includes("t.me/")) {
-            return {
-                src: photoUrl,
-                bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
-            };
-        }
-
-        try {
-            const response = await fetch(photoUrl);
-            if (!response.ok) return { src: CONFIG.FALLBACK_AVATAR, bgClass: "" };
-            const blob = await response.blob();
-            return {
-                src: URL.createObjectURL(blob),
-                bgClass: index === 0 ? "rainbow-bg" : index <= 4 ? "gold-bg" : ""
-            };
-        } catch {
-            return { src: CONFIG.FALLBACK_AVATAR, bgClass: "" };
         }
     }
 };
@@ -935,11 +641,14 @@ const Profile = {
 
         const user = tg.initDataUnsafe?.user;
         if (user) {
-            API.updateProfile(
-                user.id,
-                `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
-                user.photo_url || CONFIG.FALLBACK_AVATAR
-            );
+            API.fetch("/update_profile", {
+                method: "POST",
+                body: JSON.stringify({
+                    user_id: user.id,
+                    username: `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
+                    photo_url: user.photo_url || CONFIG.FALLBACK_AVATAR
+                })
+            });
         }
     }
 };
@@ -985,13 +694,16 @@ const Friends = {
 
         const referrerId = new URLSearchParams(window.location.search).get("start");
         if (referrerId && userId && referrerId !== userId) {
-            const bonus = tg.initDataUnsafe?.user?.premium ? CONFIG.REFERRAL_BONUS.premium : CONFIG.REFERRAL_BONUS.default;
-            API.updateCoins(userId, bonus, tg.initDataUnsafe?.user?.first_name);
+            API.fetch("/handle_referral", {
+                method: "POST",
+                body: JSON.stringify({ user_id: userId, referrer_id: referrerId })
+            });
         }
     },
 
     async updateFriendsCount() {
-        const data = await API.getReferralCount(tg.initDataUnsafe?.user?.id);
+        const userId = tg.initDataUnsafe?.user?.id;
+        const data = await API.fetch(`/get_referral_count/${userId}`);
         this.elements.friendsCount.textContent = `Your friends: ${data.referral_count || 0}`;
     }
 };
@@ -1009,14 +721,6 @@ const Particles = {
             x: window.innerWidth,
             y: window.innerHeight
         });
-
-        Object.assign(particleSystem, {
-            amount: 100,
-            diameter: { min: 1, max: 3 },
-            life: { min: 3, max: 7 },
-            speed: { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } }
-        });
-
         particleSystem.init();
 
         window.addEventListener("resize", () => {
@@ -1030,202 +734,12 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
-// Функция для загрузки изображений с прогрессом
-function loadImages(imageUrls) {
-    const loadingText = document.getElementById('loading-text');
-    let loadedCount = 0;
-    const totalCount = imageUrls.length;
-
-    const promises = imageUrls.map(url => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.src = url;
-            img.onload = () => {
-                loadedCount++;
-                const progress = Math.round((loadedCount / totalCount) * 100);
-                loadingText.textContent = `Loading ${progress}%`;
-                resolve(url);
-            };
-            img.onerror = () => {
-                console.error(`Ошибка загрузки изображения: ${url}`);
-                loadedCount++;
-                const progress = Math.round((loadedCount / totalCount) * 100);
-                loadingText.textContent = `Loading ${progress}%`;
-                resolve(url);
-            };
-        });
-    });
-    return Promise.all(promises);
-}
-
-// Список всех изображений, которые нужно загрузить
-function getAllGameImages() {
-    const skinConfig = Game.getSkinConfig();
-    const images = [];
-
-    for (const skin in skinConfig) {
-        images.push(skinConfig[skin].default);
-        images.push(skinConfig[skin].rainbow);
-    }
-
-    const outcomes = {
-        classic: {
-            default: [
-                { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 1 },
-                { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 2 },
-                { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 3 },
-                { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 4 },
-                { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 5 },
-                { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 6 }
-            ],
-            rainbow: [
-                { range: 40, src: "pictures/cubics/классика/1-кубик.gif", coins: 2 },
-                { range: 65, src: "pictures/cubics/классика/2-кубик.gif", coins: 4 },
-                { range: 80, src: "pictures/cubics/классика/3-кубик.gif", coins: 6 },
-                { range: 90, src: "pictures/cubics/классика/4-кубик.gif", coins: 8 },
-                { range: 97, src: "pictures/cubics/классика/5-кубик.gif", coins: 10 },
-                { range: 100, src: "pictures/cubics/классика/6-кубик.gif", coins: 12 }
-            ]
-        },
-        negative: {
-            default: [
-                { range: 40, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 2 },
-                { range: 65, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 3 },
-                { range: 80, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 4 },
-                { range: 90, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 5 },
-                { range: 97, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 6 },
-                { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 7 }
-            ],
-            rainbow: [
-                { range: 15, src: "pictures/cubics/негатив/1-кубик-негатив.gif", coins: 4 },
-                { range: 45, src: "pictures/cubics/негатив/2-кубик-негатив.gif", coins: 6 },
-                { range: 70, src: "pictures/cubics/негатив/3-кубик-негатив.gif", coins: 8 },
-                { range: 85, src: "pictures/cubics/негатив/4-кубик-негатив.gif", coins: 10 },
-                { range: 94, src: "pictures/cubics/негатив/5-кубик-негатив.gif", coins: 12 },
-                { range: 100, src: "pictures/cubics/негатив/6-кубик-негатив.gif", coins: 14 }
-            ]
-        },
-        Emerald: {
-            default: [
-                { range: 40, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 3 },
-                { range: 65, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 4 },
-                { range: 80, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 5 },
-                { range: 90, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 6 },
-                { range: 97, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 7 },
-                { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 8 }
-            ],
-            rainbow: [
-                { range: 15, src: "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", coins: 6 },
-                { range: 45, src: "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", coins: 8 },
-                { range: 70, src: "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", coins: 10 },
-                { range: 85, src: "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", coins: 12 },
-                { range: 94, src: "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", coins: 14 },
-                { range: 100, src: "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", coins: 16 }
-            ]
-        },
-        Pixel: {
-            default: [
-                { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 10 },
-                { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 11 },
-                { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 12 },
-                { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 13 },
-                { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 14 },
-                { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 15 }
-            ],
-            rainbow: [
-                { range: 40, src: "pictures/cubics/пиксель/1-кубик-пиксель.gif", coins: 20 },
-                { range: 65, src: "pictures/cubics/пиксель/2-кубик-пиксель.gif", coins: 22 },
-                { range: 80, src: "pictures/cubics/пиксель/3-кубик-пиксель.gif", coins: 24 },
-                { range: 90, src: "pictures/cubics/пиксель/4-кубик-пиксель.gif", coins: 26 },
-                { range: 97, src: "pictures/cubics/пиксель/5-кубик-пиксель.gif", coins: 28 },
-                { range: 100, src: "pictures/cubics/пиксель/6-кубик-пиксель.gif", coins: 30 }
-            ]
-        }
-    };
-
-    for (const skin in outcomes) {
-        outcomes[skin].default.forEach(outcome => images.push(outcome.src));
-        outcomes[skin].rainbow.forEach(outcome => images.push(outcome.src));
-    }
-
-    images.push(CONFIG.FALLBACK_AVATAR);
-    return [...new Set(images)];
-}
-
-// Функция для предварительной загрузки данных игры
-async function preloadGameData() {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) return;
-
-    try {
-        const data = await API.getUserData(userId);
-        Game.state.coins = data.coins || 0;
-        Game.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
-        Game.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
-
-        const skinConfig = Game.getSkinConfig();
-        const cube = document.getElementById('cube');
-        const coinsDisplay = document.getElementById('coins') || document.getElementById('coins-display');
-        const bestLuckDisplay = document.getElementById('bestLuck');
-
-        if (cube) {
-            cube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
-        }
-        if (coinsDisplay) {
-            coinsDisplay.textContent = `${Utils.formatCoins(Game.state.coins)} $LUCU`;
-        }
-        if (bestLuckDisplay) {
-            bestLuckDisplay.innerHTML = Game.state.bestLuck === Infinity
-                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(Game.state.bestLuck)}</span>`;
-        }
-
-        Skins.state.ownedSkins = data.owned_skins || [];
-        Skins.state.equippedSkin = Game.state.equippedSkin;
-    } catch (error) {
-        console.error('Ошибка при предварительной загрузке данных игры:', error);
-    }
-}
-
-// Функция для запуска игры
-function startGame() {
-    const gameContent = document.getElementById('game-content');
-    if (gameContent) {
-        gameContent.style.display = 'block';
-    }
-
-    // Инициализируем только оставшиеся части, не трогая уже загруженные данные
-    Game.elements.cube = document.getElementById("cube");
-    Game.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
-    Game.elements.bestLuckDisplay = document.getElementById("bestLuck");
-    Game.elements.progressBar = document.querySelector("#progressBar div");
-
-    if (!Game.elements.cube || !Game.elements.coinsDisplay || !Game.elements.bestLuckDisplay || !Game.elements.progressBar) {
-        console.error("Не удалось найти один или несколько элементов DOM");
-        return;
-    }
-
-    document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
-    Game.elements.cube.addEventListener("click", Game.handleClick.bind(Game));
-
-    Skins.init();
-    Quests.init();
-    Leaderboard.init();
-    Profile.init();
-    Friends.init();
-
-    tg.expand();
-    tg.requestFullscreen();
-    tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
-}
-
 async function initializeApp() {
-    const tg = window.Telegram?.WebApp;
-    if (!tg) {
-        console.error("Это приложение должно запускаться в Telegram Web App");
-        document.body.innerHTML = "<p>Please open this app in Telegram</p>";
+    if (!window.Telegram?.WebApp) {
+        document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
         return;
     }
+    const tg = window.Telegram.WebApp;
 
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
@@ -1235,8 +749,8 @@ async function initializeApp() {
     const playerBestLuck = document.getElementById('player-best-luck');
 
     if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
-        console.error('Не удалось найти элементы экрана загрузки');
-        document.body.innerHTML = '<p>Error: Loading screen elements not found</p>';
+        console.error("Не найдены элементы загрузочного экрана или информации игрока");
+        document.body.innerHTML = "<p>Error: Missing UI elements</p>";
         return;
     }
 
@@ -1246,36 +760,49 @@ async function initializeApp() {
 
     try {
         await loadConfig();
-        Particles.init();
-        const imageUrls = getAllGameImages();
-        console.log('Загружаем изображения:', imageUrls);
-        await loadImages(imageUrls);
-        console.log('Все изображения загружены');
-        await preloadGameData();
+        if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
 
-        const skinConfig = Game.getSkinConfig();
-        loadingCube.src = `${skinConfig[Game.state.equippedSkin].default}?t=${Date.now()}`;
-        playerCoins.textContent = `Coins: ${Utils.formatCoins(Game.state.coins)} $LUCU`;
-        playerBestLuck.textContent = `Best Luck: ${Game.state.bestLuck === Infinity ? 'N/A' : Utils.formatNumber(Game.state.bestLuck)}`;
+        Particles.init();
+
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) throw new Error("User ID not found in Telegram init data");
+
+        const data = await API.fetch(`/get_user_data/${userId}`);
+        loadingText.textContent = 'Loading 50%';
+
+        loadingCube.src = `${Game.getSkinConfig()[data.equipped_skin || "classic"].default}?t=${Date.now()}`;
+        playerCoins.textContent = `Coins: ${Utils.formatCoins(data.coins || 0)} $LUCU`;
+        playerBestLuck.textContent = `Best Luck: ${data.min_luck === Infinity ? 'N/A' : Utils.formatNumber(data.min_luck)}`;
         playerInfo.classList.remove('hidden');
 
         loadingText.textContent = 'Press to enter the game';
-        await new Promise(resolve => {
-            loadingScreen.addEventListener('click', () => resolve(), { once: true });
-        });
+        await Promise.race([
+            new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
+            Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
+        ]);
 
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-            startGame();
+            try {
+                Game.init();
+                Skins.init();
+                Quests.init();
+                Leaderboard.init();
+                Profile.init();
+                Friends.init();
+            } catch (initError) {
+                console.error("Ошибка инициализации модулей:", initError);
+            }
+            tg.expand();
+            tg.requestFullscreen();
+            tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
         }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error);
-        loadingText.textContent = 'Error loading game. Please refresh.';
+        loadingText.textContent = `Error: ${error.message}. Click to refresh.`;
         loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
     }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await initializeApp();
-});
+document.addEventListener("DOMContentLoaded", initializeApp);
