@@ -651,29 +651,28 @@ const Profile = {
         name: document.getElementById("profile-name")
     },
 
-// Обновление профиля
-Profile.init = function() {
-    this.elements.name.textContent = `Hello, ${tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "NoName"}`;
-    this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
-    this.elements.menu.addEventListener("click", e => {
-        if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
-    });
-    UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+    init() {  // Shorthand method syntax
+        this.elements.name.textContent = `Hello, ${tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "NoName"}`;
+        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
 
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-        API.fetch("/update_profile", {
-            method: "POST",
-            body: JSON.stringify({
-                user_id: String(user.id),
-                username: `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
-                photo_url: user.photo_url || CONFIG.FALLBACK_AVATAR
-            })
-        }).then(() => console.log("Profile updated successfully"))
-          .catch(error => console.error("Ошибка в update_profile:", error));
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            API.fetch("/update_profile", {
+                method: "POST",
+                body: JSON.stringify({
+                    user_id: String(user.id),
+                    username: `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
+                    photo_url: user.photo_url || CONFIG.FALLBACK_AVATAR
+                })
+            }).then(() => console.log("Profile updated successfully"))
+              .catch(error => console.error("Ошибка в update_profile:", error));
+        }
     }
 };
-
 // ============================================================================
 // Друзья (Friends)
 // ============================================================================
