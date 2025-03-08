@@ -455,18 +455,37 @@ async rollCube() {
         };
     },
 
-    updateAchievementProgress(rolls) {
-        const targetRolls = 123456;
-        const progress = Math.min((rolls / targetRolls) * 100, 100);
-        const achievement = document.querySelector("#achievements-list .achievement-item:nth-child(2)");
-        if (achievement) {
-            achievement.querySelector(".progress-circle").style.setProperty("--progress", `${progress}%`);
-            achievement.querySelector(".achievement-reward").textContent = rolls >= targetRolls
-                ? "Achievement Completed! 123456 dice rolls made!"
-                : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
-        }
+updateAchievementProgress(rolls) {
+    const targetRolls = 123456;
+    const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
+    const achievementRolls = document.querySelector("#achievements-list .achievement-item:nth-child(1)");
+    if (achievementRolls) {
+        achievementRolls.querySelector(".progress-circle").style.setProperty("--progress", `${rollsProgress}%`);
+        achievementRolls.querySelector(".achievement-reward").textContent = rolls >= targetRolls
+            ? "Achievement Completed! 123456 dice rolls made!"
+            : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
     }
-};
+
+    const targetCoins = 100000;
+    const coinsProgress = Math.min((this.state.coins / targetCoins) * 100, 100);
+    const achievementCoins = document.querySelector("#achievements-list .achievement-item:nth-child(2)");
+    if (achievementCoins) {
+        achievementCoins.querySelector(".progress-circle").style.setProperty("--progress", `${coinsProgress}%`);
+        achievementCoins.querySelector(".achievement-reward").textContent = this.state.coins >= targetCoins
+            ? "Achievement Completed! 100,000+ $LUCU earned!"
+            : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
+    }
+
+    // Ачивка Beta Tester
+    const betaPlayer = AppState.userData.beta_player === "yes";
+    const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(3)");
+    if (achievementBeta) {
+        achievementBeta.querySelector(".progress-circle").style.setProperty("--progress", betaPlayer ? "100%" : "0%");
+        achievementBeta.querySelector(".achievement-reward").textContent = betaPlayer
+            ? "Achievement Completed! You are a beta tester!"
+            : "Become a beta tester to complete";
+    }
+},
 
 // ============================================================================
 // Скины (Skins)
@@ -963,7 +982,19 @@ async function initializeApp() {
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
 
+let playTime = 0; // Время в секундах
+    const startTime = Date.now();
 
+    setInterval(() => {
+        playTime = Math.floor((Date.now() - startTime) / 1000);
+        // Отправляем play_time на сервер каждые 60 секунд
+        if (playTime % 60 === 0) {
+            API.fetch("/update_play_time", {
+                method: "POST",
+                body: { user_id: tg.initDataUnsafe?.user?.id?.toString(), play_time: playTime }
+            }).catch(error => console.error("Ошибка обновления play_time:", error));
+        }
+    }, 1000);
 
         Particles.init();
         loadingText.textContent = 'Loading 60%';
