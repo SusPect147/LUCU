@@ -453,36 +453,37 @@ const Game = {
         };
     },
 
-    updateAchievementProgress(rolls) {
-        const targetRolls = 123456;
-        const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
-        const achievementRolls = document.querySelector("#achievements-list .achievement-item:nth-child(1)");
-        if (achievementRolls) {
-            achievementRolls.querySelector(".progress-circle").style.setProperty("--progress", `${rollsProgress}%`);
-            achievementRolls.querySelector(".achievement-reward").textContent = rolls >= targetRolls
-                ? "Achievement Completed! 123456 dice rolls made!"
-                : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
-        }
-
-        const targetCoins = 100000;
-        const coinsProgress = Math.min((this.state.coins / targetCoins) * 100, 100);
-        const achievementCoins = document.querySelector("#achievements-list .achievement-item:nth-child(2)");
-        if (achievementCoins) {
-            achievementCoins.querySelector(".progress-circle").style.setProperty("--progress", `${coinsProgress}%`);
-            achievementCoins.querySelector(".achievement-reward").textContent = this.state.coins >= targetCoins
-                ? "Achievement Completed! 100,000+ $LUCU earned!"
-                : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
-        }
-
-        const betaPlayer = AppState.userData.beta_player === "yes";
-        const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(3)");
-        if (achievementBeta) {
-            achievementBeta.querySelector(".progress-circle").style.setProperty("--progress", betaPlayer ? "100%" : "0%");
-            achievementBeta.querySelector(".achievement-reward").textContent = betaPlayer
-                ? "Achievement Completed! You are a beta tester!"
-                : "Become a beta tester to complete";
-        }
+// В файле game.js, функция Game.updateAchievementProgress
+updateAchievementProgress(rolls) {
+    const targetRolls = 123456;
+    const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
+    const achievementRolls = document.querySelector("#achievements-list .achievement-item:nth-child(2)"); // Изменено на 2
+    if (achievementRolls) {
+        achievementRolls.querySelector(".progress-circle").style.setProperty("--progress", `${rollsProgress}%`);
+        achievementRolls.querySelector(".achievement-reward").textContent = rolls >= targetRolls
+            ? "Achievement Completed! 123456 dice rolls made!"
+            : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
     }
+
+    const targetCoins = 100000;
+    const coinsProgress = Math.min((this.state.coins / targetCoins) * 100, 100);
+    const achievementCoins = document.querySelector("#achievements-list .achievement-item:nth-child(3)"); // Изменено на 3
+    if (achievementCoins) {
+        achievementCoins.querySelector(".progress-circle").style.setProperty("--progress", `${coinsProgress}%`);
+        achievementCoins.querySelector(".achievement-reward").textContent = this.state.coins >= targetCoins
+            ? "Achievement Completed! 100,000+ $LUCU earned!"
+            : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
+    }
+
+    const betaPlayer = AppState.userData.beta_player === "yes";
+    const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(1)"); // Изменено на 1
+    if (achievementBeta) {
+        achievementBeta.querySelector(".progress-circle").style.setProperty("--progress", betaPlayer ? "100%" : "0%");
+        achievementBeta.querySelector(".achievement-reward").textContent = betaPlayer
+            ? "Achievement Completed! You are a beta tester!"
+            : "Become a beta tester to complete";
+    }
+}
 };
 
 // ============================================================================
@@ -995,7 +996,14 @@ async function initializeApp() {
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
         const userData = await API.fetch(`/get_user_data/${userId}`);
-        AppState.userData = userData; // Сохраняем данные в глобальное состояние
+        AppState.userData = userData;
+
+        // Проверка на бан
+        if (userData.ban === "yes") {
+            loadingText.textContent = "You are banned from the game";
+            loadingScreen.removeEventListener('click', initializeApp);
+            return;
+        }
 
         loadingText.textContent = 'Loading 75%';
 
