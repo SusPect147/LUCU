@@ -291,13 +291,11 @@ const Game = {
         const skinConfig = this.getSkinConfig();
         const initialSrc = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
         this.elements.cube.src = initialSrc;
-        console.log("rollCube: Установлен начальный кубик:", initialSrc);
     },
 
     handleClick(event) {
         if (this.state.isAnimating) {
             event.preventDefault();
-            console.log("rollCube: Анимация уже в процессе, клик отклонён");
             return;
         }
         this.rollCube();
@@ -305,7 +303,6 @@ const Game = {
 
 async rollCube() {
     if (this.state.isAnimating) {
-        console.log("rollCube: Анимация уже в процессе, вызов отклонён");
         return;
     }
 
@@ -315,14 +312,10 @@ async rollCube() {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-        console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
-
         const response = await API.fetch("/roll_cube", {
             method: "POST",
             body: { user_id: userId }
         });
-
-        console.log("rollCube: Ответ от сервера:", response);
 
         if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
             throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
@@ -338,7 +331,6 @@ async rollCube() {
         setTimeout(() => {
             this.state.coins = response.coins;
             this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-            console.log("rollCube: Монеты обновлены:", response.coins);
         }, coinUpdateDelay);
 
         // Ждём завершения анимации (предполагаем, что это CONFIG.ANIMATION_DURATION)
@@ -356,7 +348,6 @@ async rollCube() {
             document.body.classList.add("gray-gradient");
         }
 
-        console.log("rollCube: Бросок успешно завершён", response);
         this.setInitialCube();
     } catch (error) {
         console.error("Ошибка в rollCube:", error.message, error.stack);
@@ -364,7 +355,6 @@ async rollCube() {
         this.setInitialCube();
     } finally {
         this.state.isAnimating = false;
-        console.log("rollCube: Анимация завершена");
     }
 },
 
@@ -870,7 +860,6 @@ const Particles = {
 // ============================================================================
 
 async function initializeApp() {
-    console.log("Starting initializeApp...");
 
     if (!window.Telegram?.WebApp) {
         console.error("Telegram WebApp is not available");
@@ -878,12 +867,10 @@ async function initializeApp() {
         return;
     }
     const tg = window.Telegram.WebApp;
-    console.log("Telegram WebApp initialized:", tg);
 
     try {
         tg.expand();
         tg.requestFullscreen();
-        console.log("Expanded to fullscreen");
     } catch (fullscreenError) {
         console.warn("Fullscreen expansion failed:", fullscreenError);
     }
@@ -895,7 +882,6 @@ async function initializeApp() {
     const playerCoins = document.getElementById('player-coins');
     const playerBestLuck = document.getElementById('player-best-luck');
 
-    console.log("DOM elements:", { loadingScreen, loadingText, loadingCube, playerInfo, playerCoins, playerBestLuck });
 
     if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
         console.error("Не найдены элементы загрузочного экрана или информации игрока");
@@ -906,11 +892,9 @@ async function initializeApp() {
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
-    console.log("Loading screen displayed");
 
     try {
         const skinConfig = Game.getSkinConfig();
-        console.log("Skin config loaded:", skinConfig);
 
         const imagesToPreload = [
             ...Object.values(skinConfig).flatMap(skin => 
@@ -924,12 +908,10 @@ async function initializeApp() {
             "pictures/cubics/cubeee.png"
         ].filter((value, index, self) => self.indexOf(value) === index);
 
-        console.log("Images to preload:", imagesToPreload);
 
         const preloadImages = async (imageUrls) => {
             const totalImages = imageUrls.length;
             if (totalImages === 0) {
-                console.log("No images to preload, skipping...");
                 loadingText.textContent = 'Loading 40%';
                 return;
             }
@@ -944,7 +926,6 @@ async function initializeApp() {
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
-                        console.log(`Loaded: ${url} (${loadedImages}/${totalImages})`);
                         resolve();
                     };
                     img.onerror = () => {
@@ -960,28 +941,28 @@ async function initializeApp() {
             await Promise.all(imageUrls.map(url => loadImage(url)));
         };
 
-        console.log("Starting image preloading...");
-        await preloadImages(imagesToPreload);
-        console.log("Image preloading completed.");
 
-        console.log("Loading configuration...");
+        await preloadImages(imagesToPreload);
+
+
+
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
-        console.log("Configuration loaded:", CONFIG);
 
-        console.log("Initializing particles...");
+
+
         Particles.init();
         loadingText.textContent = 'Loading 60%';
 
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
-        console.log("User ID:", userId);
 
-        console.log("Fetching user data...");
+
+
         const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData; // Сохраняем данные в глобальное состояние
-        console.log("User data loaded:", userData);
+
         loadingText.textContent = 'Loading 75%';
 
         // Обновляем профиль на сервере
@@ -1004,7 +985,7 @@ async function initializeApp() {
         playerInfo.classList.remove('hidden');
 
         loadingText.textContent = 'Press to enter the game';
-        console.log("Waiting for user input or timeout...");
+
         await Promise.race([
             new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
             Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
@@ -1013,7 +994,7 @@ async function initializeApp() {
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-            console.log("Loading screen hidden, initializing modules...");
+
             try {
                 Game.init();
                 Skins.init();
@@ -1021,12 +1002,12 @@ async function initializeApp() {
                 Leaderboard.init();
                 Profile.init();
                 Friends.init();
-                console.log("All modules initialized.");
+
             } catch (initError) {
                 console.error("Ошибка инициализации модулей:", initError);
             }
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
-            console.log("App fully initialized.");
+
         }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error.message, error.stack);
@@ -1036,5 +1017,5 @@ async function initializeApp() {
 }
 
 // Запуск приложения
-console.log("Script loaded, calling initializeApp...");
+
 initializeApp();
