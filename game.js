@@ -5,7 +5,7 @@
 const CONFIG = {
     CANVAS_ID: "particleCanvas",
     DEFAULT_SKIN: "classic",
-    ANIMATION_DURATION: 3620, // Было 3150, теперь 3620 мс (3.62 секунды)
+    ANIMATION_DURATION: 3550,
     PROGRESS_DURATION: 3,
     API_BASE_URL: "https://backend12-production-1210.up.railway.app",
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
