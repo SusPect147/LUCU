@@ -677,43 +677,48 @@ const Leaderboard = {
     },
 
     async load(type) {
-        const data = await API.fetch(`/leaderboard_${type}`);
-        this.elements.list.innerHTML = "";
+        try {
+            const data = await API.fetch(`/leaderboard_${type}`);
+            this.elements.list.innerHTML = "";
 
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        const userIndex = data.findIndex(p => p.user_id === userId);
-        this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
+            const userId = tg.initDataUnsafe?.user?.id?.toString();
+            const userIndex = data.findIndex(p => p.user_id === userId);
+            this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
 
-        if (!data?.length) {
-            this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
-            return;
-        }
+            if (!data?.length) {
+                this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
+                return;
+            }
 
-        for (let i = 0; i < data.length; i++) {
-            const player = data[i];
-            const isCurrentUser = userId && player.user_id === userId;
+            for (let i = 0; i < data.length; i++) {
+                const player = data[i];
+                const isCurrentUser = userId && player.user_id === userId;
 
-            const li = document.createElement("li");
-            li.classList.add("leaderboard-item");
-            if (isCurrentUser) li.classList.add("highlight");
+                const li = document.createElement("li");
+                li.classList.add("leaderboard-item");
+                if (isCurrentUser) li.classList.add("highlight");
 
-            const value = type === "coins" ? Utils.formatCoins(player.coins) + " $LUCU" : Utils.formatNumber(player.min_luck) || "N/A";
-            li.innerHTML = `
-                <div class="leaderboard-item-content">
-                    <div class="player-left">
-                        <span class="player-${type}">${value}</span>
-                    </div>
-                    <div class="player-right">
-                        <img src="${player.photo_url || CONFIG.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
-                             onerror="this.src='${CONFIG.FALLBACK_AVATAR}'">
-                        <div class="player-info">
-                            <span class="player-name">${player.username}</span>
-                            <span class="player-rank">#${i + 1}</span>
+                const value = type === "coins" ? Utils.formatCoins(player.coins) + " $LUCU" : Utils.formatNumber(player.min_luck) || "N/A";
+                li.innerHTML = `
+                    <div class="leaderboard-item-content">
+                        <div class="player-left">
+                            <span class="player-${type}">${value}</span>
+                        </div>
+                        <div class="player-right">
+                            <img src="${player.photo_url || CONFIG.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
+                                 onerror="this.src='${CONFIG.FALLBACK_AVATAR}'">
+                            <div class="player-info">
+                                <span class="player-name">${player.username}</span>
+                                <span class="player-rank">#${i + 1}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            this.elements.list.appendChild(li);
+                `;
+                this.elements.list.appendChild(li);
+            }
+        } catch (error) {
+            console.error(`Ошибка загрузки лидерборда (${type}):`, error.message, error.stack);
+            this.elements.list.innerHTML = '<li class="coming-soon">Failed to load leaderboard</li>';
         }
     }
 };
@@ -766,10 +771,10 @@ const Profile = {
             console.log("Profile updated successfully:", response);
         } catch (error) {
             console.error("Ошибка в update_profile:", error.message, error.stack);
+            // Не прерываем выполнение приложения, просто логируем ошибку
         }
     }
 };
-
 // ============================================================================
 // Друзья (Friends)
 // ============================================================================
