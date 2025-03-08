@@ -93,24 +93,28 @@ const API = {
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
                     headers: headers,
+                    mode: 'cors',  // Явно указываем режим CORS
+                    credentials: 'omit',  // Не отправляем куки, если они не нужны
                     ...options
                 });
+                console.log(`Request to ${url}: Headers sent:`, headers);  // Логируем отправленные заголовки
+                console.log(`Response headers from ${url}:`, [...response.headers]);  // Логируем полученные заголовки
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`Fetch failed: ${response.status} - ${errorText}`);
+                    console.error(`Fetch failed for ${url}: ${response.status} - ${errorText}`);
                     if (attempt === retries) throw new Error(`Network error: ${response.status} - ${errorText}`);
                     await Utils.wait(1000 * (attempt + 1));
                     continue;
                 }
                 return await response.json();
             } catch (error) {
-                console.error(`Fetch attempt ${attempt + 1} failed: ${error.message}`);
+                console.error(`Fetch attempt ${attempt + 1} failed for ${url}: ${error.message}`);
                 if (attempt === retries) throw error;
+                await Utils.wait(1000 * (attempt + 1));
             }
         }
     }
 };
-
 // ============================================================================
 // Частицы (Particle System)
 // ============================================================================
@@ -266,7 +270,7 @@ const Game = {
         this.rollCube();
     },
 
-   async rollCube() {
+  async rollCube() {
     if (this.state.isAnimating) {
         console.log("rollCube: Анимация уже в процессе, вызов отклонён");
         return;
@@ -284,6 +288,8 @@ const Game = {
             method: "POST",
             body: JSON.stringify({ user_id: String(userId) })
         });
+
+        console.log("rollCube: Ответ от сервера:", response);  // Логируем полный ответ
 
         if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
             throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
@@ -318,7 +324,7 @@ const Game = {
 
         console.log("rollCube: Бросок успешно завершён", response);
     } catch (error) {
-        console.error("Ошибка в rollCube:", error.message || error);
+        console.error("Ошибка в rollCube:", error.message, error.stack);  // Подробная ошибка
         this.elements.coinsDisplay.textContent = "Error";
         const defaultSkin = this.getSkinConfig()[this.state.equippedSkin]?.default || CONFIG.FALLBACK_AVATAR;
         this.elements.cube.src = `${defaultSkin}?t=${Date.now()}`;
@@ -651,7 +657,7 @@ const Profile = {
         name: document.getElementById("profile-name")
     },
 
-    init() {  // Shorthand method syntax
+    init() {
         this.elements.name.textContent = `Hello, ${tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "NoName"}`;
         this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
         this.elements.menu.addEventListener("click", e => {
@@ -661,6 +667,7 @@ const Profile = {
 
         const user = tg.initDataUnsafe?.user;
         if (user) {
+            console.log("Updating profile for user:", user.id);  // Логируем начало обновления
             API.fetch("/update_profile", {
                 method: "POST",
                 body: JSON.stringify({
@@ -668,8 +675,13 @@ const Profile = {
                     username: `${user.first_name}${user.last_name ? " " + user.last_name : ""}`,
                     photo_url: user.photo_url || CONFIG.FALLBACK_AVATAR
                 })
-            }).then(() => console.log("Profile updated successfully"))
-              .catch(error => console.error("Ошибка в update_profile:", error));
+            })
+            .then(response => {
+                console.log("Profile updated successfully:", response);  // Успешное обновление
+            })
+            .catch(error => {
+                console.error("Ошибка в update_profile:", error.message, error.stack);  // Подробная ошибка
+            });
         }
     }
 };
@@ -788,6 +800,7 @@ async function initializeApp() {
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
         const data = await API.fetch(`/get_user_data/${userId}`);
+        console.log("User data loaded:", data);  // Логируем данные пользователя
         loadingText.textContent = 'Loading 50%';
 
         loadingCube.src = `${Game.getSkinConfig()[data.equipped_skin || "classic"].default}?t=${Date.now()}`;
@@ -819,10 +832,8 @@ async function initializeApp() {
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
         }, 500);
     } catch (error) {
-        console.error('Ошибка инициализации приложения:', error);
+        console.error('Ошибка инициализации приложения:', error.message, error.stack);  // Подробная ошибка
         loadingText.textContent = `Error: ${error.message}. Click to refresh.`;
         loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
     }
 }
-
-document.addEventListener("DOMContentLoaded", initializeApp);
