@@ -304,29 +304,27 @@ const Game = {
     },
 
     async rollCube() {
-        if (this.state.isAnimating) {
-            console.log("rollCube: Анимация уже в процессе, вызов отклонён");
-            return;
-        }
+    if (this.state.isAnimating) {
+        console.log("rollCube: Анимация уже в процессе, вызов отклонён");
+        return;
+    }
 
-        this.state.isAnimating = true;
+    this.state.isAnimating = true;
 
-        try {
-            const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-            const skinConfig = this.getSkinConfig();
-            this.elements.cube.src = skinConfig[this.state.equippedSkin].initial;
-            this.startProgress(CONFIG.ANIMATION_DURATION);
+        this.startProgress(CONFIG.ANIMATION_DURATION); // Запускаем прогресс-бар сразу
 
-            console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
+        console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
 
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                body: { user_id: userId }
-            });
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            body: { user_id: userId }
+        });
 
-            console.log("rollCube: Ответ от сервера:", response);
+        console.log("rollCube: Ответ от сервера:", response);
 
             if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
                 throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
