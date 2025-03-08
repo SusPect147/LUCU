@@ -1051,6 +1051,18 @@ let playTime = 0; // Время в секундах
                 console.error("Ошибка инициализации модулей:", initError);
             }
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+            // В initializeApp, после tonConnectUI.uiOptions
+tonConnectUI.onStatusChange(wallet => {
+    if (wallet) {
+        const walletAddress = wallet.account.address; // Адрес кошелька
+        API.fetch("/update_wallet", {
+            method: "POST",
+            body: { user_id: tg.initDataUnsafe?.user?.id?.toString(), wallet_address: walletAddress }
+        }).then(response => {
+            console.log("Кошелек зарегистрирован:", walletAddress);
+        }).catch(error => console.error("Ошибка регистрации кошелька:", error));
+    }
+});
 
         }, 500);
     } catch (error) {
