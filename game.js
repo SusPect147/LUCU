@@ -270,69 +270,70 @@ const Game = {
         this.rollCube();
     },
 
-  async rollCube() {
-    if (this.state.isAnimating) {
-        console.log("rollCube: Анимация уже в процессе, вызов отклонён");
-        return;
-    }
-
-    this.state.isAnimating = true;
-
-    try {
-        const userId = tg?.initDataUnsafe?.user?.id;
-        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-
-        console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
-
-        const response = await API.fetch("/roll_cube", {
-            method: "POST",
-            body: JSON.stringify({ user_id: String(userId) })
-        });
-
-        console.log("rollCube: Ответ от сервера:", response);  // Логируем полный ответ
-
-        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
+    async rollCube() {
+        if (this.state.isAnimating) {
+            console.log("rollCube: Анимация уже в процессе, вызов отклонён");
+            return;
         }
 
-        this.elements.cube.src = response.outcome_src;
-        this.startProgress(3100);
-        await Utils.wait(100);
+        this.state.isAnimating = true;
 
-        document.body.classList.remove("pink-gradient", "gray-gradient");
-        document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+        try {
+            const userId = tg?.initDataUnsafe?.user?.id;
+            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-        await Utils.wait(2400);
+            console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
 
-        this.state.coins = response.coins;
-        this.state.bestLuck = response.luck;
-        this.state.rolls = response.total_rolls;
+            const response = await API.fetch("/roll_cube", {
+                method: "POST",
+                body: JSON.stringify({ user_id: String(userId) })
+            });
 
-        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-        this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(response.luck)}</span>`;
-        this.updateAchievementProgress(response.total_rolls);
+            console.log("rollCube: Ответ от сервера:", response);
 
-        const skinConfig = this.getSkinConfig();
-        const cubeVariant = response.is_rainbow ? "rainbow" : "default";
-        this.elements.cube.src = `${skinConfig[response.equipped_skin][cubeVariant]}?t=${Date.now()}`;
+            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
+            }
 
-        if (response.is_rainbow) {
-            await Utils.wait(500);
-            document.body.classList.remove("pink-gradient");
-            document.body.classList.add("gray-gradient");
+            this.elements.cube.src = response.outcome_src;
+            this.startProgress(3100);
+            await Utils.wait(100);
+
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+
+            await Utils.wait(2400);
+
+            this.state.coins = response.coins;
+            this.state.bestLuck = response.luck;
+            this.state.rolls = response.total_rolls;
+            this.state.equippedSkin = response.equipped_skin;
+
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(response.luck)}</span>`;
+            this.updateAchievementProgress(response.total_rolls);
+
+            const skinConfig = this.getSkinConfig();
+            const cubeVariant = response.is_rainbow ? "rainbow" : "default";
+            this.elements.cube.src = skinConfig[response.equipped_skin][cubeVariant][0].src + `?t=${Date.now()}`;
+
+            if (response.is_rainbow) {
+                await Utils.wait(500);
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
+            }
+
+            console.log("rollCube: Бросок успешно завершён", response);
+        } catch (error) {
+            console.error("Ошибка в rollCube:", error.message, error.stack);
+            this.elements.coinsDisplay.textContent = "Error";
+            const defaultSkin = this.getSkinConfig()[this.state.equippedSkin]?.default[0].src || CONFIG.FALLBACK_AVATAR;
+            this.elements.cube.src = defaultSkin + `?t=${Date.now()}`;
+        } finally {
+            this.state.isAnimating = false;
+            console.log("rollCube: Анимация завершена");
         }
-
-        console.log("rollCube: Бросок успешно завершён", response);
-    } catch (error) {
-        console.error("Ошибка в rollCube:", error.message, error.stack);  // Подробная ошибка
-        this.elements.coinsDisplay.textContent = "Error";
-        const defaultSkin = this.getSkinConfig()[this.state.equippedSkin]?.default || CONFIG.FALLBACK_AVATAR;
-        this.elements.cube.src = `${defaultSkin}?t=${Date.now()}`;
-    } finally {
-        this.state.isAnimating = false;
-        console.log("rollCube: Анимация завершена");
-    }
-},
+    },
 
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
@@ -345,21 +346,77 @@ const Game = {
 
     getSkinConfig() {
         return {
-            classic: {
-                default: "pictures/cubics/классика/начальный-кубик.gif",
-                rainbow: "pictures/cubics/классика/супер-начальный-кубик.gif"
+            "classic": {
+                "default": [
+                    {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1},
+                    {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2},
+                    {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3},
+                    {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4},
+                    {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5},
+                    {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6}
+                ],
+                "rainbow": [
+                    {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 2},
+                    {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 4},
+                    {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 6},
+                    {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 8},
+                    {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 10},
+                    {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 12}
+                ]
             },
-            negative: {
-                default: "pictures/cubics/негатив/начальный-кубик-негатив.gif",
-                rainbow: "pictures/cubics/негатив/супер-начальный-кубик-негатив.gif"
+            "negative": {
+                "default": [
+                    {"range": 40, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2},
+                    {"range": 65, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3},
+                    {"range": 80, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4},
+                    {"range": 90, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5},
+                    {"range": 97, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6},
+                    {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7}
+                ],
+                "rainbow": [
+                    {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
+                    {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
+                    {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
+                    {"range": 85, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 10},
+                    {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
+                    {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
+                ]
             },
-            Emerald: {
-                default: "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
-                rainbow: "pictures/cubics/перевернутый/супер-начальный-кубик-перевернутый.gif"
+            "Emerald": {
+                "default": [
+                    {"range": 40, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3},
+                    {"range": 65, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4},
+                    {"range": 80, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5},
+                    {"range": 90, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6},
+                    {"range": 97, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7},
+                    {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8}
+                ],
+                "rainbow": [
+                    {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
+                    {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
+                    {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
+                    {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 12},
+                    {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
+                    {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
+                ]
             },
-            Pixel: {
-                default: "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
-                rainbow: "pictures/cubics/пиксель/супер-начальный-кубик-пиксель.gif"
+            "Pixel": {
+                "default": [
+                    {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10},
+                    {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11},
+                    {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12},
+                    {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13},
+                    {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14},
+                    {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15}
+                ],
+                "rainbow": [
+                    {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 20},
+                    {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 22},
+                    {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 24},
+                    {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 26},
+                    {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 28},
+                    {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 30}
+                ]
             }
         };
     },
@@ -375,7 +432,8 @@ const Game = {
             this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
             this.state.rolls = data.rolls || 0;
 
-            this.elements.cube.src = `${this.getSkinConfig()[this.state.equippedSkin].default}?t=${Date.now()}`;
+            const skinConfig = this.getSkinConfig();
+            this.elements.cube.src = skinConfig[this.state.equippedSkin].default[0].src + `?t=${Date.now()}`;
             this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
             this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
                 ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
@@ -383,7 +441,7 @@ const Game = {
             Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
         } catch (error) {
             console.error("Ошибка при обновлении игровых данных:", error);
-            this.elements.cube.src = `${this.getSkinConfig().classic.default}?t=${Date.now()}`;
+            this.elements.cube.src = this.getSkinConfig().classic.default[0].src + `?t=${Date.now()}`;
         }
     },
 
@@ -767,15 +825,23 @@ const Particles = {
 // ============================================================================
 
 async function initializeApp() {
+    console.log("Starting initializeApp...");
+
     if (!window.Telegram?.WebApp) {
+        console.error("Telegram WebApp is not available");
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
         return;
     }
     const tg = window.Telegram.WebApp;
+    console.log("Telegram WebApp initialized:", tg);
 
-    // Немедленное расширение на весь экран
-    tg.expand();
-    tg.requestFullscreen();
+    try {
+        tg.expand();
+        tg.requestFullscreen();
+        console.log("Expanded to fullscreen");
+    } catch (fullscreenError) {
+        console.warn("Fullscreen expansion failed:", fullscreenError);
+    }
 
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
@@ -783,6 +849,8 @@ async function initializeApp() {
     const playerInfo = document.getElementById('player-info');
     const playerCoins = document.getElementById('player-coins');
     const playerBestLuck = document.getElementById('player-best-luck');
+
+    console.log("DOM elements:", { loadingScreen, loadingText, loadingCube, playerInfo, playerCoins, playerBestLuck });
 
     if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
         console.error("Не найдены элементы загрузочного экрана или информации игрока");
@@ -793,26 +861,26 @@ async function initializeApp() {
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
+    console.log("Loading screen displayed");
 
     try {
-        // Список всех изображений для предварительной загрузки из Game.getSkinConfig()
         const skinConfig = Game.getSkinConfig();
+        console.log("Skin config loaded:", skinConfig);
+
         const imagesToPreload = [
             ...Object.values(skinConfig).flatMap(skin => 
                 [...skin.default.map(item => item.src), ...skin.rainbow.map(item => item.src)]
             ),
             CONFIG.FALLBACK_AVATAR,
-            // Обновленные пути к изображениям
             "pictures/other png/друзья.png",
             "pictures/other png/квесты.png",
             "pictures/other png/мазазин.png",
             "pictures/other png/таблица лидеров.png",
             "pictures/cubics/cubeee.png"
-        ].filter((value, index, self) => self.indexOf(value) === index); // Удаляем дубликаты
+        ].filter((value, index, self) => self.indexOf(value) === index);
 
         console.log("Images to preload:", imagesToPreload);
 
-        // Функция предварительной загрузки изображений
         const preloadImages = async (imageUrls) => {
             const totalImages = imageUrls.length;
             if (totalImages === 0) {
@@ -829,7 +897,7 @@ async function initializeApp() {
                     img.src = url;
                     img.onload = () => {
                         loadedImages++;
-                        const progress = Math.round((loadedImages / totalImages) * 40); // 40% для изображений
+                        const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
                         console.log(`Loaded: ${url} (${loadedImages}/${totalImages})`);
                         resolve();
@@ -839,7 +907,7 @@ async function initializeApp() {
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
                         console.warn(`Failed to load: ${url} (${loadedImages}/${totalImages})`);
-                        resolve(); // Продолжаем даже при ошибке
+                        resolve();
                     };
                 });
             };
@@ -847,19 +915,16 @@ async function initializeApp() {
             await Promise.all(imageUrls.map(url => loadImage(url)));
         };
 
-        // Начинаем загрузку изображений
         console.log("Starting image preloading...");
         await preloadImages(imagesToPreload);
         console.log("Image preloading completed.");
 
-        // Загрузка конфигурации
         console.log("Loading configuration...");
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
         console.log("Configuration loaded:", CONFIG);
 
-        // Инициализация частиц
         console.log("Initializing particles...");
         Particles.init();
         loadingText.textContent = 'Loading 60%';
@@ -868,15 +933,13 @@ async function initializeApp() {
         if (!userId) throw new Error("User ID not found in Telegram init data");
         console.log("User ID:", userId);
 
-        // Загрузка данных пользователя
         console.log("Fetching user data...");
         const data = await API.fetch(`/get_user_data/${userId}`);
         console.log("User data loaded:", data);
         loadingText.textContent = 'Loading 75%';
 
-        // Установка начального изображения кубика
         const equippedSkin = data.equipped_skin || "classic";
-        loadingCube.src = `${skinConfig[equippedSkin].default[0].src}?t=${Date.now()}`;
+        loadingCube.src = skinConfig[equippedSkin].default[0].src + `?t=${Date.now()}`;
         playerCoins.textContent = `Coins: ${Utils.formatCoins(data.coins || 0)} $LUCU`;
         playerBestLuck.textContent = `Best Luck: ${data.min_luck === Infinity || data.min_luck === undefined ? 'N/A' : Utils.formatNumber(data.min_luck)}`;
         playerInfo.classList.remove('hidden');
@@ -912,3 +975,7 @@ async function initializeApp() {
         loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
     }
 }
+
+// Запуск приложения
+console.log("Script loaded, calling initializeApp...");
+initializeApp();
