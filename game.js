@@ -576,23 +576,23 @@ const Quests = {
         achievementsList: document.getElementById("achievements-list")
     },
 
-    init() {
-        this.elements.button.addEventListener("click", () => {
-            this.updateQuestStatus();
-            UI.toggleMenu(this.elements.menu, true);
-        });
-        this.elements.menu.addEventListener("click", e => {
-            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
-        });
-        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+   init() {
+    this.elements.button.addEventListener("click", () => {
+        this.updateQuestStatus(); // Уже есть
+        UI.toggleMenu(this.elements.menu, true);
+    });
+    this.elements.menu.addEventListener("click", e => {
+        if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+    });
+    UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
 
-        this.elements.subscribeButton.addEventListener("click", () => this.handleSubscription());
-        this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
-        this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
+    this.elements.subscribeButton.addEventListener("click", () => this.handleSubscription());
+    this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
+    this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
 
-        // Инициализируем статус квестов из AppState
-        this.updateQuestStatus();
-    },
+    // Инициализируем статус квестов из AppState
+    this.updateQuestStatus(); // Оставляем как есть
+},
 
     updateQuestStatus() {
         const data = AppState.userData;
@@ -602,7 +602,7 @@ const Quests = {
         }
         const isSubscribed = data?.quests?.subscription_quest === "yes";
         if (isSubscribed) {
-            this.elements.subscribeButton.textContent = "✔️";
+            this.elements.subscribeButton.textContent = "Done!";
             this.elements.subscribeButton.classList.add("completed");
             this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
             this.elements.subscribeButton.style.cursor = "default";
@@ -610,7 +610,7 @@ const Quests = {
         }
     },
 
-    async handleSubscription() {
+async handleSubscription() {
     try {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID отсутствует в данных Telegram");
@@ -630,12 +630,20 @@ const Quests = {
                 }
             });
 
-            this.state.coins = questResponse.new_coins;
-            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
-            this.updateQuestProgress({ subscription_quest: "yes" });
+            // Обновляем глобальное состояние AppState
+            AppState.userData.coins = questResponse.new_coins;
+            AppState.userData.quests = AppState.userData.quests || {};
+            AppState.userData.quests.subscription_quest = "yes";
+
+            // Обновляем состояние игры
+            Game.state.coins = questResponse.new_coins;
+            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
+
+            // Обновляем UI квестов
+            this.updateQuestStatus();
+
             console.log("Подписка подтверждена, квест обновлён:", questResponse);
         } else {
-            console.log("Пользователь не подписан на канал");
             tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
             setTimeout(() => this.handleSubscription(), 10000);
         }
