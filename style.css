@@ -228,6 +228,7 @@ body.pink-gradient {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  overflow-y: auto; /* Добавляем вертикальную прокрутку */
   padding: 10px;
   background: #222; /* Оставляем один фон */
   border-radius: 10px;
