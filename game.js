@@ -484,7 +484,7 @@ updateAchievementProgress(rolls) {
             ? "Achievement Completed! You are a beta tester!"
             : "Become a beta tester to complete";
     }
-}, // Добавлена запятая здесь
+}, // Добавлена запятая здесь 
 
 // ============================================================================
 // Скины (Skins)
