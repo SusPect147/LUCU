@@ -223,12 +223,11 @@ body.pink-gradient {
   width: calc(100% - 10px);
 }
 
-/* Элемент ачивки (удаляем дубликат и исправляем ширину) */
-#achievements-list .achievement-item {
+.achievement-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  overflow-y: auto; /* Добавляем вертикальную прокрутку */
+
   padding: 10px;
   background: #222; /* Оставляем один фон */
   border-radius: 10px;
@@ -236,7 +235,13 @@ body.pink-gradient {
   width: calc(100% - 10px); /* Убираем !important, так как достаточно calc */
   box-sizing: border-box; /* Учитываем padding в ширине */
 }
-
+/* В style.css, внутри секции стилей для #quests-menu-content */
+#achievements-list {
+  width: 100%;
+  max-height: 50vh; /* Ограничиваем высоту, чтобы появилась прокрутка */
+  overflow-y: auto; /* Добавляем вертикальную прокрутку */
+  padding: 0 10px;
+}
 /* Делаем иконки круглыми */
 .quest-icon,
 .achievement-icon {
