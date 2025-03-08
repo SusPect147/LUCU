@@ -5,7 +5,7 @@
 const CONFIG = {
     CANVAS_ID: "particleCanvas",
     DEFAULT_SKIN: "classic",
-    ANIMATION_DURATION: 3150, // Обновлено до 3150 мс как вы просили
+    ANIMATION_DURATION: 3620, // Было 3150, теперь 3620 мс (3.62 секунды)
     PROGRESS_DURATION: 3,
     API_BASE_URL: "https://backend12-production-1210.up.railway.app",
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
@@ -303,7 +303,7 @@ const Game = {
         this.rollCube();
     },
 
-    async rollCube() {
+async rollCube() {
     if (this.state.isAnimating) {
         console.log("rollCube: Анимация уже в процессе, вызов отклонён");
         return;
@@ -315,8 +315,6 @@ const Game = {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-        this.startProgress(CONFIG.ANIMATION_DURATION); // Запускаем прогресс-бар сразу
-
         console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
 
         const response = await API.fetch("/roll_cube", {
@@ -326,46 +324,49 @@ const Game = {
 
         console.log("rollCube: Ответ от сервера:", response);
 
-            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
-            }
-
-            this.elements.cube.src = response.outcome_src;
-            document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
-
-            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                console.log("rollCube: Монеты обновлены:", response.coins);
-            }, coinUpdateDelay);
-
-            await Utils.wait(CONFIG.ANIMATION_DURATION);
-
-            this.state.bestLuck = response.luck;
-            this.state.rolls = response.total_rolls;
-            this.state.equippedSkin = response.equipped_skin;
-
-            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(response.luck)}</span>`;
-            this.updateAchievementProgress(response.total_rolls);
-
-            if (response.is_rainbow) {
-                document.body.classList.remove("pink-gradient");
-                document.body.classList.add("gray-gradient");
-            }
-
-            console.log("rollCube: Бросок успешно завершён", response);
-            this.setInitialCube();
-        } catch (error) {
-            console.error("Ошибка в rollCube:", error.message, error.stack);
-            this.elements.coinsDisplay.textContent = "Error";
-            this.setInitialCube();
-        } finally {
-            this.state.isAnimating = false;
-            console.log("rollCube: Анимация завершена");
+        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
-    },
+
+        // Устанавливаем кубик результата и сразу запускаем прогресс-бар
+        this.elements.cube.src = response.outcome_src;
+        this.startProgress(CONFIG.ANIMATION_DURATION); // Прогресс-бар начинается здесь
+        document.body.classList.remove("pink-gradient", "gray-gradient");
+        document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+
+        const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+        setTimeout(() => {
+            this.state.coins = response.coins;
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            console.log("rollCube: Монеты обновлены:", response.coins);
+        }, coinUpdateDelay);
+
+        // Ждём завершения анимации (предполагаем, что это CONFIG.ANIMATION_DURATION)
+        await Utils.wait(CONFIG.ANIMATION_DURATION);
+
+        this.state.bestLuck = response.luck;
+        this.state.rolls = response.total_rolls;
+        this.state.equippedSkin = response.equipped_skin;
+
+        this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(response.luck)}</span>`;
+        this.updateAchievementProgress(response.total_rolls);
+
+        if (response.is_rainbow) {
+            document.body.classList.remove("pink-gradient");
+            document.body.classList.add("gray-gradient");
+        }
+
+        console.log("rollCube: Бросок успешно завершён", response);
+        this.setInitialCube();
+    } catch (error) {
+        console.error("Ошибка в rollCube:", error.message, error.stack);
+        this.elements.coinsDisplay.textContent = "Error";
+        this.setInitialCube();
+    } finally {
+        this.state.isAnimating = false;
+        console.log("rollCube: Анимация завершена");
+    }
+},
 
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
