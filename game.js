@@ -13,15 +13,15 @@ const CONFIG = {
 
 async function loadConfig() {
     try {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/get_config`);
-        const data = await response.json();
+        const response = await API.fetch("/get_config"); // Используем API.fetch вместо fetch
+        const data = await response;
         Object.assign(CONFIG, {
             API_BASE_URL: data.API_BASE_URL,
             TELEGRAM_BOT_TOKEN: data.TELEGRAM_BOT_TOKEN,
             CHANNEL_USERNAME: data.CHANNEL_USERNAME
         });
     } catch (error) {
-        console.error("Ошибка загрузки конфигурации:", error);
+        console.error("Ошибка загрузки конфигурации:", error.message, error.stack);
     }
 }
 
@@ -113,7 +113,6 @@ const API = {
         }
     }
 };
-
 // ============================================================================
 // Частицы (Particle System)
 // ============================================================================
@@ -917,7 +916,7 @@ async function initializeApp() {
             CONFIG.FALLBACK_AVATAR,
             "pictures/other png/друзья.png",
             "pictures/other png/квесты.png",
-            "pictures/other png/мазазин.png",
+            "pictures/other png/магазин.png",
             "pictures/other png/таблица лидеров.png",
             "pictures/cubics/cubeee.png"
         ].filter((value, index, self) => self.indexOf(value) === index);
