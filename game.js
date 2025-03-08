@@ -766,12 +766,20 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
+// ============================================================================
+// Инициализация приложения
+// ============================================================================
+
 async function initializeApp() {
     if (!window.Telegram?.WebApp) {
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
         return;
     }
     const tg = window.Telegram.WebApp;
+
+    // Немедленное расширение на весь экран
+    tg.expand();
+    tg.requestFullscreen();
 
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
@@ -791,21 +799,70 @@ async function initializeApp() {
     loadingCube.style.display = 'block';
 
     try {
+        // Список всех изображений для предварительной загрузки из Game.getSkinConfig()
+        const skinConfig = Game.getSkinConfig();
+        const imagesToPreload = [
+            ...Object.values(skinConfig).flatMap(skin => 
+                [...skin.default.map(item => item.src), ...skin.rainbow.map(item => item.src)]
+            ),
+            CONFIG.FALLBACK_AVATAR,
+            // Дополнительные изображения (иконки меню и т.д., добавьте свои пути, если есть)
+            "pictures/other png/друзья.png",
+            "pictures/other png/квесты.png",
+            "pictures/other png/мазазин.png",
+            "pictures/other png/таблица лидеров.png",
+            "pictures/cubics/cubeee.png"
+        ].filter((value, index, self) => self.indexOf(value) === index); // Удаляем дубликаты
+
+        // Функция предварительной загрузки изображений
+        const preloadImages = async (imageUrls) => {
+            const totalImages = imageUrls.length;
+            let loadedImages = 0;
+
+            const loadImage = (url) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = () => {
+                        loadedImages++;
+                        const progress = Math.round((loadedImages / totalImages) * 40); // 40% для изображений
+                        loadingText.textContent = `Loading ${progress}%`;
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.warn(`Не удалось загрузить изображение: ${url}`);
+                        loadedImages++;
+                        resolve(); // Продолжаем даже при ошибке
+                    };
+                });
+            };
+
+            await Promise.all(imageUrls.map(url => loadImage(url)));
+        };
+
+        // Начинаем загрузку изображений
+        await preloadImages(imagesToPreload);
+
+        // Загрузка конфигурации
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
+        loadingText.textContent = 'Loading 50%';
 
+        // Инициализация частиц
         Particles.init();
 
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
         const data = await API.fetch(`/get_user_data/${userId}`);
-        console.log("User data loaded:", data);  // Логируем данные пользователя
-        loadingText.textContent = 'Loading 50%';
+        console.log("User data loaded:", data);
+        loadingText.textContent = 'Loading 75%';
 
-        loadingCube.src = `${Game.getSkinConfig()[data.equipped_skin || "classic"].default}?t=${Date.now()}`;
+        // Установка начального изображения кубика
+        const equippedSkin = data.equipped_skin || "classic";
+        loadingCube.src = `${skinConfig[equippedSkin].default[0].src}?t=${Date.now()}`;
         playerCoins.textContent = `Coins: ${Utils.formatCoins(data.coins || 0)} $LUCU`;
-        playerBestLuck.textContent = `Best Luck: ${data.min_luck === Infinity ? 'N/A' : Utils.formatNumber(data.min_luck)}`;
+        playerBestLuck.textContent = `Best Luck: ${data.min_luck === Infinity || data.min_luck === undefined ? 'N/A' : Utils.formatNumber(data.min_luck)}`;
         playerInfo.classList.remove('hidden');
 
         loadingText.textContent = 'Press to enter the game';
@@ -827,12 +884,10 @@ async function initializeApp() {
             } catch (initError) {
                 console.error("Ошибка инициализации модулей:", initError);
             }
-            tg.expand();
-            tg.requestFullscreen();
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
         }, 500);
     } catch (error) {
-        console.error('Ошибка инициализации приложения:', error.message, error.stack);  // Подробная ошибка
+        console.error('Ошибка инициализации приложения:', error.message, error.stack);
         loadingText.textContent = `Error: ${error.message}. Click to refresh.`;
         loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
     }
