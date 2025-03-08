@@ -257,12 +257,22 @@ const Game = {
 
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
+        this.setInitialCube(); // Устанавливаем начальный кубик при инициализации
         this.updateGameData();
+    },
+
+    // Установка начального кубика
+    setInitialCube() {
+        const skinConfig = this.getSkinConfig();
+        const initialSrc = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
+        this.elements.cube.src = initialSrc;
+        console.log("rollCube: Установлен начальный кубик:", initialSrc);
     },
 
     handleClick(event) {
         if (this.state.isAnimating) {
             event.preventDefault();
+            console.log("rollCube: Анимация уже в процессе, клик отклонён");
             return;
         }
         this.rollCube();
@@ -282,6 +292,7 @@ const Game = {
 
             console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
 
+            // 1. Запрос к серверу после клика
             const response = await API.fetch("/roll_cube", {
                 method: "POST",
                 body: { user_id: userId }
@@ -293,40 +304,43 @@ const Game = {
                 throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
             }
 
+            // 2. Установка анимации выпавшего кубика
             this.elements.cube.src = response.outcome_src;
-            this.startProgress(3100);
-            await Utils.wait(100);
-
+            this.startProgress(CONFIG.ANIMATION_DURATION); // Прогресс-бар на всю анимацию
             document.body.classList.remove("pink-gradient", "gray-gradient");
             document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
 
-            await Utils.wait(2400);
+            // 3. Обновление монет ближе к концу анимации (за 500 мс до конца)
+            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                console.log("rollCube: Монеты обновлены:", response.coins);
+            }, coinUpdateDelay);
 
-            this.state.coins = response.coins;
+            // 4. Обновление остальных данных после полной анимации
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
+
             this.state.bestLuck = response.luck;
             this.state.rolls = response.total_rolls;
             this.state.equippedSkin = response.equipped_skin;
 
-            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
             this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(response.luck)}</span>`;
             this.updateAchievementProgress(response.total_rolls);
 
-            const skinConfig = this.getSkinConfig();
-            const cubeVariant = response.is_rainbow ? "rainbow" : "default";
-            this.elements.cube.src = skinConfig[response.equipped_skin][cubeVariant][0].src + `?t=${Date.now()}`;
-
             if (response.is_rainbow) {
-                await Utils.wait(500);
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
             }
 
             console.log("rollCube: Бросок успешно завершён", response);
+
+            // 5. Возвращение к начальному кубику для нового цикла
+            this.setInitialCube();
         } catch (error) {
             console.error("Ошибка в rollCube:", error.message, error.stack);
             this.elements.coinsDisplay.textContent = "Error";
-            const defaultSkin = this.getSkinConfig()[this.state.equippedSkin]?.default[0].src || CONFIG.FALLBACK_AVATAR;
-            this.elements.cube.src = defaultSkin + `?t=${Date.now()}`;
+            this.setInitialCube(); // Возвращаем начальный кубик даже при ошибке
         } finally {
             this.state.isAnimating = false;
             console.log("rollCube: Анимация завершена");
