@@ -611,40 +611,38 @@ const Quests = {
     },
 
     async handleSubscription() {
-        if (this.elements.subscribeButton.classList.contains("completed")) return;
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-        window.open(`https://t.me/${CONFIG.CHANNEL_USERNAME}`, "_blank");
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            console.error("User ID отсутствует для обработки подписки");
-            return;
-        }
-        try {
-            const response = await API.fetch("/check_subscription", {
+        const subscriptionResponse = await API.fetch("/check_subscription", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        if (subscriptionResponse.success) {
+            const questResponse = await API.fetch("/update_quest", {
                 method: "POST",
-                body: { user_id: userId }
+                body: {
+                    user_id: userId,
+                    quest: "subscription_quest",
+                    status: "yes"
+                }
             });
-            if (response.success) {
-                this.elements.subscribeButton.textContent = "✔️";
-                this.elements.subscribeButton.classList.add("completed");
-                this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
-                this.elements.subscribeButton.style.cursor = "default";
-                this.elements.subscribeButton.disabled = true;
 
-                const questResponse = await API.fetch("/update_quest", {
-                    method: "POST",
-                    body: { user_id: userId, quest: "subscription_quest", status: "yes" }
-                });
-                Game.state.coins = questResponse.new_coins;
-                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
-                // Обновляем AppState
-                AppState.userData.coins = questResponse.new_coins;
-                AppState.userData.quests = { subscription_quest: "yes" };
-            }
-        } catch (error) {
-            console.error("Ошибка проверки подписки:", error.message, error.stack);
+            this.state.coins = questResponse.new_coins;
+            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
+            this.updateQuestProgress({ subscription_quest: "yes" });
+            console.log("Подписка подтверждена, квест обновлён:", questResponse);
+        } else {
+            console.log("Пользователь не подписан на канал");
+            tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
+            setTimeout(() => this.handleSubscription(), 10000);
         }
-    },
+    } catch (error) {
+        console.error("Ошибка проверки подписки:", error.message, error);
+    }
+},
 
     switchTab(tab) {
         this.elements.questsTab.classList.toggle("active", tab === "quests");
