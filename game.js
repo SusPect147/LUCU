@@ -476,7 +476,6 @@ updateAchievementProgress(rolls) {
             : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
     }
 
-    // Ачивка Beta Tester
     const betaPlayer = AppState.userData.beta_player === "yes";
     const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(3)");
     if (achievementBeta) {
@@ -485,7 +484,7 @@ updateAchievementProgress(rolls) {
             ? "Achievement Completed! You are a beta tester!"
             : "Become a beta tester to complete";
     }
-},
+}, // Добавлена запятая здесь
 
 // ============================================================================
 // Скины (Skins)
