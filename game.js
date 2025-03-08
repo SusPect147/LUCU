@@ -5,7 +5,7 @@
 const CONFIG = {
     CANVAS_ID: "particleCanvas",
     DEFAULT_SKIN: "classic",
-    ANIMATION_DURATION: 3050,
+    ANIMATION_DURATION: 3150, // Обновлено до 3150 мс как вы просили
     PROGRESS_DURATION: 3,
     API_BASE_URL: "https://backend12-production-1210.up.railway.app",
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
@@ -13,7 +13,7 @@ const CONFIG = {
 
 async function loadConfig() {
     try {
-        const response = await API.fetch("/get_config"); // Используем API.fetch вместо fetch
+        const response = await API.fetch("/get_config");
         const data = await response;
         Object.assign(CONFIG, {
             API_BASE_URL: data.API_BASE_URL,
@@ -30,6 +30,11 @@ const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
     buttonRootId: "ton-connect"
 });
+
+// Глобальное состояние для хранения данных пользователя
+const AppState = {
+    userData: null // Будет содержать все данные пользователя после загрузки
+};
 
 // ============================================================================
 // Утилиты (только для UI)
@@ -113,6 +118,7 @@ const API = {
         }
     }
 };
+
 // ============================================================================
 // Частицы (Particle System)
 // ============================================================================
@@ -257,11 +263,30 @@ const Game = {
 
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
-        this.setInitialCube(); // Устанавливаем начальный кубик при инициализации
-        this.updateGameData();
+
+        // Используем данные из AppState, загруженные на этапе загрузки
+        this.updateFromAppState();
     },
 
-    // Установка начального кубика
+    updateFromAppState() {
+        const data = AppState.userData;
+        if (!data) {
+            console.error("Нет данных пользователя в AppState");
+            return;
+        }
+        this.state.coins = data.coins || 0;
+        this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+        this.state.rolls = data.rolls || 0;
+
+        const skinConfig = this.getSkinConfig();
+        this.elements.cube.src = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
+        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+    },
+
     setInitialCube() {
         const skinConfig = this.getSkinConfig();
         const initialSrc = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
@@ -290,9 +315,12 @@ const Game = {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
             if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
+            const skinConfig = this.getSkinConfig();
+            this.elements.cube.src = skinConfig[this.state.equippedSkin].initial;
+            this.startProgress(CONFIG.ANIMATION_DURATION);
+
             console.log("rollCube: Отправка запроса на /roll_cube с userId:", userId);
 
-            // 1. Запрос к серверу после клика
             const response = await API.fetch("/roll_cube", {
                 method: "POST",
                 body: { user_id: userId }
@@ -304,13 +332,10 @@ const Game = {
                 throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
             }
 
-            // 2. Установка анимации выпавшего кубика
             this.elements.cube.src = response.outcome_src;
-            this.startProgress(CONFIG.ANIMATION_DURATION); // Прогресс-бар на всю анимацию
             document.body.classList.remove("pink-gradient", "gray-gradient");
             document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
 
-            // 3. Обновление монет ближе к концу анимации (за 500 мс до конца)
             const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
             setTimeout(() => {
                 this.state.coins = response.coins;
@@ -318,7 +343,6 @@ const Game = {
                 console.log("rollCube: Монеты обновлены:", response.coins);
             }, coinUpdateDelay);
 
-            // 4. Обновление остальных данных после полной анимации
             await Utils.wait(CONFIG.ANIMATION_DURATION);
 
             this.state.bestLuck = response.luck;
@@ -334,13 +358,11 @@ const Game = {
             }
 
             console.log("rollCube: Бросок успешно завершён", response);
-
-            // 5. Возвращение к начальному кубику для нового цикла
             this.setInitialCube();
         } catch (error) {
             console.error("Ошибка в rollCube:", error.message, error.stack);
             this.elements.coinsDisplay.textContent = "Error";
-            this.setInitialCube(); // Возвращаем начальный кубик даже при ошибке
+            this.setInitialCube();
         } finally {
             this.state.isAnimating = false;
             console.log("rollCube: Анимация завершена");
@@ -437,33 +459,6 @@ const Game = {
         };
     },
 
-    async updateGameData() {
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            console.error("User ID отсутствует в данных Telegram");
-            return;
-        }
-
-        try {
-            const data = await API.fetch(`/get_user_data/${userId}`);
-            this.state.coins = data.coins || 0;
-            this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
-            this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
-            this.state.rolls = data.rolls || 0;
-
-            const skinConfig = this.getSkinConfig();
-            this.elements.cube.src = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
-            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
-                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
-        } catch (error) {
-            console.error("Ошибка при обновлении игровых данных:", error.message, error.stack);
-            this.elements.cube.src = this.getSkinConfig().classic.initial + `?t=${Date.now()}`;
-        }
-    },
-
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
         const progress = Math.min((rolls / targetRolls) * 100, 100);
@@ -507,6 +502,20 @@ const Skins = {
         this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
         this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
         this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
+
+        // Используем данные из AppState
+        this.updateFromAppState();
+    },
+
+    updateFromAppState() {
+        const data = AppState.userData;
+        if (!data) {
+            console.error("Нет данных пользователя в AppState для Skins");
+            return;
+        }
+        this.state.ownedSkins = data.owned_skins || [];
+        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+        this.updateUI();
     },
 
     async handleSkin(type) {
@@ -526,19 +535,17 @@ const Skins = {
                 this.updateUI();
                 Game.state.coins = response.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-                Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`; // Используем initial вместо default
+                Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`;
+                // Обновляем AppState
+                AppState.userData.coins = response.new_coins;
+                AppState.userData.owned_skins = response.owned_skins;
+                AppState.userData.equipped_skin = response.equipped_skin;
             } else {
                 alert(response.message);
             }
         } catch (error) {
             console.error("Ошибка обработки скина:", error.message, error.stack);
         }
-    },
-
-    syncSkins(ownedSkins, equippedSkin) {
-        this.state.ownedSkins = ownedSkins;
-        this.state.equippedSkin = equippedSkin;
-        this.updateUI();
     },
 
     updateUI() {
@@ -574,8 +581,8 @@ const Quests = {
     },
 
     init() {
-        this.elements.button.addEventListener("click", async () => {
-            await this.loadQuestStatus();
+        this.elements.button.addEventListener("click", () => {
+            this.updateQuestStatus();
             UI.toggleMenu(this.elements.menu, true);
         });
         this.elements.menu.addEventListener("click", e => {
@@ -586,13 +593,17 @@ const Quests = {
         this.elements.subscribeButton.addEventListener("click", () => this.handleSubscription());
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
+
+        // Инициализируем статус квестов из AppState
+        this.updateQuestStatus();
     },
 
-    async loadQuestStatus() {
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) return;
-
-        const data = await API.fetch(`/get_user_data/${userId}`);
+    updateQuestStatus() {
+        const data = AppState.userData;
+        if (!data) {
+            console.error("Нет данных пользователя в AppState для Quests");
+            return;
+        }
         const isSubscribed = data?.quests?.subscription_quest === "yes";
         if (isSubscribed) {
             this.elements.subscribeButton.textContent = "✔️";
@@ -630,13 +641,16 @@ const Quests = {
                 });
                 Game.state.coins = questResponse.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
+                // Обновляем AppState
+                AppState.userData.coins = questResponse.new_coins;
+                AppState.userData.quests = { subscription_quest: "yes" };
             }
         } catch (error) {
             console.error("Ошибка проверки подписки:", error.message, error.stack);
         }
     },
 
-    async switchTab(tab) {
+    switchTab(tab) {
         this.elements.questsTab.classList.toggle("active", tab === "quests");
         this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
         this.elements.questsList.classList.toggle("hidden", tab !== "quests");
@@ -752,42 +766,18 @@ const Profile = {
         if (!user) {
             console.error("Данные пользователя Telegram недоступны");
             this.elements.name.textContent = "Hello, Guest";
-            return;
+        } else {
+            this.elements.name.textContent = `Hello, ${user.username || user.first_name || "NoName"}`;
         }
 
-        this.elements.name.textContent = `Hello, ${user.username || user.first_name || "NoName"}`;
         this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-
-        console.log("Updating profile for user:", user.id);
-        this.updateProfile(user);
-    },
-
-    async updateProfile(user) {
-        const userId = user.id?.toString();
-        if (!userId) {
-            console.error("User ID отсутствует для обновления профиля");
-            return;
-        }
-
-        const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
-        const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
-
-        try {
-            const response = await API.fetch("/update_profile", {
-                method: "POST",
-                body: { user_id: userId, username: username, photo_url: photoUrl }
-            });
-            console.log("Profile updated successfully:", response);
-        } catch (error) {
-            console.error("Ошибка в update_profile:", error.message, error.stack);
-            // Не прерываем выполнение приложения, просто логируем ошибку
-        }
     }
 };
+
 // ============================================================================
 // Друзья (Friends)
 // ============================================================================
@@ -839,18 +829,18 @@ const Friends = {
                 body: { user_id: userId, referrer_id: referrerId }
             }).catch(error => console.error("Ошибка обработки реферала:", error.message));
         }
+
+        // Используем данные из AppState
+        this.updateFriendsCount();
     },
 
-    async updateFriendsCount() {
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) return;
-
-        try {
-            const data = await API.fetch(`/get_referral_count/${userId}`);
-            this.elements.friendsCount.textContent = `Your friends: ${data.referral_count || 0}`;
-        } catch (error) {
-            console.error("Ошибка обновления количества друзей:", error.message);
+    updateFriendsCount() {
+        const data = AppState.userData;
+        if (!data || !data.referral_count === undefined) {
+            this.elements.friendsCount.textContent = "Your friends: 0";
+            return;
         }
+        this.elements.friendsCount.textContent = `Your friends: ${data.referral_count || 0}`;
     }
 };
 
@@ -990,14 +980,28 @@ async function initializeApp() {
         console.log("User ID:", userId);
 
         console.log("Fetching user data...");
-        const data = await API.fetch(`/get_user_data/${userId}`);
-        console.log("User data loaded:", data);
+        const userData = await API.fetch(`/get_user_data/${userId}`);
+        AppState.userData = userData; // Сохраняем данные в глобальное состояние
+        console.log("User data loaded:", userData);
         loadingText.textContent = 'Loading 75%';
 
-        const equippedSkin = data.equipped_skin || "classic";
+        // Обновляем профиль на сервере
+        const user = tg.initDataUnsafe.user;
+        const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
+        const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
+        await API.fetch("/update_profile", {
+            method: "POST",
+            body: { user_id: userId, username: username, photo_url: photoUrl }
+        });
+
+        // Загружаем количество рефералов
+        const referralData = await API.fetch(`/get_referral_count/${userId}`);
+        AppState.userData.referral_count = referralData.referral_count || 0;
+
+        const equippedSkin = userData.equipped_skin || "classic";
         loadingCube.src = skinConfig[equippedSkin].initial + `?t=${Date.now()}`;
-        playerCoins.textContent = `Coins: ${Utils.formatCoins(data.coins || 0)} $LUCU`;
-        playerBestLuck.textContent = `Best Luck: ${data.min_luck === Infinity || data.min_luck === undefined ? 'N/A' : Utils.formatNumber(data.min_luck)}`;
+        playerCoins.textContent = `Coins: ${Utils.formatCoins(userData.coins || 0)} $LUCU`;
+        playerBestLuck.textContent = `Best Luck: ${userData.min_luck === Infinity || userData.min_luck === undefined ? 'N/A' : Utils.formatNumber(userData.min_luck)}`;
         playerInfo.classList.remove('hidden');
 
         loadingText.textContent = 'Press to enter the game';
