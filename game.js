@@ -81,36 +81,31 @@ const Utils = {
 // ============================================================================
 
 const API = {
-    async fetch(url, options = {}, retries = 2) {
-        const initData = tg.initData;
-        if (!initData) throw new Error("Telegram initData is missing");
-        const headers = {
+    async fetch(endpoint, options = {}) {
+        const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+        const defaultHeaders = {
             "Content-Type": "application/json",
-            "X-Telegram-Init-Data": initData
+            "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""  // Добавляем initData
         };
+        const config = {
+            method: "GET",
+            headers: { ...defaultHeaders, ...options.headers },
+            ...options
+        };
+        if (options.body) config.body = JSON.stringify(options.body);
 
-        for (let attempt = 0; attempt <= retries; attempt++) {
+        let attempts = 0;
+        const maxAttempts = 3;
+        while (attempts < maxAttempts) {
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
-                    headers: headers,
-                    mode: 'cors',  // Явно указываем режим CORS
-                    credentials: 'omit',  // Не отправляем куки, если они не нужны
-                    ...options
-                });
-                console.log(`Request to ${url}: Headers sent:`, headers);  // Логируем отправленные заголовки
-                console.log(`Response headers from ${url}:`, [...response.headers]);  // Логируем полученные заголовки
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`Fetch failed for ${url}: ${response.status} - ${errorText}`);
-                    if (attempt === retries) throw new Error(`Network error: ${response.status} - ${errorText}`);
-                    await Utils.wait(1000 * (attempt + 1));
-                    continue;
-                }
+                const response = await fetch(url, config);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return await response.json();
             } catch (error) {
-                console.error(`Fetch attempt ${attempt + 1} failed for ${url}: ${error.message}`);
-                if (attempt === retries) throw error;
-                await Utils.wait(1000 * (attempt + 1));
+                attempts++;
+                console.error(`Fetch attempt ${attempts} failed for ${endpoint}: ${error.message}`);
+                if (attempts === maxAttempts) throw error;
+                await Utils.wait(1000 * attempts);
             }
         }
     }
@@ -345,105 +340,109 @@ const Game = {
     },
 
     getSkinConfig() {
-        return {
-            "classic": {
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1},
-                    {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2},
-                    {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3},
-                    {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4},
-                    {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5},
-                    {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6}
-                ],
-                "rainbow": [
-                    {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 2},
-                    {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 4},
-                    {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 6},
-                    {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 8},
-                    {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 10},
-                    {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 12}
-                ]
-            },
-            "negative": {
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2},
-                    {"range": 65, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3},
-                    {"range": 80, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4},
-                    {"range": 90, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5},
-                    {"range": 97, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6},
-                    {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7}
-                ],
-                "rainbow": [
-                    {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
-                    {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
-                    {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
-                    {"range": 85, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 10},
-                    {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
-                    {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
-                ]
-            },
-            "Emerald": {
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3},
-                    {"range": 65, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4},
-                    {"range": 80, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5},
-                    {"range": 90, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6},
-                    {"range": 97, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7},
-                    {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8}
-                ],
-                "rainbow": [
-                    {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
-                    {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
-                    {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
-                    {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 12},
-                    {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
-                    {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
-                ]
-            },
-            "Pixel": {
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10},
-                    {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11},
-                    {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12},
-                    {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13},
-                    {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14},
-                    {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15}
-                ],
-                "rainbow": [
-                    {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 20},
-                    {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 22},
-                    {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 24},
-                    {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 26},
-                    {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 28},
-                    {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 30}
-                ]
-            }
-        };
-    },
+    return {
+        "classic": {
+            "initial": "pictures/cubics/классика/начальный-кубик.gif",  // Начальное изображение для classic
+            "default": [
+                {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1},
+                {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2},
+                {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3},
+                {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4},
+                {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5},
+                {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6}
+            ],
+            "rainbow": [
+                {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 2},
+                {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 4},
+                {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 6},
+                {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 8},
+                {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 10},
+                {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 12}
+            ]
+        },
+        "negative": {
+            "initial": "pictures/cubics/негатив/начальный-кубик-негатив.gif",  // Начальное изображение для negative
+            "default": [
+                {"range": 40, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2},
+                {"range": 65, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3},
+                {"range": 80, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4},
+                {"range": 90, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5},
+                {"range": 97, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6},
+                {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7}
+            ],
+            "rainbow": [
+                {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
+                {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
+                {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
+                {"range": 85, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 10},
+                {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
+                {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
+            ]
+        },
+        "Emerald": {
+            "initial": "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",  // Начальное изображение для Emerald
+            "default": [
+                {"range": 40, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3},
+                {"range": 65, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4},
+                {"range": 80, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5},
+                {"range": 90, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6},
+                {"range": 97, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7},
+                {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8}
+            ],
+            "rainbow": [
+                {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
+                {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
+                {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
+                {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 12},
+                {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
+                {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
+            ]
+        },
+        "Pixel": {
+            "initial": "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",  // Начальное изображение для Pixel
+            "default": [
+                {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10},
+                {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11},
+                {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12},
+                {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13},
+                {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14},
+                {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15}
+            ],
+            "rainbow": [
+                {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 20},
+                {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 22},
+                {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 24},
+                {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 26},
+                {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 28},
+                {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 30}
+            ]
+        }
+    };
+},
 
     async updateGameData() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return;
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return;
 
-        try {
-            const data = await API.fetch(`/get_user_data/${userId}`);
-            this.state.coins = data.coins || 0;
-            this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
-            this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
-            this.state.rolls = data.rolls || 0;
+    try {
+        const data = await API.fetch(`/get_user_data/${userId}`);
+        this.state.coins = data.coins || 0;
+        this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+        this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
+        this.state.rolls = data.rolls || 0;
 
-            const skinConfig = this.getSkinConfig();
-            this.elements.cube.src = skinConfig[this.state.equippedSkin].default[0].src + `?t=${Date.now()}`;
-            this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
-                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
-        } catch (error) {
-            console.error("Ошибка при обновлении игровых данных:", error);
-            this.elements.cube.src = this.getSkinConfig().classic.default[0].src + `?t=${Date.now()}`;
-        }
-    },
+        const skinConfig = this.getSkinConfig();
+        this.elements.cube.src = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;  // Используем начальное изображение
+        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
+        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+        Skins.syncSkins(data.owned_skins || [], this.state.equippedSkin);
+    } catch (error) {
+        console.error("Ошибка при обновлении игровых данных:", error);
+        this.elements.cube.src = this.getSkinConfig().classic.initial + `?t=${Date.now()}`;  // Fallback на начальный кубик
+    }
+},
 
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
@@ -939,7 +938,7 @@ async function initializeApp() {
         loadingText.textContent = 'Loading 75%';
 
         const equippedSkin = data.equipped_skin || "classic";
-        loadingCube.src = skinConfig[equippedSkin].default[0].src + `?t=${Date.now()}`;
+        loadingCube.src = skinConfig[equippedSkin].initial + `?t=${Date.now()}`;  // Используем начальное изображение
         playerCoins.textContent = `Coins: ${Utils.formatCoins(data.coins || 0)} $LUCU`;
         playerBestLuck.textContent = `Best Luck: ${data.min_luck === Infinity || data.min_luck === undefined ? 'N/A' : Utils.formatNumber(data.min_luck)}`;
         playerInfo.classList.remove('hidden');
