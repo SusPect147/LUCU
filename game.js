@@ -766,10 +766,6 @@ const Particles = {
 // Инициализация приложения
 // ============================================================================
 
-// ============================================================================
-// Инициализация приложения
-// ============================================================================
-
 async function initializeApp() {
     if (!window.Telegram?.WebApp) {
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
@@ -806,7 +802,7 @@ async function initializeApp() {
                 [...skin.default.map(item => item.src), ...skin.rainbow.map(item => item.src)]
             ),
             CONFIG.FALLBACK_AVATAR,
-            // Дополнительные изображения (иконки меню и т.д., добавьте свои пути, если есть)
+            // Обновленные пути к изображениям
             "pictures/other png/друзья.png",
             "pictures/other png/квесты.png",
             "pictures/other png/мазазин.png",
@@ -814,9 +810,17 @@ async function initializeApp() {
             "pictures/cubics/cubeee.png"
         ].filter((value, index, self) => self.indexOf(value) === index); // Удаляем дубликаты
 
+        console.log("Images to preload:", imagesToPreload);
+
         // Функция предварительной загрузки изображений
         const preloadImages = async (imageUrls) => {
             const totalImages = imageUrls.length;
+            if (totalImages === 0) {
+                console.log("No images to preload, skipping...");
+                loadingText.textContent = 'Loading 40%';
+                return;
+            }
+
             let loadedImages = 0;
 
             const loadImage = (url) => {
@@ -827,11 +831,14 @@ async function initializeApp() {
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40); // 40% для изображений
                         loadingText.textContent = `Loading ${progress}%`;
+                        console.log(`Loaded: ${url} (${loadedImages}/${totalImages})`);
                         resolve();
                     };
                     img.onerror = () => {
-                        console.warn(`Не удалось загрузить изображение: ${url}`);
                         loadedImages++;
+                        const progress = Math.round((loadedImages / totalImages) * 40);
+                        loadingText.textContent = `Loading ${progress}%`;
+                        console.warn(`Failed to load: ${url} (${loadedImages}/${totalImages})`);
                         resolve(); // Продолжаем даже при ошибке
                     };
                 });
@@ -841,19 +848,28 @@ async function initializeApp() {
         };
 
         // Начинаем загрузку изображений
+        console.log("Starting image preloading...");
         await preloadImages(imagesToPreload);
+        console.log("Image preloading completed.");
 
         // Загрузка конфигурации
+        console.log("Loading configuration...");
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
+        console.log("Configuration loaded:", CONFIG);
 
         // Инициализация частиц
+        console.log("Initializing particles...");
         Particles.init();
+        loadingText.textContent = 'Loading 60%';
 
         const userId = tg.initDataUnsafe?.user?.id;
         if (!userId) throw new Error("User ID not found in Telegram init data");
+        console.log("User ID:", userId);
 
+        // Загрузка данных пользователя
+        console.log("Fetching user data...");
         const data = await API.fetch(`/get_user_data/${userId}`);
         console.log("User data loaded:", data);
         loadingText.textContent = 'Loading 75%';
@@ -866,6 +882,7 @@ async function initializeApp() {
         playerInfo.classList.remove('hidden');
 
         loadingText.textContent = 'Press to enter the game';
+        console.log("Waiting for user input or timeout...");
         await Promise.race([
             new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
             Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
@@ -874,6 +891,7 @@ async function initializeApp() {
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
+            console.log("Loading screen hidden, initializing modules...");
             try {
                 Game.init();
                 Skins.init();
@@ -881,10 +899,12 @@ async function initializeApp() {
                 Leaderboard.init();
                 Profile.init();
                 Friends.init();
+                console.log("All modules initialized.");
             } catch (initError) {
                 console.error("Ошибка инициализации модулей:", initError);
             }
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+            console.log("App fully initialized.");
         }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error.message, error.stack);
