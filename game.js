@@ -353,7 +353,15 @@ const Game = {
                 document.body.classList.add("gray-gradient");
             }
         } else {
-            // Логика для забаненных: ничего не меняем, только ждем анимацию
+            // Логика для забаненных: обновляем монеты после анимации
+            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins; // Обновляем состояние монет
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`; // Обновляем UI
+                // Обновляем AppState, чтобы данные оставались синхронизированными
+                AppState.userData.coins = response.coins;
+            }, coinUpdateDelay);
+
             await Utils.wait(CONFIG.ANIMATION_DURATION);
         }
 
@@ -366,7 +374,6 @@ const Game = {
         this.state.isAnimating = false;
     }
 },
-
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
