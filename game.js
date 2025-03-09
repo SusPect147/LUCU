@@ -17,7 +17,6 @@ async function loadConfig() {
         const data = await response;
         Object.assign(CONFIG, {
             API_BASE_URL: data.API_BASE_URL,
-            TELEGRAM_BOT_TOKEN: data.TELEGRAM_BOT_TOKEN,
             CHANNEL_USERNAME: data.CHANNEL_USERNAME
         });
     } catch (error) {
