@@ -244,7 +244,7 @@ const Game = {
     },
     state: {
         coins: 0,
-        bestLuck: Infinity,
+        bestLuck: 1001,
         isAnimating: false,
         equippedSkin: CONFIG.DEFAULT_SKIN,
         rolls: 0
@@ -275,14 +275,14 @@ const Game = {
             return;
         }
         this.state.coins = data.coins || 0;
-        this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? Infinity : data.min_luck;
+        this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? 1001 : data.min_luck;
         this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
         this.state.rolls = data.rolls || 0;
 
         const skinConfig = this.getSkinConfig();
         this.elements.cube.src = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
         this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === Infinity
+        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
             ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
             : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
     },
@@ -981,18 +981,28 @@ async function initializeApp() {
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
 
-        let playTime = 0; // Время в секундах
-        const startTime = Date.now();
+let playTime = AppState.userData?.play_time || 0; // Загружаем существующее время
+    const startTime = Date.now();
 
-        setInterval(() => {
-            playTime = Math.floor((Date.now() - startTime) / 1000);
-            if (playTime % 60 === 0) {
-                API.fetch("/update_play_time", {
-                    method: "POST",
-                    body: { user_id: tg.initDataUnsafe?.user?.id?.toString(), play_time: playTime }
-                }).catch(error => console.error("Ошибка обновления play_time:", error));
-            }
-        }, 1000);
+    setInterval(() => {
+        const currentSessionTime = Math.floor((Date.now() - startTime) / 1000);
+        const totalPlayTime = playTime + currentSessionTime;
+        
+        // Обновляем на сервере каждые 60 секунд
+        if (currentSessionTime % 60 === 0) {
+            API.fetch("/update_play_time", {
+                method: "POST",
+                body: { 
+                    user_id: userId, 
+                    play_time: totalPlayTime 
+                }
+            })
+            .then(() => {
+                AppState.userData.play_time = totalPlayTime; // Обновляем локальное состояние
+            })
+            .catch(error => console.error("Ошибка обновления play_time:", error));
+        }
+    }, 1000);
 
         Particles.init();
         loadingText.textContent = 'Loading 60%';
@@ -1000,14 +1010,15 @@ async function initializeApp() {
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
-        const userData = await API.fetch(`/get_user_data/${userId}`);
-        AppState.userData = userData;
+const userData = await API.fetch(`/get_user_data/${userId}`);
+    AppState.userData = userData;
 
-        if (userData.ban === "yes") {
-            loadingText.textContent = "You are banned from the game";
-            loadingScreen.removeEventListener('click', initializeApp);
-            return;
-        }
+    if (userData.ban === "yes") {
+        loadingText.textContent = "You are banned from the game";
+        loadingScreen.removeEventListener('click', initializeApp);
+        loadingScreen.style.display = 'flex'; // Оставляем экран видимым
+        return;
+    }
 
         loadingText.textContent = 'Loading 75%';
 
@@ -1025,7 +1036,7 @@ async function initializeApp() {
         const equippedSkin = userData.equipped_skin || "classic";
         loadingCube.src = skinConfig[equippedSkin].initial + `?t=${Date.now()}`;
         playerCoins.textContent = `Coins: ${Utils.formatCoins(userData.coins || 0)} $LUCU`;
-        playerBestLuck.textContent = `Best Luck: ${userData.min_luck === Infinity || userData.min_luck === undefined ? 'N/A' : Utils.formatNumber(userData.min_luck)}`;
+        playerBestLuck.textContent = `Best Luck: ${userData.min_luck === 1001 || userData.min_luck === undefined ? 'N/A' : Utils.formatNumber(userData.min_luck)}`;
         playerInfo.classList.remove('hidden');
 
         loadingText.textContent = 'Press to enter the game';
@@ -1051,17 +1062,27 @@ async function initializeApp() {
             }
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
 
-            tonConnectUI.onStatusChange(wallet => {
-                if (wallet) {
-                    const walletAddress = wallet.account.address;
-                    API.fetch("/update_wallet", {
-                        method: "POST",
-                        body: { user_id: tg.initDataUnsafe?.user?.id?.toString(), wallet_address: walletAddress }
-                    }).then(response => {
-                        console.log("Кошелек зарегистрирован:", walletAddress);
-                    }).catch(error => console.error("Ошибка регистрации кошелька:", error));
+            // В initializeApp(), внутри tonConnectUI.onStatusChange
+tonConnectUI.onStatusChange(wallet => {
+    if (wallet) {
+        const walletAddress = wallet.account.address;
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        if (userId) {
+            API.fetch("/update_wallet", {
+                method: "POST",
+                body: { 
+                    user_id: userId, 
+                    wallet_address: walletAddress 
                 }
-            });
+            })
+            .then(response => {
+                console.log("Кошелек зарегистрирован:", walletAddress);
+                AppState.userData.wallet_address = walletAddress; // Сохраняем в состоянии
+            })
+            .catch(error => console.error("Ошибка регистрации кошелька:", error));
+        }
+    }
+});
         }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error.message, error.stack);
