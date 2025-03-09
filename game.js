@@ -302,29 +302,32 @@ const Game = {
     },
 
     async rollCube() {
-        if (this.state.isAnimating) {
-            console.log("rollCube: Анимация уже в процессе, вызов отклонён");
-            return;
+    if (this.state.isAnimating) {
+        console.log("rollCube: Анимация уже в процессе, вызов отклонён");
+        return;
+    }
+
+    this.state.isAnimating = true;
+
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
+
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
 
-        this.state.isAnimating = true;
+        // Устанавливаем кубик результата и сразу запускаем прогресс-бар
+        this.elements.cube.src = response.outcome_src;
+        this.startProgress(CONFIG.ANIMATION_DURATION);
 
-        try {
-            const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                body: { user_id: userId }
-            });
-
-            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
-            }
-
-            // Устанавливаем кубик результата и сразу запускаем прогресс-бар
-            this.elements.cube.src = response.outcome_src;
-            this.startProgress(CONFIG.ANIMATION_DURATION);
+        if (AppState.userData.ban !== "yes") {
+            // Обычная логика для незабаненных пользователей
             document.body.classList.remove("pink-gradient", "gray-gradient");
             document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
 
@@ -334,17 +337,14 @@ const Game = {
                 this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
             }, coinUpdateDelay);
 
-            // Ждём завершения анимации (3620 мс)
             await Utils.wait(CONFIG.ANIMATION_DURATION);
 
-            // Обновляем bestLuck только если новое значение меньше текущего
             if (response.luck < this.state.bestLuck) {
                 this.state.bestLuck = response.luck;
             }
             this.state.rolls = response.total_rolls;
             this.state.equippedSkin = response.equipped_skin;
 
-            // Показываем минимальное значение удачи из состояния
             this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
             this.updateAchievementProgress(response.total_rolls);
 
@@ -352,16 +352,20 @@ const Game = {
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
             }
-
-            this.setInitialCube();
-        } catch (error) {
-            console.error("Ошибка в rollCube:", error.message, error.stack);
-            this.elements.coinsDisplay.textContent = "Error";
-            this.setInitialCube();
-        } finally {
-            this.state.isAnimating = false;
+        } else {
+            // Логика для забаненных: ничего не меняем, только ждем анимацию
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
         }
-    },
+
+        this.setInitialCube();
+    } catch (error) {
+        console.error("Ошибка в rollCube:", error.message, error.stack);
+        this.elements.coinsDisplay.textContent = "Error";
+        this.setInitialCube();
+    } finally {
+        this.state.isAnimating = false;
+    }
+},
 
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
@@ -374,6 +378,15 @@ const Game = {
 
     getSkinConfig() {
         return {
+            "banned": {
+                "initial": "pictures/cubics/ban.gif",
+                "default": [
+                    {"range": 100, "src": "pictures/cubics/ban.gif", "coins": 0}
+                ],
+                "rainbow": [
+                    {"range": 100, "src": "pictures/cubics/ban.gif", "coins": 0}
+                ]
+            },
             "classic": {
                 "initial": "pictures/cubics/классика/начальный-кубик.gif",
                 "default": [
@@ -1012,6 +1025,32 @@ let playTime = AppState.userData?.play_time || 0; // Загружаем суще
 
 const userData = await API.fetch(`/get_user_data/${userId}`);
     AppState.userData = userData;
+
+    if (userData.ban === "yes") {
+        loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
+        loadingCube.src = "pictures/cubics/ban.gif"; // Показываем ban.gif сразу
+        playerInfo.classList.add('hidden'); // Скрываем информацию о монетах и удаче
+
+        await Promise.race([
+            new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
+            Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
+        ]);
+
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            Game.init();
+            Skins.init();
+            Quests.init();
+            Leaderboard.init();
+            Profile.init();
+            Friends.init();
+            // Устанавливаем скин для забаненного игрока
+            Game.state.equippedSkin = "banned";
+            Game.setInitialCube();
+        }, 500);
+        return; // Прерываем выполнение, чтобы не инициализировать обычную игру
+    }
 
     if (userData.ban === "yes") {
         loadingText.textContent = "You are banned from the game";
