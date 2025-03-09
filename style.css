@@ -296,11 +296,25 @@ body.pink-gradient {
 }
 
 .progress-circle {
-    width: 40px;
-    height: 40px;
+    width: 40px; /* Фиксированная ширина */
+    height: 40px; /* Фиксированная высота */
     border-radius: 50%;
     position: relative;
-    background: transparent; /* Прозрачный фон контейнера */
+    background: #222; /* Серый фон для внутренней части "пончика" */
+    overflow: hidden; /* Обрезаем все, что выходит за границы */
+}
+
+.progress-circle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 28px; /* Внутренний диаметр "пончика" (70% от 40px) */
+    height: 28px; /* Внутренний диаметр "пончика" */
+    background: #0c0c0c; /* Цвет внутренней части "пончика" */
+    border-radius: 50%;
+    transform: translate(-50%, -50%); /* Центрируем круг */
+    z-index: 2; /* Над прогрессом */
 }
 
 .progress-circle::after {
@@ -314,8 +328,7 @@ body.pink-gradient {
         #000000 var(--progress, 0%)   /* Черный фон кольца */
     );
     transform: rotate(-90deg); /* Начало сверху */
-    -webkit-mask: radial-gradient(circle at center, transparent 50%, black 60%); /* Уменьшаем прозрачную область */
-    mask: radial-gradient(circle at center, transparent 50%, black 60%); /* Уменьшаем прозрачную область */
+    z-index: 1; /* Под внутренним кругом */
 }
 
 .progress-circle span {
