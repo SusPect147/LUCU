@@ -103,6 +103,13 @@ const API = {
         };
         if (options.body) config.body = JSON.stringify(options.body);
 
+        // Отладочный вывод
+        console.log(`Sending request to ${url}:`, {
+            method: config.method,
+            headers: config.headers,
+            body: config.body
+        });
+
         let attempts = 0;
         const maxAttempts = 3;
         while (attempts < maxAttempts) {
@@ -1034,10 +1041,26 @@ async function initializeApp() {
         const user = tg.initDataUnsafe.user;
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
-        await API.fetch("/update_profile", {
+
+        // Явный вызов с отладкой
+        console.log("Sending /update_profile:", {
+            user_id: userId,
+            username: username,
+            photo_url: photoUrl
+        });
+        const updateProfileResponse = await API.fetch("/update_profile", {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": tg.initData
+            },
             body: { user_id: userId, username: username, photo_url: photoUrl }
         });
+        console.log("Response from /update_profile:", updateProfileResponse);
+
+        // Обновляем AppState после успешного обновления профиля
+        AppState.userData.username = username;
+        AppState.userData.photo_url = photoUrl;
 
         const referralData = await API.fetch(`/get_referral_count/${userId}`);
         AppState.userData.referral_count = referralData.referral_count || 0;
