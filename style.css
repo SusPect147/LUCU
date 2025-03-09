@@ -296,12 +296,12 @@ body.pink-gradient {
 }
 
 .progress-circle {
-    width: 40px; /* Фиксированная ширина */
-    height: 40px; /* Фиксированная высота */
+    width: 40px; /* Фиксированный размер */
+    height: 40px;
     border-radius: 50%;
     position: relative;
-    background: #222; /* Серый фон для внутренней части "пончика" */
-    overflow: hidden; /* Обрезаем все, что выходит за границы */
+    background: #333; /* Более светлый серый фон для внешнего кольца */
+    overflow: hidden;
 }
 
 .progress-circle::before {
@@ -309,11 +309,11 @@ body.pink-gradient {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 28px; /* Внутренний диаметр "пончика" (70% от 40px) */
-    height: 28px; /* Внутренний диаметр "пончика" */
-    background: #0c0c0c; /* Цвет внутренней части "пончика" */
+    width: 28px; /* Внутренний круг "пончика" */
+    height: 28px;
+    background: #1a1a1a; /* Темно-серый для внутренней части */
     border-radius: 50%;
-    transform: translate(-50%, -50%); /* Центрируем круг */
+    transform: translate(-50%, -50%);
     z-index: 2; /* Над прогрессом */
 }
 
@@ -324,8 +324,8 @@ body.pink-gradient {
     height: 100%;
     border-radius: 50%;
     background: conic-gradient(
-        #ff0000 var(--progress, 0%),  /* Красный прогресс */
-        #000000 var(--progress, 0%)   /* Черный фон кольца */
+        #ff0000 var(--progress, 0%), /* Красный прогресс */
+        #555 var(--progress, 0%)     /* Серый фон кольца для контраста */
     );
     transform: rotate(-90deg); /* Начало сверху */
     z-index: 1; /* Под внутренним кругом */
