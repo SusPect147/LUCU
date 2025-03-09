@@ -92,7 +92,6 @@ const API = {
             console.error("Telegram initData is missing");
             throw new Error("Telegram initData is required for API requests");
         }
-        console.log("Sending X-Telegram-Init-Data:", telegramInitData); // Отладка
         const defaultHeaders = {
             "Content-Type": "application/json",
             "X-Telegram-Init-Data": telegramInitData
@@ -308,7 +307,6 @@ const Game = {
 
     async rollCube() {
     if (this.state.isAnimating) {
-        console.log("rollCube: Анимация уже в процессе, вызов отклонён");
         return;
     }
 
@@ -685,7 +683,6 @@ const Quests = {
                 // Обновляем UI квестов
                 this.updateQuestStatus();
 
-                console.log("Подписка подтверждена, квест обновлён:", questResponse);
             } else {
                 tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
                 setTimeout(() => this.handleSubscription(), 10000);
