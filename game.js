@@ -379,12 +379,12 @@ const Game = {
     getSkinConfig() {
         return {
             "banned": {
-                "initial": "pictures/cubics/ban.gif",
+                "initial": "ban.gif",
                 "default": [
-                    {"range": 100, "src": "pictures/cubics/ban.gif", "coins": 0}
+                    {"range": 100, "src": "ban.gif", "coins": 0}
                 ],
                 "rainbow": [
-                    {"range": 100, "src": "pictures/cubics/ban.gif", "coins": 0}
+                    {"range": 100, "src": "ban.gif", "coins": 0}
                 ]
             },
             "classic": {
@@ -1028,7 +1028,7 @@ const userData = await API.fetch(`/get_user_data/${userId}`);
 
     if (userData.ban === "yes") {
         loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
-        loadingCube.src = "pictures/cubics/ban.gif"; // Показываем ban.gif сразу
+        loadingCube.src = "ban.gif"; // Показываем ban.gif сразу
         playerInfo.classList.add('hidden'); // Скрываем информацию о монетах и удаче
 
         await Promise.race([
