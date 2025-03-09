@@ -892,19 +892,12 @@ const Particles = {
 
 async function initializeApp() {
     if (!window.Telegram?.WebApp) {
-        console.error("Telegram WebApp is not available");
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
         return;
     }
     const tg = window.Telegram.WebApp;
 
-    try {
-        tg.expand();
-        tg.requestFullscreen();
-    } catch (fullscreenError) {
-        console.warn("Fullscreen expansion failed:", fullscreenError);
-    }
-
+    // Немедленное отображение загрузочного экрана
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
     const loadingCube = document.getElementById('loading-cube');
@@ -918,13 +911,26 @@ async function initializeApp() {
         return;
     }
 
+    // Показываем загрузочный экран синхронно
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
 
+    // Принудительный рефлоу для немедленного отображения
+    loadingScreen.offsetHeight; // Это заставляет браузер применить стили перед продолжением
+
+    // Расширяем приложение Telegram
+    try {
+        tg.expand();
+        tg.requestFullscreen();
+    } catch (fullscreenError) {
+        console.warn("Fullscreen expansion failed:", fullscreenError);
+    }
+
     try {
         const skinConfig = Game.getSkinConfig();
 
+        // Предзагрузка изображений
         const imagesToPreload = [
             ...Object.values(skinConfig).flatMap(skin => 
                 [...skin.default.map(item => item.src), ...skin.rainbow.map(item => item.src)]
@@ -980,7 +986,6 @@ async function initializeApp() {
 
         setInterval(() => {
             playTime = Math.floor((Date.now() - startTime) / 1000);
-            // Отправляем play_time на сервер каждые 60 секунд
             if (playTime % 60 === 0) {
                 API.fetch("/update_play_time", {
                     method: "POST",
@@ -998,7 +1003,6 @@ async function initializeApp() {
         const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData;
 
-        // Проверка на бан
         if (userData.ban === "yes") {
             loadingText.textContent = "You are banned from the game";
             loadingScreen.removeEventListener('click', initializeApp);
@@ -1007,7 +1011,6 @@ async function initializeApp() {
 
         loadingText.textContent = 'Loading 75%';
 
-        // Обновляем профиль на сервере
         const user = tg.initDataUnsafe.user;
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
@@ -1016,7 +1019,6 @@ async function initializeApp() {
             body: { user_id: userId, username: username, photo_url: photoUrl }
         });
 
-        // Загружаем количество рефералов
         const referralData = await API.fetch(`/get_referral_count/${userId}`);
         AppState.userData.referral_count = referralData.referral_count || 0;
 
@@ -1051,7 +1053,7 @@ async function initializeApp() {
 
             tonConnectUI.onStatusChange(wallet => {
                 if (wallet) {
-                    const walletAddress = wallet.account.address; // Адрес кошелька
+                    const walletAddress = wallet.account.address;
                     API.fetch("/update_wallet", {
                         method: "POST",
                         body: { user_id: tg.initDataUnsafe?.user?.id?.toString(), wallet_address: walletAddress }
