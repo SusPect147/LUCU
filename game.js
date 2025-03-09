@@ -87,9 +87,15 @@ const Utils = {
 const API = {
     async fetch(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+        const telegramInitData = window.Telegram.WebApp.initData || "";
+        if (!telegramInitData) {
+            console.error("Telegram initData is missing");
+            throw new Error("Telegram initData is required for API requests");
+        }
+        console.log("Sending X-Telegram-Init-Data:", telegramInitData); // Отладка
         const defaultHeaders = {
             "Content-Type": "application/json",
-            "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            "X-Telegram-Init-Data": telegramInitData
         };
         const config = {
             method: "GET",
@@ -910,8 +916,9 @@ const Particles = {
 // ============================================================================
 
 async function initializeApp() {
-    if (!window.Telegram?.WebApp) {
+    if (!window.Telegram?.WebApp?.initData) {
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
+        console.error("Telegram WebApp initData is missing");
         return;
     }
     const tg = window.Telegram.WebApp;
@@ -930,15 +937,11 @@ async function initializeApp() {
         return;
     }
 
-    // Показываем загрузочный экран синхронно
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
+    loadingScreen.offsetHeight;
 
-    // Принудительный рефлоу для немедленного отображения
-    loadingScreen.offsetHeight; // Это заставляет браузер применить стили перед продолжением
-
-    // Расширяем приложение Telegram
     try {
         tg.expand();
         tg.requestFullscreen();
@@ -948,8 +951,6 @@ async function initializeApp() {
 
     try {
         const skinConfig = Game.getSkinConfig();
-
-        // Предзагрузка изображений
         const imagesToPreload = [
             ...Object.values(skinConfig).flatMap(skin => 
                 [...skin.default.map(item => item.src), ...skin.rainbow.map(item => item.src)]
@@ -970,7 +971,6 @@ async function initializeApp() {
             }
 
             let loadedImages = 0;
-
             const loadImage = (url) => {
                 return new Promise((resolve) => {
                     const img = new Image();
@@ -985,43 +985,18 @@ async function initializeApp() {
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
-                        console.warn(`Failed to load: ${url} (${loadedImages}/${totalImages})`);
+                        console.warn(`Failed to load: ${url}`);
                         resolve();
                     };
                 });
             };
-
             await Promise.all(imageUrls.map(url => loadImage(url)));
         };
 
         await preloadImages(imagesToPreload);
-
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
-
-let playTime = AppState.userData?.play_time || 0; // Загружаем существующее время
-    const startTime = Date.now();
-
-    setInterval(() => {
-        const currentSessionTime = Math.floor((Date.now() - startTime) / 1000);
-        const totalPlayTime = playTime + currentSessionTime;
-        
-        // Обновляем на сервере каждые 60 секунд
-        if (currentSessionTime % 60 === 0) {
-            API.fetch("/update_play_time", {
-                method: "POST",
-                body: { 
-                    user_id: userId, 
-                    play_time: totalPlayTime 
-                }
-            })
-            .then(() => {
-                AppState.userData.play_time = totalPlayTime; // Обновляем локальное состояние
-            })
-            .catch(error => console.error("Ошибка обновления play_time:", error));
-        }
-    }, 1000);
 
         Particles.init();
         loadingText.textContent = 'Loading 60%';
@@ -1029,41 +1004,33 @@ let playTime = AppState.userData?.play_time || 0; // Загружаем суще
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
-const userData = await API.fetch(`/get_user_data/${userId}`);
-    AppState.userData = userData;
+        const userData = await API.fetch(`/get_user_data/${userId}`);
+        AppState.userData = userData;
 
-    if (userData.ban === "yes") {
-        loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
-        loadingCube.src = "ban.gif"; // Показываем ban.gif сразу
-        playerInfo.classList.add('hidden'); // Скрываем информацию о монетах и удаче
+        if (userData.ban === "yes") {
+            loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
+            loadingCube.src = "ban.gif";
+            playerInfo.classList.add('hidden');
 
-        await Promise.race([
-            new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
-            Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
-        ]);
+            await Promise.race([
+                new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
+                Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
+            ]);
 
-        loadingScreen.classList.add('hidden');
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            Game.init();
-            Skins.init();
-            Quests.init();
-            Leaderboard.init();
-            Profile.init();
-            Friends.init();
-            // Устанавливаем скин для забаненного игрока
-            Game.state.equippedSkin = "banned";
-            Game.setInitialCube();
-        }, 500);
-        return; // Прерываем выполнение, чтобы не инициализировать обычную игру
-    }
-
-    if (userData.ban === "yes") {
-        loadingText.textContent = "You are banned from the game";
-        loadingScreen.removeEventListener('click', initializeApp);
-        loadingScreen.style.display = 'flex'; // Оставляем экран видимым
-        return;
-    }
+            loadingScreen.classList.add('hidden');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                Game.init();
+                Skins.init();
+                Quests.init();
+                Leaderboard.init();
+                Profile.init();
+                Friends.init();
+                Game.state.equippedSkin = "banned";
+                Game.setInitialCube();
+            }, 500);
+            return;
+        }
 
         loadingText.textContent = 'Loading 75%';
 
@@ -1094,40 +1061,13 @@ const userData = await API.fetch(`/get_user_data/${userId}`);
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
-
-            try {
-                Game.init();
-                Skins.init();
-                Quests.init();
-                Leaderboard.init();
-                Profile.init();
-                Friends.init();
-            } catch (initError) {
-                console.error("Ошибка инициализации модулей:", initError);
-            }
+            Game.init();
+            Skins.init();
+            Quests.init();
+            Leaderboard.init();
+            Profile.init();
+            Friends.init();
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
-
-            // В initializeApp(), внутри tonConnectUI.onStatusChange
-tonConnectUI.onStatusChange(wallet => {
-    if (wallet) {
-        const walletAddress = wallet.account.address;
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (userId) {
-            API.fetch("/update_wallet", {
-                method: "POST",
-                body: { 
-                    user_id: userId, 
-                    wallet_address: walletAddress 
-                }
-            })
-            .then(response => {
-                console.log("Кошелек зарегистрирован:", walletAddress);
-                AppState.userData.wallet_address = walletAddress; // Сохраняем в состоянии
-            })
-            .catch(error => console.error("Ошибка регистрации кошелька:", error));
-        }
-    }
-});
         }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error.message, error.stack);
