@@ -381,10 +381,10 @@ const Game = {
             "banned": {
                 "initial": "ban.gif",
                 "default": [
-                    {"range": 100, "src": "ban.gif", "coins": 0}
+                    {"range": 100, "src": "ban.gif", "coins": -1}
                 ],
                 "rainbow": [
-                    {"range": 100, "src": "ban.gif", "coins": 0}
+                    {"range": 100, "src": "ban.gif", "coins": -100}
                 ]
             },
             "classic": {
