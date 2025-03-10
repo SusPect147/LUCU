@@ -313,80 +313,79 @@ const Game = {
     },
 
     async rollCube() {
-    if (this.state.isAnimating) {
-        return;
-    }
-
-    this.state.isAnimating = true;
-
-    try {
-        const userId = tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-
-        console.log("Sending /roll_cube request with user_id:", userId);
-        const response = await API.fetch("/roll_cube", {
-            method: "POST",
-            body: { user_id: userId }
-        });
-        console.log("Response from /roll_cube:", response);
-
-        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
+        if (this.state.isAnimating) {
+            return;
         }
 
-        // Устанавливаем кубик результата и сразу запускаем прогресс-бар
-        this.elements.cube.src = response.outcome_src;
-        this.startProgress(CONFIG.ANIMATION_DURATION);
+        this.state.isAnimating = true;
 
-        if (AppState.userData.ban !== "yes") {
-            // Обычная логика для незабаненных пользователей
-            document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+        try {
+            const userId = tg?.initDataUnsafe?.user?.id?.toString();
+            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-            }, coinUpdateDelay);
+            console.log("Sending /roll_cube request with user_id:", userId);
+            const response = await API.fetch("/roll_cube", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            console.log("Response from /roll_cube:", response);
 
-            await Utils.wait(CONFIG.ANIMATION_DURATION);
-
-            if (response.luck < this.state.bestLuck) {
-                this.state.bestLuck = response.luck;
+            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
             }
-            this.state.rolls = response.total_rolls;
-            this.state.equippedSkin = response.equipped_skin;
 
-            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            this.updateAchievementProgress(response.total_rolls);
+            // Устанавливаем кубик результата и сразу запускаем прогресс-бар
+            this.elements.cube.src = response.outcome_src;
+            this.startProgress(CONFIG.ANIMATION_DURATION);
 
-            if (response.is_rainbow) {
-                document.body.classList.remove("pink-gradient");
-                document.body.classList.add("gray-gradient");
+            if (AppState.userData.ban !== "yes") {
+                // Обычная логика для незабаненных пользователей
+                document.body.classList.remove("pink-gradient", "gray-gradient");
+                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+
+                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = response.coins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                }, coinUpdateDelay);
+
+                await Utils.wait(CONFIG.ANIMATION_DURATION);
+
+                if (response.luck < this.state.bestLuck) {
+                    this.state.bestLuck = response.luck;
+                }
+                this.state.rolls = response.total_rolls;
+                this.state.equippedSkin = response.equipped_skin;
+
+                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+                this.updateAchievementProgress(response.total_rolls);
+
+                if (response.is_rainbow) {
+                    document.body.classList.remove("pink-gradient");
+                    document.body.classList.add("gray-gradient");
+                }
+            } else {
+                // Логика для забаненных: обновляем монеты после анимации
+                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = response.coins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                    AppState.userData.coins = response.coins;
+                }, coinUpdateDelay);
+
+                await Utils.wait(CONFIG.ANIMATION_DURATION);
             }
-        } else {
-            // Логика для забаненных: обновляем монеты после анимации
-            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                AppState.userData.coins = response.coins;
-            }, coinUpdateDelay);
 
-            await Utils.wait(CONFIG.ANIMATION_DURATION);
+            this.setInitialCube();
+        } catch (error) {
+            console.error("Ошибка в rollCube:", error.message, error.stack);
+            this.elements.coinsDisplay.textContent = "Error";
+            this.setInitialCube();
+        } finally {
+            this.state.isAnimating = false;
         }
+    },
 
-        this.setInitialCube();
-    } catch (error) {
-        console.error("Ошибка в rollCube:", error.message, error.stack);
-        this.elements.coinsDisplay.textContent = "Error";
-        this.setInitialCube();
-    } finally {
-        this.state.isAnimating = false;
-    }
-},
-
-    
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
@@ -486,37 +485,36 @@ const Game = {
         };
     },
 
-// В файле game.js, функция Game.updateAchievementProgress
-updateAchievementProgress(rolls) {
-    const targetRolls = 123456;
-    const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
-    const achievementRolls = document.querySelector("#achievements-list .achievement-item:nth-child(2)"); // Изменено на 2
-    if (achievementRolls) {
-        achievementRolls.querySelector(".progress-circle").style.setProperty("--progress", `${rollsProgress}%`);
-        achievementRolls.querySelector(".achievement-reward").textContent = rolls >= targetRolls
-            ? "Achievement Completed! 123456 dice rolls made!"
-            : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
-    }
+    updateAchievementProgress(rolls) {
+        const targetRolls = 123456;
+        const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
+        const achievementRolls = document.querySelector("#achievements-list .achievement-item:nth-child(2)");
+        if (achievementRolls) {
+            achievementRolls.querySelector(".progress-circle").style.setProperty("--progress", `${rollsProgress}%`);
+            achievementRolls.querySelector(".achievement-reward").textContent = rolls >= targetRolls
+                ? "Achievement Completed! 123456 dice rolls made!"
+                : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
+        }
 
-    const targetCoins = 100000;
-    const coinsProgress = Math.min((this.state.coins / targetCoins) * 100, 100);
-    const achievementCoins = document.querySelector("#achievements-list .achievement-item:nth-child(3)"); // Изменено на 3
-    if (achievementCoins) {
-        achievementCoins.querySelector(".progress-circle").style.setProperty("--progress", `${coinsProgress}%`);
-        achievementCoins.querySelector(".achievement-reward").textContent = this.state.coins >= targetCoins
-            ? "Achievement Completed! 100,000+ $LUCU earned!"
-            : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
-    }
+        const targetCoins = 100000;
+        const coinsProgress = Math.min((this.state.coins / targetCoins) * 100, 100);
+        const achievementCoins = document.querySelector("#achievements-list .achievement-item:nth-child(3)");
+        if (achievementCoins) {
+            achievementCoins.querySelector(".progress-circle").style.setProperty("--progress", `${coinsProgress}%`);
+            achievementCoins.querySelector(".achievement-reward").textContent = this.state.coins >= targetCoins
+                ? "Achievement Completed! 100,000+ $LUCU earned!"
+                : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
+        }
 
-    const betaPlayer = AppState.userData.beta_player === "yes";
-    const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(1)"); // Изменено на 1
-    if (achievementBeta) {
-        achievementBeta.querySelector(".progress-circle").style.setProperty("--progress", betaPlayer ? "100%" : "0%");
-        achievementBeta.querySelector(".achievement-reward").textContent = betaPlayer
-            ? "Achievement Completed! You are a beta tester!"
-            : "Become a beta tester to complete";
+        const betaPlayer = AppState.userData.beta_player === "yes";
+        const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(1)");
+        if (achievementBeta) {
+            achievementBeta.querySelector(".progress-circle").style.setProperty("--progress", betaPlayer ? "100%" : "0%");
+            achievementBeta.querySelector(".achievement-reward").textContent = betaPlayer
+                ? "Achievement Completed! You are a beta tester!"
+                : "Become a beta tester to complete";
+        }
     }
-}
 };
 
 // ============================================================================
