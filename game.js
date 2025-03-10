@@ -947,6 +947,7 @@ async function initializeApp() {
     loadingScreen.offsetHeight;
 
     try {
+        console.log("Starting initialization...");
         tg.expand();
         tg.requestFullscreen();
     } catch (fullscreenError) {
@@ -971,43 +972,62 @@ async function initializeApp() {
             const totalImages = imageUrls.length;
             if (totalImages === 0) {
                 loadingText.textContent = 'Loading 40%';
+                console.log("No images to preload, skipping to 40%");
                 return;
             }
 
             let loadedImages = 0;
-            const loadImage = (url) => {
+            const loadImageWithTimeout = (url) => {
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.src = url;
+
+                    const timeout = setTimeout(() => {
+                        console.warn(`Timeout loading image: ${url}`);
+                        loadedImages++;
+                        const progress = Math.round((loadedImages / totalImages) * 40);
+                        loadingText.textContent = `Loading ${progress}%`;
+                        resolve();
+                    }, 5000); // Таймаут 5 секунд
+
                     img.onload = () => {
+                        clearTimeout(timeout);
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
                         resolve();
                     };
                     img.onerror = () => {
+                        clearTimeout(timeout);
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
-                        console.warn(`Failed to load: ${url}`);
+                        console.warn(`Failed to load image: ${url}`);
                         resolve();
                     };
                 });
             };
-            await Promise.all(imageUrls.map(url => loadImage(url)));
+
+            await Promise.all(imageUrls.map(url => loadImageWithTimeout(url)));
+            console.log("Image preloading completed");
         };
 
+        console.log("Preloading images...");
         await preloadImages(imagesToPreload);
+
+        console.log("Loading config...");
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
 
+        console.log("Initializing particles...");
         Particles.init();
         loadingText.textContent = 'Loading 60%';
 
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
+        console.log("Fetching user data...");
         const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData;
 
@@ -1041,25 +1061,23 @@ async function initializeApp() {
         const user = tg.initDataUnsafe.user;
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
-const updateProfileResponse = await API.fetch("/debug_update_profile", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": tg.initData
-    },
-    body: { user_id: userId, username: username, photo_url: photoUrl }
-});
-        // Явный вызов с отладкой
-        console.log("Sending /update_profile:", {
-            user_id: userId,
-            username: username,
-            photo_url: photoUrl
+
+        console.log("Sending /debug_update_profile:", { user_id: userId, username: username, photo_url: photoUrl });
+        const updateProfileResponse = await API.fetch("/debug_update_profile", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": tg.initData
+            },
+            body: { user_id: userId, username: username, photo_url: photoUrl }
         });
+        console.log("Response from /debug_update_profile:", updateProfileResponse);
 
         // Обновляем AppState после успешного обновления профиля
         AppState.userData.username = username;
         AppState.userData.photo_url = photoUrl;
 
+        console.log("Fetching referral count...");
         const referralData = await API.fetch(`/get_referral_count/${userId}`);
         AppState.userData.referral_count = referralData.referral_count || 0;
 
@@ -1086,6 +1104,7 @@ const updateProfileResponse = await API.fetch("/debug_update_profile", {
             Profile.init();
             Friends.init();
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
+            console.log("Application fully initialized");
         }, 500);
     } catch (error) {
         console.error('Ошибка инициализации приложения:', error.message, error.stack);
