@@ -1041,7 +1041,14 @@ async function initializeApp() {
         const user = tg.initDataUnsafe.user;
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
-
+        const updateProfileResponse = await API.fetch("/debug_update_profile", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": tg.initData
+    },
+    body: { user_id: userId, username: username, photo_url: photoUrl }
+});
         // Явный вызов с отладкой
         console.log("Sending /update_profile:", {
             user_id: userId,
