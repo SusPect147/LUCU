@@ -323,10 +323,12 @@ const Game = {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
+        console.log("Sending /roll_cube request with user_id:", userId);
         const response = await API.fetch("/roll_cube", {
             method: "POST",
             body: { user_id: userId }
         });
+        console.log("Response from /roll_cube:", response);
 
         if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
             throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
@@ -366,9 +368,8 @@ const Game = {
             // Логика для забаненных: обновляем монеты после анимации
             const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
             setTimeout(() => {
-                this.state.coins = response.coins; // Обновляем состояние монет
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`; // Обновляем UI
-                // Обновляем AppState, чтобы данные оставались синхронизированными
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
                 AppState.userData.coins = response.coins;
             }, coinUpdateDelay);
 
@@ -384,6 +385,8 @@ const Game = {
         this.state.isAnimating = false;
     }
 },
+
+    
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
