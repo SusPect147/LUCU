@@ -103,7 +103,6 @@ const API = {
         };
         if (options.body) config.body = JSON.stringify(options.body);
 
-        // Отладочный вывод
         console.log(`Sending request to ${url}:`, {
             method: config.method,
             headers: config.headers,
@@ -117,13 +116,22 @@ const API = {
                 const response = await fetch(url, config);
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                    const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                    error.status = response.status; // Добавляем статус для дальнейшей обработки
+                    throw error;
                 }
                 return await response.json();
             } catch (error) {
                 attempts++;
                 console.error(`Fetch attempt ${attempts} failed for ${endpoint}: ${error.message}`);
-                if (attempts === maxAttempts) throw error;
+                if (attempts === maxAttempts) {
+                    // Специфическая обработка для 500 ошибки
+                    if (error.status === 500) {
+                        console.error("Server error (500), please try again later.");
+                        throw new Error("Server is experiencing issues, please try again later.");
+                    }
+                    throw error;
+                }
                 await Utils.wait(1000 * attempts);
             }
         }
@@ -313,26 +321,26 @@ const Game = {
     },
 
     async rollCube() {
-        if (this.state.isAnimating) {
-            return;
+       if (this.state.isAnimating) {
+        return;
+    }
+
+    this.state.isAnimating = true;
+
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
+
+        console.log("Sending /roll_cube request with user_id:", userId);
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+        console.log("Response from /roll_cube:", response);
+
+        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
-
-        this.state.isAnimating = true;
-
-        try {
-            const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-
-            console.log("Sending /roll_cube request with user_id:", userId);
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                body: { user_id: userId }
-            });
-            console.log("Response from /roll_cube:", response);
-
-            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
-            }
 
             // Устанавливаем кубик результата и сразу запускаем прогресс-бар
             this.elements.cube.src = response.outcome_src;
@@ -378,13 +386,17 @@ const Game = {
 
             this.setInitialCube();
         } catch (error) {
-            console.error("Ошибка в rollCube:", error.message, error.stack);
+        console.error("Ошибка в rollCube:", error.message, error.stack);
+        if (error.message.includes("Server is experiencing issues")) {
+            this.elements.coinsDisplay.textContent = "Server Error";
+        } else {
             this.elements.coinsDisplay.textContent = "Error";
-            this.setInitialCube();
-        } finally {
-            this.state.isAnimating = false;
         }
-    },
+        this.setInitialCube();
+    } finally {
+        this.state.isAnimating = false;
+    }
+},
 
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
@@ -1107,9 +1119,13 @@ async function initializeApp() {
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
             console.log("Application fully initialized");
         }, 500);
-    } catch (error) {
+} catch (error) {
         console.error('Ошибка инициализации приложения:', error.message, error.stack);
-        loadingText.textContent = `Error: ${error.message}. Click to refresh.`;
+        if (error.message.includes("Server is experiencing issues")) {
+            loadingText.textContent = "Server error: Please try again later.";
+        } else {
+            loadingText.textContent = `Error: ${error.message}. Click to refresh.`;
+        }
         loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
     }
 }
