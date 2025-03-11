@@ -321,7 +321,7 @@ const Game = {
     },
 
     async rollCube() {
-       if (this.state.isAnimating) {
+if (this.state.isAnimating) {
         return;
     }
 
@@ -385,10 +385,10 @@ const Game = {
             }
 
             this.setInitialCube();
-        } catch (error) {
+} catch (error) {
         console.error("Ошибка в rollCube:", error.message, error.stack);
-        if (error.message.includes("Server is experiencing issues")) {
-            this.elements.coinsDisplay.textContent = "Server Error";
+        if (error.message.includes("422")) {
+            this.elements.coinsDisplay.textContent = "Invalid request data";
         } else {
             this.elements.coinsDisplay.textContent = "Error";
         }
