@@ -1130,5 +1130,7 @@ async function initializeApp() {
     }
 }
 
+
+
 // Запуск приложения
 initializeApp();
