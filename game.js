@@ -320,8 +320,8 @@ const Game = {
         this.rollCube();
     },
 
-    async rollCube() {
-if (this.state.isAnimating) {
+async rollCube() {
+    if (this.state.isAnimating) {
         return;
     }
 
@@ -342,57 +342,66 @@ if (this.state.isAnimating) {
             throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
 
-            // Устанавливаем кубик результата и сразу запускаем прогресс-бар
-            this.elements.cube.src = response.outcome_src;
-            this.startProgress(CONFIG.ANIMATION_DURATION);
+        // Устанавливаем кубик результата и сразу запускаем прогресс-бар
+        this.elements.cube.src = response.outcome_src;
+        this.startProgress(CONFIG.ANIMATION_DURATION);
 
-            if (AppState.userData.ban !== "yes") {
-                // Обычная логика для незабаненных пользователей
-                document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+        if (AppState.userData.ban !== "yes") {
+            // Обычная логика для незабаненных пользователей
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
 
-                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                }, coinUpdateDelay);
+            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            }, coinUpdateDelay);
 
-                await Utils.wait(CONFIG.ANIMATION_DURATION);
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
 
-                if (response.luck < this.state.bestLuck) {
-                    this.state.bestLuck = response.luck;
-                }
-                this.state.rolls = response.total_rolls;
-                this.state.equippedSkin = response.equipped_skin;
-
-                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-                this.updateAchievementProgress(response.total_rolls);
-
-                if (response.is_rainbow) {
-                    document.body.classList.remove("pink-gradient");
-                    document.body.classList.add("gray-gradient");
-                }
-            } else {
-                // Логика для забаненных: обновляем монеты после анимации
-                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                    AppState.userData.coins = response.coins;
-                }, coinUpdateDelay);
-
-                await Utils.wait(CONFIG.ANIMATION_DURATION);
+            if (response.luck < this.state.bestLuck) {
+                this.state.bestLuck = response.luck;
             }
+            this.state.rolls = response.total_rolls;
+            this.state.equippedSkin = response.equipped_skin;
 
-            this.setInitialCube();
-} catch (error) {
+            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            this.updateAchievementProgress(response.total_rolls);
+
+            if (response.is_rainbow) {
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
+            }
+        } else {
+            // Логика для забаненных: обновляем монеты после анимации
+            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                AppState.userData.coins = response.coins;
+            }, coinUpdateDelay);
+
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
+        }
+
+        this.setInitialCube();
+    } catch (error) {
         console.error("Ошибка в rollCube:", error.message, error.stack);
+        // Улучшенная обработка ошибок для пользователя
         if (error.message.includes("422")) {
             this.elements.coinsDisplay.textContent = "Invalid request data";
+        } else if (error.message.includes("401")) {
+            this.elements.coinsDisplay.textContent = "Unauthorized access";
+        } else if (error.message.includes("403")) {
+            this.elements.coinsDisplay.textContent = "You are banned";
+        } else if (error.message.includes("429")) {
+            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
         } else {
-            this.elements.coinsDisplay.textContent = "Error";
+            this.elements.coinsDisplay.textContent = "Server error, try again later";
         }
         this.setInitialCube();
+        // Добавляем задержку перед сбросом анимации, чтобы пользователь увидел сообщение
+        await Utils.wait(2000);
     } finally {
         this.state.isAnimating = false;
     }
