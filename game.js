@@ -775,7 +775,17 @@ async function initializeApp() {
     const playerBestLuck = document.getElementById('player-best-luck');
     if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
         document.body.innerHTML = "<p>Error: Missing UI elements</p>";
+        re
+    const ua = navigator.userAgent.toLowerCase();
+    const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(ua);
+    if (!isMobile) {
+        document.body.innerHTML = "<p style='text-align: center;'>This game is only available on mobile devices. Please open it from your phone.</p>";
         return;
+    }
+    if (!window.Telegram?.WebApp?.initData) {
+        document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
+        return;
+    }turn;
     }
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
