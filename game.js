@@ -616,12 +616,13 @@ const Quests = {
             await this.completeQuest(userId, "subscription_quest", 250);
         } else {
             tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
-            setTimeout(() => this.handleSubscription(userId), 10000);
+            setTimeout(() => this.handleSubscription(userId), 10000); // Проверка через 10 секунд
         }
     },
     async handleForwardMessage(userId) {
-        const messageText = "Check out Lucky Cubes! Join me at " + `t.me/LuckyCubesbot?start=${userId}`;
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(web_app_url)}&text=${encodeURIComponent(messageText)}`);
+        const messageText = "Hey, jump into the game and check your luck level with me!";
+        // Открываем Telegram с предложением переслать сообщение
+        tg.openTelegramLink(`https://t.me/LuckyCubesbot?start=/forward_message`);
         setTimeout(async () => {
             const response = await API.fetch("/check_forward_message", {
                 method: "POST",
@@ -630,10 +631,11 @@ const Quests = {
             if (response.success) {
                 await this.completeQuest(userId, "forward_message", 500);
             }
-        }, 10000);
+        }, 15000); // Даем 15 секунд на выполнение
     },
     async handleDiceStatus(userId) {
-        alert("Add 🎲 to your Telegram status, then send /verify_status to @LuckyCubesbot in Telegram. Wait a few seconds and press OK.");
+        // Открываем Telegram с командой /verify_status вместо alert
+        tg.openTelegramLink("https://t.me/LuckyCubesbot?start=/verify_status");
         setTimeout(async () => {
             const response = await API.fetch("/check_dice_status", {
                 method: "POST",
@@ -641,12 +643,11 @@ const Quests = {
             });
             if (response.success) {
                 await this.completeQuest(userId, "dice_status", 500);
-            } else {
-                alert("Dice emoji 🎲 not found in your status. Please add it and send /verify_status again.");
             }
-        }, 15000); // 15 секунд на выполнение команды
+        }, 15000); // Даем 15 секунд на установку статуса и проверку
     },
     async handleDiceNickname(userId) {
+        // Оставляем alert, так как нет прямого способа открыть меню редактирования ника через Telegram API
         alert("Add 🎲 to your Telegram nickname and press OK after.");
         const response = await API.fetch("/check_dice_nickname", {
             method: "POST",
@@ -659,16 +660,17 @@ const Quests = {
         }
     },
     async handleBoostChannel(userId) {
-        alert("Boost the LUCU channel via Telegram (use the boost feature) and press OK after.");
-        const response = await API.fetch("/check_boost_channel", {
-            method: "POST",
-            body: { user_id: userId }
-        });
-        if (response.success) {
-            await this.completeQuest(userId, "boost_channel", 500);
-        } else {
-            alert("Channel boost not detected. Please boost the LUCU channel and try again.");
-        }
+        // Открываем Telegram с командой /boost_channel вместо alert
+        tg.openTelegramLink(`https://t.me/LuckyCubesbot?start=/boost_channel`);
+        setTimeout(async () => {
+            const response = await API.fetch("/check_boost_channel", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            if (response.success) {
+                await this.completeQuest(userId, "boost_channel", 500);
+            }
+        }, 15000); // Даем 15 секунд на буст и проверку
     },
     async completeQuest(userId, questName, reward) {
         const response = await API.fetch("/update_quest", {
