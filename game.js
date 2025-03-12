@@ -65,19 +65,16 @@ const Utils = {
 };
 
 const API = {
+    defaultHeaders: {}, // Изначально пустой, будет обновлен в initializeApp
     async fetch(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
         const telegramInitData = window.Telegram.WebApp.initData || "";
         if (!telegramInitData) {
             throw new Error("Telegram initData is required for API requests");
         }
-        const defaultHeaders = {
-            "Content-Type": "application/json",
-            "X-Telegram-Init-Data": telegramInitData
-        };
         const config = {
             method: "GET",
-            headers: { ...defaultHeaders, ...options.headers },
+            headers: { ...this.defaultHeaders, ...options.headers },
             ...options
         };
         if (options.body) config.body = JSON.stringify(options.body);
@@ -799,6 +796,13 @@ async function initializeApp() {
         const { token } = await initResponse.json();
         localStorage.setItem('authToken', token);
 
+        // Обновляем defaultHeaders для всех последующих запросов
+        API.defaultHeaders = {
+            "Content-Type": "application/json",
+            "X-Telegram-Init-Data": tg.initData,
+            "Authorization": `Bearer ${token}`
+        };
+
         const skinConfig = Game.getSkinConfig();
         const imagesToPreload = [
             ...Object.values(skinConfig).flatMap(skin => 
@@ -849,7 +853,7 @@ async function initializeApp() {
         };
 
         await preloadImages(imagesToPreload);
-        await loadConfig();
+        await loadConfig(); // Теперь вызываем после получения токена
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
         Particles.init();
@@ -858,12 +862,7 @@ async function initializeApp() {
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
 
-        // Используем JWT-токен для запроса данных пользователя
-        const userData = await API.fetch(`/get_user_data/${userId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            }
-        });
+        const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData;
 
         if (userData.ban === "yes") {
@@ -894,25 +893,15 @@ async function initializeApp() {
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
 
-        // Обновление профиля с использованием JWT
         const updateProfileResponse = await API.fetch("/debug_update_profile", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem('authToken')}`
-            },
-            body: JSON.stringify({ user_id: userId, username: username, photo_url: photoUrl })
+            body: { user_id: userId, username: username, photo_url: photoUrl }
         });
 
         AppState.userData.username = username;
         AppState.userData.photo_url = photoUrl;
 
-        // Получение данных о рефералах с JWT
-        const referralData = await API.fetch(`/get_referral_count/${userId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            }
-        });
+        const referralData = await API.fetch(`/get_referral_count/${userId}`);
         AppState.userData.referral_count = referralData.referral_count || 0;
 
         const equippedSkin = userData.equipped_skin || "classic";
