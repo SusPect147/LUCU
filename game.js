@@ -1,7 +1,3 @@
-// ============================================================================
-//                   Константы и глобальные переменные
-// ============================================================================
-
 const CONFIG = {
     CANVAS_ID: "particleCanvas",
     DEFAULT_SKIN: "classic",
@@ -19,9 +15,7 @@ async function loadConfig() {
             API_BASE_URL: data.API_BASE_URL,
             CHANNEL_USERNAME: data.CHANNEL_USERNAME
         });
-    } catch (error) {
-        console.error("Ошибка загрузки конфигурации:", error.message, error.stack);
-    }
+    } catch (error) {}
 }
 
 const tg = window.Telegram?.WebApp;
@@ -30,14 +24,9 @@ const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     buttonRootId: "ton-connect"
 });
 
-// Глобальное состояние для хранения данных пользователя
 const AppState = {
-    userData: null // Будет содержать все данные пользователя после загрузки
+    userData: null
 };
-
-// ============================================================================
-// Утилиты (только для UI)
-// ============================================================================
 
 const Utils = {
     formatCoins(amount) {
@@ -46,19 +35,15 @@ const Utils = {
         if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`;
         return amount.toString();
     },
-
     formatNumber(num) {
         return num >= 1 ? num.toFixed(4) : num.toPrecision(4);
     },
-
     formatWithCommas(num) {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     },
-
     wait(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
-
     adjustFontSize(element) {
         const parentWidth = element.parentElement.offsetWidth;
         let fontSize = 35;
@@ -67,7 +52,6 @@ const Utils = {
             element.style.fontSize = `${--fontSize}px`;
         }
     },
-
     copyToClipboard(text) {
         const textarea = document.createElement("textarea");
         textarea.value = text;
@@ -80,16 +64,11 @@ const Utils = {
     }
 };
 
-// ============================================================================
-// API Взаимодействие
-// ============================================================================
-
 const API = {
     async fetch(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
         const telegramInitData = window.Telegram.WebApp.initData || "";
         if (!telegramInitData) {
-            console.error("Telegram initData is missing");
             throw new Error("Telegram initData is required for API requests");
         }
         const defaultHeaders = {
@@ -102,13 +81,6 @@ const API = {
             ...options
         };
         if (options.body) config.body = JSON.stringify(options.body);
-
-        console.log(`Sending request to ${url}:`, {
-            method: config.method,
-            headers: config.headers,
-            body: config.body
-        });
-
         let attempts = 0;
         const maxAttempts = 3;
         while (attempts < maxAttempts) {
@@ -117,17 +89,14 @@ const API = {
                 if (!response.ok) {
                     const errorText = await response.text();
                     const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-                    error.status = response.status; // Добавляем статус для дальнейшей обработки
+                    error.status = response.status;
                     throw error;
                 }
                 return await response.json();
             } catch (error) {
                 attempts++;
-                console.error(`Fetch attempt ${attempts} failed for ${endpoint}: ${error.message}`);
                 if (attempts === maxAttempts) {
-                    // Специфическая обработка для 500 ошибки
                     if (error.status === 500) {
-                        console.error("Server error (500), please try again later.");
                         throw new Error("Server is experiencing issues, please try again later.");
                     }
                     throw error;
@@ -137,10 +106,6 @@ const API = {
         }
     }
 };
-
-// ============================================================================
-//                       Частицы (Particle System)
-// ============================================================================
 
 class Particle {
     constructor(id, parent) {
@@ -152,7 +117,6 @@ class Particle {
         this.speed = { x: 0, y: 0 };
         this.init();
     }
-
     init() {
         const FPS = 60;
         const interval = setInterval(() => {
@@ -180,7 +144,6 @@ class ParticleSystem {
         this.canvas.width = size.x;
         this.canvas.height = size.y;
     }
-
     createParticle() {
         const particle = new Particle(this.lastId.toString(), this);
         particle.position.x = Math.random() * this.size.x;
@@ -192,17 +155,13 @@ class ParticleSystem {
         this.particles.set(this.lastId.toString(), particle);
         this.lastId++;
     }
-
     init() {
         const ctx = this.canvas.getContext("2d");
         ctx.fillStyle = "white";
-
         for (let i = 0; i < this.amount; i++) this.createParticle();
-
         setInterval(() => {
             if (this.particles.size < this.amount) this.createParticle();
         }, 1000 / 60);
-
         setInterval(() => {
             ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.particles.forEach(particle => {
@@ -212,7 +171,6 @@ class ParticleSystem {
             });
         }, 1000 / 60);
     }
-
     resize(newSize, oldSize) {
         this.canvas.width = newSize.x;
         this.canvas.height = newSize.y;
@@ -226,10 +184,6 @@ class ParticleSystem {
     }
 }
 
-// ============================================================================
-//                          UI Управление
-// ============================================================================
-
 const UI = {
     toggleMenu(menu, show) {
         menu.classList.toggle("hidden", !show);
@@ -239,7 +193,6 @@ const UI = {
             setTimeout(() => menu.classList.remove("hide"), 400);
         }
     },
-
     addSwipeHandler(menu, onSwipeDown) {
         let startY;
         menu.addEventListener("touchstart", e => startY = e.touches[0].clientY);
@@ -249,10 +202,6 @@ const UI = {
         });
     }
 };
-
-// ============================================================================
-// Игра (Game)
-// ============================================================================
 
 const Game = {
     elements: {
@@ -268,36 +217,27 @@ const Game = {
         equippedSkin: CONFIG.DEFAULT_SKIN,
         rolls: 0
     },
-
     init() {
         this.elements.cube = document.getElementById("cube");
         this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
         this.elements.bestLuckDisplay = document.getElementById("bestLuck");
         this.elements.progressBar = document.querySelector("#progressBar div");
-
         if (!this.elements.cube || !this.elements.coinsDisplay || !this.elements.bestLuckDisplay || !this.elements.progressBar) {
-            console.error("Не удалось найти один или несколько элементов DOM");
             return;
         }
-
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
         this.elements.cube.addEventListener("click", this.handleClick.bind(this));
-
-        // Используем данные из AppState, загруженные на этапе загрузки
         this.updateFromAppState();
     },
-
     updateFromAppState() {
         const data = AppState.userData;
         if (!data) {
-            console.error("Нет данных пользователя в AppState");
             return;
         }
         this.state.coins = data.coins || 0;
         this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? 1001 : data.min_luck;
         this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
         this.state.rolls = data.rolls || 0;
-
         const skinConfig = this.getSkinConfig();
         this.elements.cube.src = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
         this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
@@ -305,13 +245,11 @@ const Game = {
             ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
             : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
     },
-
     setInitialCube() {
         const skinConfig = this.getSkinConfig();
         const initialSrc = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
         this.elements.cube.src = initialSrc;
     },
-
     handleClick(event) {
         if (this.state.isAnimating) {
             event.preventDefault();
@@ -319,94 +257,71 @@ const Game = {
         }
         this.rollCube();
     },
-
-async rollCube() {
-    if (this.state.isAnimating) {
-        return;
-    }
-
-    this.state.isAnimating = true;
-
-    try {
-        const userId = tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-
-        console.log("Sending /roll_cube request with user_id:", userId);
-        const response = await API.fetch("/roll_cube", {
-            method: "POST",
-            body: { user_id: userId }
-        });
-        console.log("Response from /roll_cube:", response);
-
-        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
+    async rollCube() {
+        if (this.state.isAnimating) {
+            return;
         }
-
-        // Устанавливаем кубик результата и сразу запускаем прогресс-бар
-        this.elements.cube.src = response.outcome_src;
-        this.startProgress(CONFIG.ANIMATION_DURATION);
-
-        if (AppState.userData.ban !== "yes") {
-            // Обычная логика для незабаненных пользователей
-            document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
-
-            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-            }, coinUpdateDelay);
-
-            await Utils.wait(CONFIG.ANIMATION_DURATION);
-
-            if (response.luck < this.state.bestLuck) {
-                this.state.bestLuck = response.luck;
+        this.state.isAnimating = true;
+        try {
+            const userId = tg?.initDataUnsafe?.user?.id?.toString();
+            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
+            const response = await API.fetch("/roll_cube", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
             }
-            this.state.rolls = response.total_rolls;
-            this.state.equippedSkin = response.equipped_skin;
-
-            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            this.updateAchievementProgress(response.total_rolls);
-
-            if (response.is_rainbow) {
-                document.body.classList.remove("pink-gradient");
-                document.body.classList.add("gray-gradient");
+            this.elements.cube.src = response.outcome_src;
+            this.startProgress(CONFIG.ANIMATION_DURATION);
+            if (AppState.userData.ban !== "yes") {
+                document.body.classList.remove("pink-gradient", "gray-gradient");
+                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = response.coins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                }, coinUpdateDelay);
+                await Utils.wait(CONFIG.ANIMATION_DURATION);
+                if (response.luck < this.state.bestLuck) {
+                    this.state.bestLuck = response.luck;
+                }
+                this.state.rolls = response.total_rolls;
+                this.state.equippedSkin = response.equipped_skin;
+                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+                this.updateAchievementProgress(response.total_rolls);
+                if (response.is_rainbow) {
+                    document.body.classList.remove("pink-gradient");
+                    document.body.classList.add("gray-gradient");
+                }
+            } else {
+                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = response.coins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                    AppState.userData.coins = response.coins;
+                }, coinUpdateDelay);
+                await Utils.wait(CONFIG.ANIMATION_DURATION);
             }
-        } else {
-            // Логика для забаненных: обновляем монеты после анимации
-            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                AppState.userData.coins = response.coins;
-            }, coinUpdateDelay);
-
-            await Utils.wait(CONFIG.ANIMATION_DURATION);
+            this.setInitialCube();
+        } catch (error) {
+            if (error.message.includes("422")) {
+                this.elements.coinsDisplay.textContent = "Invalid request data";
+            } else if (error.message.includes("401")) {
+                this.elements.coinsDisplay.textContent = "Unauthorized access";
+            } else if (error.message.includes("403")) {
+                this.elements.coinsDisplay.textContent = "You are banned";
+            } else if (error.message.includes("429")) {
+                this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
+            } else {
+                this.elements.coinsDisplay.textContent = "Server error, try again later";
+            }
+            this.setInitialCube();
+            await Utils.wait(2000);
+        } finally {
+            this.state.isAnimating = false;
         }
-
-        this.setInitialCube();
-    } catch (error) {
-        console.error("Ошибка в rollCube:", error.message, error.stack);
-        // Улучшенная обработка ошибок для пользователя
-        if (error.message.includes("422")) {
-            this.elements.coinsDisplay.textContent = "Invalid request data";
-        } else if (error.message.includes("401")) {
-            this.elements.coinsDisplay.textContent = "Unauthorized access";
-        } else if (error.message.includes("403")) {
-            this.elements.coinsDisplay.textContent = "You are banned";
-        } else if (error.message.includes("429")) {
-            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
-        } else {
-            this.elements.coinsDisplay.textContent = "Server error, try again later";
-        }
-        this.setInitialCube();
-        // Добавляем задержку перед сбросом анимации, чтобы пользователь увидел сообщение
-        await Utils.wait(2000);
-    } finally {
-        this.state.isAnimating = false;
-    }
-},
-
+    },
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
@@ -415,17 +330,12 @@ async rollCube() {
             this.elements.progressBar.style.width = "0%";
         }, duration);
     },
-
     getSkinConfig() {
         return {
             "banned": {
                 "initial": "ban.gif",
-                "default": [
-                    {"range": 100, "src": "ban.gif", "coins": -1}
-                ],
-                "rainbow": [
-                    {"range": 100, "src": "ban.gif", "coins": -100}
-                ]
+                "default": [{"range": 100, "src": "ban.gif", "coins": -1}],
+                "rainbow": [{"range": 100, "src": "ban.gif", "coins": -100}]
             },
             "classic": {
                 "initial": "pictures/cubics/классика/начальный-кубик.gif",
@@ -505,7 +415,6 @@ async rollCube() {
             }
         };
     },
-
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
         const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
@@ -516,7 +425,6 @@ async rollCube() {
                 ? "Achievement Completed! 123456 dice rolls made!"
                 : `Make ${Utils.formatWithCommas(targetRolls - rolls)} more dice rolls to complete`;
         }
-
         const targetCoins = 100000;
         const coinsProgress = Math.min((this.state.coins / targetCoins) * 100, 100);
         const achievementCoins = document.querySelector("#achievements-list .achievement-item:nth-child(3)");
@@ -526,7 +434,6 @@ async rollCube() {
                 ? "Achievement Completed! 100,000+ $LUCU earned!"
                 : `Earn ${Utils.formatWithCommas(targetCoins - this.state.coins)} more $LUCU to complete`;
         }
-
         const betaPlayer = AppState.userData.beta_player === "yes";
         const achievementBeta = document.querySelector("#achievements-list .achievement-item:nth-child(1)");
         if (achievementBeta) {
@@ -538,10 +445,6 @@ async rollCube() {
     }
 };
 
-// ============================================================================
-// Скины (Skins)
-// ============================================================================
-
 const Skins = {
     elements: {
         buyNegative: document.getElementById("buy-negative"),
@@ -551,43 +454,34 @@ const Skins = {
         menu: document.getElementById("skins-menu"),
         button: document.querySelector('.menu-item img[alt="Skins"]')
     },
-
     state: {
         ownedSkins: [],
         equippedSkin: CONFIG.DEFAULT_SKIN
     },
-
     init() {
         this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-
         this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
         this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
         this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
         this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
-
-        // Используем данные из AppState
         this.updateFromAppState();
     },
-
     updateFromAppState() {
         const data = AppState.userData;
         if (!data) {
-            console.error("Нет данных пользователя в AppState для Skins");
             return;
         }
         this.state.ownedSkins = data.owned_skins || [];
         this.state.equippedSkin = data.equipped_skin || CONFIG.DEFAULT_SKIN;
         this.updateUI();
     },
-
     async handleSkin(type) {
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) {
-            console.error("User ID отсутствует для обработки скина");
             return;
         }
         try {
@@ -602,22 +496,17 @@ const Skins = {
                 Game.state.coins = response.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
                 Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`;
-                // Обновляем AppState
                 AppState.userData.coins = response.new_coins;
                 AppState.userData.owned_skins = response.owned_skins;
                 AppState.userData.equipped_skin = response.equipped_skin;
             } else {
                 alert(response.message);
             }
-        } catch (error) {
-            console.error("Ошибка обработки скина:", error.message, error.stack);
-        }
+        } catch (error) {}
     },
-
     updateUI() {
         const owned = this.state.ownedSkins;
         const equipped = this.state.equippedSkin;
-
         this.elements.buyNegative.textContent = owned.includes("negative")
             ? (equipped === "negative" ? "Equipped" : "Equip")
             : "Buy //5K $LUCU/";
@@ -631,10 +520,6 @@ const Skins = {
     }
 };
 
-// ============================================================================
-// Квесты (Quests)
-// ============================================================================
-
 const Quests = {
     elements: {
         menu: document.getElementById("quests-menu"),
@@ -645,7 +530,6 @@ const Quests = {
         questsList: document.getElementById("quests-list"),
         achievementsList: document.getElementById("achievements-list")
     },
-
     init() {
         this.elements.button.addEventListener("click", () => {
             this.updateQuestStatus();
@@ -655,19 +539,14 @@ const Quests = {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-
         this.elements.subscribeButton.addEventListener("click", () => this.handleSubscription());
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
-
-        // Инициализируем статус квестов из AppState
         this.updateQuestStatus();
     },
-
     updateQuestStatus() {
         const data = AppState.userData;
         if (!data) {
-            console.error("Нет данных пользователя в AppState для Quests");
             return;
         }
         const isSubscribed = data?.quests?.subscription_quest === "yes";
@@ -679,17 +558,14 @@ const Quests = {
             this.elements.subscribeButton.disabled = true;
         }
     },
-
     async handleSubscription() {
         try {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
             if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-
             const subscriptionResponse = await API.fetch("/check_subscription", {
                 method: "POST",
                 body: { user_id: userId }
             });
-
             if (subscriptionResponse.success) {
                 const questResponse = await API.fetch("/update_quest", {
                     method: "POST",
@@ -699,43 +575,28 @@ const Quests = {
                         status: "yes"
                     }
                 });
-
-                // Обновляем глобальное состояние AppState
                 AppState.userData.coins = questResponse.new_coins;
                 AppState.userData.quests = AppState.userData.quests || {};
                 AppState.userData.quests.subscription_quest = "yes";
-
-                // Обновляем состояние игры
                 Game.state.coins = questResponse.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
-
-                // Обновляем UI квестов
                 this.updateQuestStatus();
-
             } else {
                 tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
                 setTimeout(() => this.handleSubscription(), 10000);
             }
-        } catch (error) {
-            console.error("Ошибка проверки подписки:", error.message, error);
-        }
+        } catch (error) {}
     },
-
     switchTab(tab) {
         this.elements.questsTab.classList.toggle("active", tab === "quests");
         this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
         this.elements.questsList.classList.toggle("hidden", tab !== "quests");
         this.elements.achievementsList.classList.toggle("hidden", tab !== "achievements");
-
         if (tab === "achievements") {
             Game.updateAchievementProgress(Game.state.rolls);
         }
     }
 };
-
-// ============================================================================
-// Лидерборд (Leaderboard)
-// ============================================================================
 
 const Leaderboard = {
     elements: {
@@ -747,7 +608,6 @@ const Leaderboard = {
         placeBadge: document.getElementById("player-place-badge"),
         topSection: document.querySelector(".top-section")
     },
-
     init() {
         this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
@@ -757,7 +617,6 @@ const Leaderboard = {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
         UI.addSwipeHandler(this.elements.topSection, () => UI.toggleMenu(this.elements.menu, false));
-
         this.elements.mostLucuBtn.addEventListener("click", () => {
             this.elements.mostLucuBtn.classList.add("active");
             this.elements.bestLuckBtn.classList.remove("active");
@@ -768,34 +627,27 @@ const Leaderboard = {
             this.elements.mostLucuBtn.classList.remove("active");
             this.load("luck");
         });
-
         this.elements.list.addEventListener("scroll", () => {
             this.elements.menu.classList.toggle("scrolled", this.elements.list.scrollTop > 20);
         });
     },
-
     async load(type) {
         try {
             const data = await API.fetch(`/leaderboard_${type}`);
             this.elements.list.innerHTML = "";
-
             const userId = tg.initDataUnsafe?.user?.id?.toString();
             const userIndex = data.findIndex(p => p.user_id === userId);
             this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
-
             if (!data?.length) {
                 this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
                 return;
             }
-
             for (let i = 0; i < data.length; i++) {
                 const player = data[i];
                 const isCurrentUser = userId && player.user_id === userId;
-
                 const li = document.createElement("li");
                 li.classList.add("leaderboard-item");
                 if (isCurrentUser) li.classList.add("highlight");
-
                 const value = type === "coins" ? Utils.formatCoins(player.coins) + " $LUCU" : Utils.formatNumber(player.min_luck) || "N/A";
                 li.innerHTML = `
                     <div class="leaderboard-item-content">
@@ -815,15 +667,10 @@ const Leaderboard = {
                 this.elements.list.appendChild(li);
             }
         } catch (error) {
-            console.error(`Ошибка загрузки лидерборда (${type}):`, error.message, error.stack);
             this.elements.list.innerHTML = '<li class="coming-soon">Failed to load leaderboard</li>';
         }
     }
 };
-
-// ============================================================================
-// Профиль (Profile)
-// ============================================================================
 
 const Profile = {
     elements: {
@@ -831,16 +678,13 @@ const Profile = {
         button: document.getElementById("profile-button"),
         name: document.getElementById("profile-name")
     },
-
     init() {
         const user = tg.initDataUnsafe?.user;
         if (!user) {
-            console.error("Данные пользователя Telegram недоступны");
             this.elements.name.textContent = "Hello, Guest";
         } else {
             this.elements.name.textContent = `Hello, ${user.username || user.first_name || "NoName"}`;
         }
-
         this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
@@ -848,10 +692,6 @@ const Profile = {
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
     }
 };
-
-// ============================================================================
-// Друзья (Friends)
-// ============================================================================
 
 const Friends = {
     elements: {
@@ -862,17 +702,13 @@ const Friends = {
         shareButton: document.getElementById("share-link"),
         friendsCount: document.querySelector(".friends-count")
     },
-
     init() {
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) {
-            console.error("User ID отсутствует для инициализации Friends");
             return;
         }
-
         const referralLink = `t.me/LuckyCubesbot?start=${userId}`;
         this.elements.referralInput.value = referralLink;
-
         this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
             this.updateFriendsCount();
@@ -881,30 +717,24 @@ const Friends = {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-
         this.elements.copyButton.addEventListener("click", () => {
             Utils.copyToClipboard(referralLink);
             this.elements.copyButton.textContent = "Copied!";
             setTimeout(() => this.elements.copyButton.textContent = "Copy", 1500);
         });
-
         this.elements.shareButton.addEventListener("click", () => {
             const shareText = "Want to try your luck? Check out this game and join me!";
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`);
         });
-
         const referrerId = new URLSearchParams(window.location.search).get("start");
         if (referrerId && userId && referrerId !== userId) {
             API.fetch("/handle_referral", {
                 method: "POST",
                 body: { user_id: userId, referrer_id: referrerId }
-            }).catch(error => console.error("Ошибка обработки реферала:", error.message));
+            }).catch(error => {});
         }
-
-        // Используем данные из AppState
         this.updateFriendsCount();
     },
-
     updateFriendsCount() {
         const data = AppState.userData;
         if (!data || data.referral_count === undefined) {
@@ -915,21 +745,15 @@ const Friends = {
     }
 };
 
-// ============================================================================
-// Инициализация Particle System
-// ============================================================================
-
 const Particles = {
     init() {
         const canvas = document.getElementById(CONFIG.CANVAS_ID);
         if (!canvas) return;
-
         const particleSystem = new ParticleSystem(canvas, {
             x: window.innerWidth,
             y: window.innerHeight
         });
         particleSystem.init();
-
         window.addEventListener("resize", () => {
             const oldSize = { x: particleSystem.size.x, y: particleSystem.size.y };
             particleSystem.resize({ x: window.innerWidth, y: window.innerHeight }, oldSize);
@@ -937,45 +761,30 @@ const Particles = {
     }
 };
 
-// ============================================================================
-// Инициализация приложения
-// ============================================================================
-
 async function initializeApp() {
     if (!window.Telegram?.WebApp?.initData) {
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
-        console.error("Telegram WebApp initData is missing");
         return;
     }
     const tg = window.Telegram.WebApp;
-
-    // Немедленное отображение загрузочного экрана
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
     const loadingCube = document.getElementById('loading-cube');
     const playerInfo = document.getElementById('player-info');
     const playerCoins = document.getElementById('player-coins');
     const playerBestLuck = document.getElementById('player-best-luck');
-
     if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
-        console.error("Не найдены элементы загрузочного экрана или информации игрока");
         document.body.innerHTML = "<p>Error: Missing UI elements</p>";
         return;
     }
-
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
     loadingScreen.offsetHeight;
-
     try {
-        console.log("Starting initialization...");
         tg.expand();
         tg.requestFullscreen();
-    } catch (fullscreenError) {
-        console.warn("Fullscreen expansion failed:", fullscreenError);
-    }
-
+    } catch (fullscreenError) {}
     try {
         const skinConfig = Game.getSkinConfig();
         const imagesToPreload = [
@@ -989,29 +798,23 @@ async function initializeApp() {
             "pictures/other png/таблица лидеров.png",
             "pictures/cubics/cubeee.png"
         ].filter((value, index, self) => self.indexOf(value) === index);
-
         const preloadImages = async (imageUrls) => {
             const totalImages = imageUrls.length;
             if (totalImages === 0) {
                 loadingText.textContent = 'Loading 40%';
-                console.log("No images to preload, skipping to 40%");
                 return;
             }
-
             let loadedImages = 0;
             const loadImageWithTimeout = (url) => {
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.src = url;
-
                     const timeout = setTimeout(() => {
-                        console.warn(`Timeout loading image: ${url}`);
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
                         resolve();
-                    }, 5000); // Таймаут 5 секунд
-
+                    }, 5000);
                     img.onload = () => {
                         clearTimeout(timeout);
                         loadedImages++;
@@ -1024,45 +827,30 @@ async function initializeApp() {
                         loadedImages++;
                         const progress = Math.round((loadedImages / totalImages) * 40);
                         loadingText.textContent = `Loading ${progress}%`;
-                        console.warn(`Failed to load image: ${url}`);
                         resolve();
                     };
                 });
             };
-
             await Promise.all(imageUrls.map(url => loadImageWithTimeout(url)));
-            console.log("Image preloading completed");
         };
-
-        console.log("Preloading images...");
         await preloadImages(imagesToPreload);
-
-        console.log("Loading config...");
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
-
-        console.log("Initializing particles...");
         Particles.init();
         loadingText.textContent = 'Loading 60%';
-
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
-
-        console.log("Fetching user data...");
         const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData;
-
         if (userData.ban === "yes") {
             loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
             loadingCube.src = "ban.gif";
             playerInfo.classList.add('hidden');
-
             await Promise.race([
                 new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
-                Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
+                Utils.wait(10000)
             ]);
-
             loadingScreen.classList.add('hidden');
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
@@ -1077,14 +865,10 @@ async function initializeApp() {
             }, 500);
             return;
         }
-
         loadingText.textContent = 'Loading 75%';
-
         const user = tg.initDataUnsafe.user;
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
-
-        console.log("Sending /debug_update_profile:", { user_id: userId, username: username, photo_url: photoUrl });
         const updateProfileResponse = await API.fetch("/debug_update_profile", {
             method: "POST",
             headers: {
@@ -1093,29 +877,20 @@ async function initializeApp() {
             },
             body: { user_id: userId, username: username, photo_url: photoUrl }
         });
-        console.log("Response from /debug_update_profile:", updateProfileResponse);
-
-        // Обновляем AppState после успешного обновления профиля
         AppState.userData.username = username;
         AppState.userData.photo_url = photoUrl;
-
-        console.log("Fetching referral count...");
         const referralData = await API.fetch(`/get_referral_count/${userId}`);
         AppState.userData.referral_count = referralData.referral_count || 0;
-
         const equippedSkin = userData.equipped_skin || "classic";
         loadingCube.src = skinConfig[equippedSkin].initial + `?t=${Date.now()}`;
         playerCoins.textContent = `Coins: ${Utils.formatCoins(userData.coins || 0)} $LUCU`;
         playerBestLuck.textContent = `Best Luck: ${userData.min_luck === 1001 || userData.min_luck === undefined ? 'N/A' : Utils.formatNumber(userData.min_luck)}`;
         playerInfo.classList.remove('hidden');
-
         loadingText.textContent = 'Press to enter the game';
-
         await Promise.race([
             new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
-            Utils.wait(10000).then(() => console.log("Auto-continuing after 10s"))
+            Utils.wait(10000)
         ]);
-
         loadingScreen.classList.add('hidden');
         setTimeout(() => {
             loadingScreen.style.display = 'none';
@@ -1126,10 +901,8 @@ async function initializeApp() {
             Profile.init();
             Friends.init();
             tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
-            console.log("Application fully initialized");
         }, 500);
-} catch (error) {
-        console.error('Ошибка инициализации приложения:', error.message, error.stack);
+    } catch (error) {
         if (error.message.includes("Server is experiencing issues")) {
             loadingText.textContent = "Server error: Please try again later.";
         } else {
@@ -1139,7 +912,4 @@ async function initializeApp() {
     }
 }
 
-
-
-// Запуск приложения
 initializeApp();
