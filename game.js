@@ -766,6 +766,31 @@ async function initializeApp() {
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
         return;
     }
+    const ua = navigator.userAgent.toLowerCase();
+    const isMobileUA = /android|iphone|ipad|ipod|windows phone|mobile/i.test(ua);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const screenWidth = window.screen.width;
+    const screenHeight = window.screen.height;
+    const isSmallScreen = screenWidth <= 768 && screenHeight <= 1024; // Типичные размеры мобильных устройств
+
+    // Проверка: мобильный User-Agent ИЛИ сенсорный экран И маленький экран
+    const isMobileDevice = (isMobileUA || isTouchDevice) && isSmallScreen;
+
+    if (!isMobileDevice) {
+        document.body.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <h2>Sorry!</h2>
+                <p>This game is only available on mobile devices.</p>
+                <p>Please open it from your phone using the Telegram app.</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (!window.Telegram?.WebApp?.initData) {
+        document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
+        return;
+    }
     const tg = window.Telegram.WebApp;
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
@@ -773,20 +798,6 @@ async function initializeApp() {
     const playerInfo = document.getElementById('player-info');
     const playerCoins = document.getElementById('player-coins');
     const playerBestLuck = document.getElementById('player-best-luck');
-    if (!loadingScreen || !loadingText || !loadingCube || !playerInfo || !playerCoins || !playerBestLuck) {
-        document.body.innerHTML = "<p>Error: Missing UI elements</p>";
-        re
-    const ua = navigator.userAgent.toLowerCase();
-    const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(ua);
-    if (!isMobile) {
-        document.body.innerHTML = "<p style='text-align: center;'>This game is only available on mobile devices. Please open it from your phone.</p>";
-        return;
-    }
-    if (!window.Telegram?.WebApp?.initData) {
-        document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
-        return;
-    }turn;
-    }
     loadingScreen.style.display = 'flex';
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
