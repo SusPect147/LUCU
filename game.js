@@ -781,9 +781,9 @@ async function initializeApp() {
         document.body.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; padding: 20px;">
                 <p style="font-size: 18px; margin-bottom: 20px;">
-                    Hey, ${username}! You need to play this game only from your <span style="color: red;">phone</span> Telegram!
+                    Hey, ${username}! Playing from desktop Telegram is boring! Join via your <span style="color: red;">phone</span>!
                 </p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=t.me/LuckyCubesbot" alt="QR Code" style="margin: 20px 0;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://t.me/LuckyCubesbot&color=FF0000&bgcolor=000000" alt="QR Code" style="margin: 20px 0;">
                 <p style="font-size: 18px; margin-top: 20px;">
                     Scan this QR code with your phone to join the game!
                 </p>
@@ -792,10 +792,6 @@ async function initializeApp() {
         return;
     }
 
-    if (!window.Telegram?.WebApp?.initData) {
-        document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
-        return;
-    }
     const tg = window.Telegram.WebApp;
     const loadingScreen = document.getElementById('loading-screen');
     const loadingText = document.getElementById('loading-text');
@@ -807,11 +803,27 @@ async function initializeApp() {
     loadingText.textContent = 'Loading 0%';
     loadingCube.style.display = 'block';
     loadingScreen.offsetHeight;
+
     try {
         tg.expand();
         tg.requestFullscreen();
     } catch (fullscreenError) {}
+
     try {
+        // Инициализация с JWT
+        const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': tg.initData
+            }
+        });
+        if (!initResponse.ok) {
+            throw new Error('Failed to initialize session');
+        }
+        const { token } = await initResponse.json();
+        localStorage.setItem('authToken', token);
+
         const skinConfig = Game.getSkinConfig();
         const imagesToPreload = [
             ...Object.values(skinConfig).flatMap(skin => 
@@ -824,6 +836,7 @@ async function initializeApp() {
             "pictures/other png/таблица лидеров.png",
             "pictures/cubics/cubeee.png"
         ].filter((value, index, self) => self.indexOf(value) === index);
+
         const preloadImages = async (imageUrls) => {
             const totalImages = imageUrls.length;
             if (totalImages === 0) {
@@ -859,16 +872,25 @@ async function initializeApp() {
             };
             await Promise.all(imageUrls.map(url => loadImageWithTimeout(url)));
         };
+
         await preloadImages(imagesToPreload);
         await loadConfig();
         if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
         loadingText.textContent = 'Loading 50%';
         Particles.init();
         loadingText.textContent = 'Loading 60%';
+
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) throw new Error("User ID not found in Telegram init data");
-        const userData = await API.fetch(`/get_user_data/${userId}`);
+
+        // Используем JWT-токен для запроса данных пользователя
+        const userData = await API.fetch(`/get_user_data/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
         AppState.userData = userData;
+
         if (userData.ban === "yes") {
             loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
             loadingCube.src = "ban.gif";
@@ -891,28 +913,40 @@ async function initializeApp() {
             }, 500);
             return;
         }
+
         loadingText.textContent = 'Loading 75%';
         const user = tg.initDataUnsafe.user;
         const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
         const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
+
+        // Обновление профиля с использованием JWT
         const updateProfileResponse = await API.fetch("/debug_update_profile", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-Telegram-Init-Data": tg.initData
+                "Authorization": `Bearer ${localStorage.getItem('authToken')}`
             },
-            body: { user_id: userId, username: username, photo_url: photoUrl }
+            body: JSON.stringify({ user_id: userId, username: username, photo_url: photoUrl })
         });
+
         AppState.userData.username = username;
         AppState.userData.photo_url = photoUrl;
-        const referralData = await API.fetch(`/get_referral_count/${userId}`);
+
+        // Получение данных о рефералах с JWT
+        const referralData = await API.fetch(`/get_referral_count/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
         AppState.userData.referral_count = referralData.referral_count || 0;
+
         const equippedSkin = userData.equipped_skin || "classic";
         loadingCube.src = skinConfig[equippedSkin].initial + `?t=${Date.now()}`;
         playerCoins.textContent = `Coins: ${Utils.formatCoins(userData.coins || 0)} $LUCU`;
         playerBestLuck.textContent = `Best Luck: ${userData.min_luck === 1001 || userData.min_luck === undefined ? 'N/A' : Utils.formatNumber(userData.min_luck)}`;
         playerInfo.classList.remove('hidden');
         loadingText.textContent = 'Press to enter the game';
+
         await Promise.race([
             new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
             Utils.wait(10000)
