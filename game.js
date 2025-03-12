@@ -766,31 +766,6 @@ async function initializeApp() {
         document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
         return;
     }
-    const ua = navigator.userAgent.toLowerCase();
-    const isMobileUA = /android|iphone|ipad|ipod|windows phone|mobile/i.test(ua);
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const screenWidth = window.screen.width;
-    const screenHeight = window.screen.height;
-    const isSmallScreen = screenWidth <= 768 && screenHeight <= 1024;
-
-    const isMobileDevice = (isMobileUA || isTouchDevice) && isSmallScreen;
-
-if (!isMobileDevice) {
-    const tg = window.Telegram?.WebApp;
-    const username = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || "User";
-    document.body.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #000; font-family: Arial, sans-serif; text-align: center; padding: 20px; background: transparent;">
-            <p style="font-size: 18px; margin-bottom: 20px;">
-                Hey, ${username}! Playing from desktop Telegram is boring! Join via your <span style="color: red;">phone</span>!
-            </p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://t.me/LuckyCubesbot&color=FF0000" alt="QR Code" style="margin: 20px 0; background: transparent;">
-            <p style="font-size: 18px; margin-top: 20px;">
-                Scan this QR code with your phone to join the game!
-            </p>
-        </div>
-    `;
-    return;
-}
 
     const tg = window.Telegram.WebApp;
     const loadingScreen = document.getElementById('loading-screen');
