@@ -521,7 +521,6 @@ const Quests = {
     elements: {
         menu: document.getElementById("quests-menu"),
         button: document.querySelector('.menu-item img[alt="Quests"]'),
-        subscribeButton: document.querySelector(".quest-item .quest-btn"),
         questsTab: document.getElementById("quests-tab"),
         achievementsTab: document.getElementById("achievements-tab"),
         questsList: document.getElementById("quests-list"),
@@ -536,59 +535,164 @@ const Quests = {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-        this.elements.subscribeButton.addEventListener("click", () => this.handleSubscription());
+        
+        this.elements.questsList.querySelectorAll(".quest-btn").forEach(button => {
+            button.addEventListener("click", () => {
+                const questName = button.getAttribute("data-quest");
+                this.handleQuest(questName);
+            });
+        });
+
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
         this.updateQuestStatus();
     },
     updateQuestStatus() {
         const data = AppState.userData;
-        if (!data) {
-            return;
-        }
-        const isSubscribed = data?.quests?.subscription_quest === "yes";
-        if (isSubscribed) {
-            this.elements.subscribeButton.textContent = "Done!";
-            this.elements.subscribeButton.classList.add("completed");
-            this.elements.subscribeButton.style.background = "rgb(139, 0, 0)";
-            this.elements.subscribeButton.style.cursor = "default";
-            this.elements.subscribeButton.disabled = true;
+        if (!data || !data.quests) return;
+
+        const questButtons = {
+            "subscription_quest": this.elements.questsList.querySelector('[data-quest="subscription_quest"]') || this.elements.questsList.querySelector(".quest-btn"),
+            "forward_message": this.elements.questsList.querySelector('[data-quest="forward_message"]'),
+            "dice_status": this.elements.questsList.querySelector('[data-quest="dice_status"]'),
+            "dice_nickname": this.elements.questsList.querySelector('[data-quest="dice_nickname"]'),
+            "boost_channel": this.elements.questsList.querySelector('[data-quest="boost_channel"]')
+        };
+
+        Object.entries(questButtons).forEach(([quest, button]) => {
+            if (!button) return;
+            const isCompleted = data.quests[quest] === "yes";
+            if (isCompleted) {
+                button.textContent = "Done!";
+                button.classList.add("completed");
+                button.style.background = "rgb(139, 0, 0)";
+                button.style.cursor = "default";
+                button.disabled = true;
+            } else {
+                button.textContent = "Go";
+                button.classList.remove("completed");
+                button.style.background = "";
+                button.style.cursor = "pointer";
+                button.disabled = false;
+            }
+        });
+    },
+    async handleQuest(questName) {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) return;
+
+        try {
+            switch (questName) {
+                case "subscription_quest":
+                    await this.handleSubscription(userId);
+                    break;
+                case "forward_message":
+                    await this.handleForwardMessage(userId);
+                    break;
+                case "dice_status":
+                    await this.handleDiceStatus(userId);
+                    break;
+                case "dice_nickname":
+                    await this.handleDiceNickname(userId);
+                    break;
+                case "boost_channel":
+                    await this.handleBoostChannel(userId);
+                    break;
+                default:
+                    console.error(`Unknown quest: ${questName}`);
+            }
+            this.updateQuestStatus();
+        } catch (error) {
+            console.error(`Error handling quest ${questName}:`, error);
         }
     },
-    async handleSubscription() {
-        try {
-            const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-            const subscriptionResponse = await API.fetch("/check_subscription", {
+    async handleSubscription(userId) {
+        const subscriptionResponse = await API.fetch("/check_subscription", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        if (subscriptionResponse.success) {
+            await this.completeQuest(userId, "subscription_quest", 250);
+        } else {
+            tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
+            setTimeout(() => this.handleSubscription(userId), 10000);
+        }
+    },
+    async handleForwardMessage(userId) {
+        const messageText = "Check out Lucky Cubes! Join me at " + `t.me/LuckyCubesbot?start=${userId}`;
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(web_app_url)}&text=${encodeURIComponent(messageText)}`);
+        setTimeout(async () => {
+            const response = await API.fetch("/check_forward_message", {
                 method: "POST",
                 body: { user_id: userId }
             });
-            if (subscriptionResponse.success) {
-                const questResponse = await API.fetch("/update_quest", {
-                    method: "POST",
-                    body: {
-                        user_id: userId,
-                        quest: "subscription_quest",
-                        status: "yes"
-                    }
-                });
-                AppState.userData.coins = questResponse.new_coins;
-                AppState.userData.quests = AppState.userData.quests || {};
-                AppState.userData.quests.subscription_quest = "yes";
-                Game.state.coins = questResponse.new_coins;
-                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(questResponse.new_coins)} $LUCU`;
-                this.updateQuestStatus();
-            } else {
-                tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
-                setTimeout(() => this.handleSubscription(), 10000);
+            if (response.success) {
+                await this.completeQuest(userId, "forward_message", 500);
             }
-        } catch (error) {}
+        }, 10000);
+    },
+    async handleDiceStatus(userId) {
+        alert("Add 🎲 to your Telegram status, then send /verify_status to @LuckyCubesbot in Telegram. Wait a few seconds and press OK.");
+        setTimeout(async () => {
+            const response = await API.fetch("/check_dice_status", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            if (response.success) {
+                await this.completeQuest(userId, "dice_status", 500);
+            } else {
+                alert("Dice emoji 🎲 not found in your status. Please add it and send /verify_status again.");
+            }
+        }, 15000); // 15 секунд на выполнение команды
+    },
+    async handleDiceNickname(userId) {
+        alert("Add 🎲 to your Telegram nickname and press OK after.");
+        const response = await API.fetch("/check_dice_nickname", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+        if (response.success) {
+            await this.completeQuest(userId, "dice_nickname", 100);
+        } else {
+            alert("Dice emoji 🎲 not found in your nickname. Please add it and try again.");
+        }
+    },
+    async handleBoostChannel(userId) {
+        alert("Boost the LUCU channel via Telegram (use the boost feature) and press OK after.");
+        const response = await API.fetch("/check_boost_channel", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+        if (response.success) {
+            await this.completeQuest(userId, "boost_channel", 500);
+        } else {
+            alert("Channel boost not detected. Please boost the LUCU channel and try again.");
+        }
+    },
+    async completeQuest(userId, questName, reward) {
+        const response = await API.fetch("/update_quest", {
+            method: "POST",
+            body: {
+                user_id: userId,
+                quest: questName,
+                status: "yes"
+            }
+        });
+        if (response.message === "Quest updated successfully") {
+            AppState.userData.coins = response.new_coins;
+            AppState.userData.quests = AppState.userData.quests || {};
+            AppState.userData.quests[questName] = "yes";
+            Game.state.coins = response.new_coins;
+            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+            this.updateQuestStatus();
+        }
     },
     switchTab(tab) {
         this.elements.questsTab.classList.toggle("active", tab === "quests");
-        this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
+        this.elements.achievementsTab.classList.toggle("active", tab !== "quests");
         this.elements.questsList.classList.toggle("hidden", tab !== "quests");
-        this.elements.achievementsList.classList.toggle("hidden", tab !== "achievements");
+        this.elements.achievementsList.classList.toggle("hidden", tab === "quests");
         if (tab === "achievements") {
             Game.updateAchievementProgress(Game.state.rolls);
         }
