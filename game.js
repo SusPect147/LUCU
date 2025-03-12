@@ -579,7 +579,10 @@ const Quests = {
     },
     async handleQuest(questName) {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) return;
+        if (!userId) {
+            alert("User ID not found. Please restart the app in Telegram.");
+            return;
+        }
 
         try {
             switch (questName) {
@@ -604,6 +607,7 @@ const Quests = {
             this.updateQuestStatus();
         } catch (error) {
             console.error(`Error handling quest ${questName}:`, error);
+            alert(`Error: ${error.message}. Please try again.`);
         }
     },
     async handleSubscription(userId) {
@@ -616,64 +620,111 @@ const Quests = {
             await this.completeQuest(userId, "subscription_quest", 250);
         } else {
             tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
+            alert("Please subscribe to the channel and press OK after.");
             setTimeout(() => this.handleSubscription(userId), 10000); // Проверка через 10 секунд
         }
     },
     async handleForwardMessage(userId) {
         const messageText = "Hey, jump into the game and check your luck level with me!";
-        // Открываем Telegram с предложением переслать сообщение
-        tg.openTelegramLink(`https://t.me/LuckyCubesbot?start=/forward_message`);
-        setTimeout(async () => {
+        // Открываем чат с ботом и отправляем команду /forward_message
+        tg.openTelegramLink("https://t.me/LuckyCubesbot");
+        // Используем Telegram WebApp API для показа уведомления
+        tg.showPopup({
+            title: "Forward Message",
+            message: "Send this message to any chat: 'Hey, jump into the game and check your luck level with me!' then return here.",
+            buttons: [{ type: "ok", text: "I've sent it" }]
+        }, async () => {
             const response = await API.fetch("/check_forward_message", {
                 method: "POST",
                 body: { user_id: userId }
             });
             if (response.success) {
                 await this.completeQuest(userId, "forward_message", 500);
+            } else {
+                tg.showPopup({
+                    title: "Error",
+                    message: "Message not forwarded yet. Please send it and try again.",
+                    buttons: [{ type: "ok" }]
+                });
             }
-        }, 15000); // Даем 15 секунд на выполнение
+        });
     },
     async handleDiceStatus(userId) {
-        // Открываем Telegram с командой /verify_status вместо alert
-        tg.openTelegramLink("https://t.me/LuckyCubesbot?start=/verify_status");
-        setTimeout(async () => {
+        // Открываем настройки профиля Telegram через deep link
+        tg.openTelegramLink("tg://settings/status");
+        // Показываем инструкцию через WebApp popup
+        tg.showPopup({
+            title: "Add Dice to Status",
+            message: "Add 🎲 to your Telegram status, then send /verify_status to @LuckyCubesbot. Return here after.",
+            buttons: [{ type: "ok", text: "I've done it" }]
+        }, async () => {
+            tg.openTelegramLink("https://t.me/LuckyCubesbot?start=/verify_status");
+            await Utils.wait(5000); // Даем боту время обработать команду
             const response = await API.fetch("/check_dice_status", {
                 method: "POST",
                 body: { user_id: userId }
             });
             if (response.success) {
                 await this.completeQuest(userId, "dice_status", 500);
+            } else {
+                tg.showPopup({
+                    title: "Error",
+                    message: "Dice emoji 🎲 not found in your status. Please add it and send /verify_status again.",
+                    buttons: [{ type: "ok" }]
+                });
             }
-        }, 15000); // Даем 15 секунд на установку статуса и проверку
+        });
     },
     async handleDiceNickname(userId) {
-        // Оставляем alert, так как нет прямого способа открыть меню редактирования ника через Telegram API
-        alert("Add 🎲 to your Telegram nickname and press OK after.");
-        const response = await API.fetch("/check_dice_nickname", {
-            method: "POST",
-            body: { user_id: userId }
+        // Открываем настройки профиля для изменения ника
+        tg.openTelegramLink("tg://settings");
+        tg.showPopup({
+            title: "Add Dice to Nickname",
+            message: "Add 🎲 to your Telegram nickname, then press OK.",
+            buttons: [{ type: "ok", text: "I've added it" }]
+        }, async () => {
+            const response = await API.fetch("/check_dice_nickname", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            if (response.success) {
+                await this.completeQuest(userId, "dice_nickname", 100);
+            } else {
+                tg.showPopup({
+                    title: "Error",
+                    message: "Dice emoji 🎲 not found in your nickname. Please add it and try again.",
+                    buttons: [{ type: "ok" }]
+                });
+            }
         });
-        if (response.success) {
-            await this.completeQuest(userId, "dice_nickname", 100);
-        } else {
-            alert("Dice emoji 🎲 not found in your nickname. Please add it and try again.");
-        }
     },
     async handleBoostChannel(userId) {
-        // Открываем Telegram с командой /boost_channel вместо alert
-        tg.openTelegramLink(`https://t.me/LuckyCubesbot?start=/boost_channel`);
-        setTimeout(async () => {
+        // Открываем канал с возможностью буста
+        tg.openTelegramLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}?boost`);
+        tg.showPopup({
+            title: "Boost the Channel",
+            message: "Boost our channel via Telegram, then send /boost_channel to @LuckyCubesbot. Return here after.",
+            buttons: [{ type: "ok", text: "I've boosted it" }]
+        }, async () => {
+            tg.openTelegramLink("https://t.me/LuckyCubesbot?start=/boost_channel");
+            await Utils.wait(5000); // Даем боту время обработать команду
             const response = await API.fetch("/check_boost_channel", {
                 method: "POST",
                 body: { user_id: userId }
             });
             if (response.success) {
-                await this.completeQuest(userId, "boost_channel", 500);
+                await this.completeQuest(userId, fluffy"boost_channel", 500);
+            } else {
+                tg.showPopup({
+                    title: "Error",
+                    message: "Channel boost not detected. Please boost it and send /boost_channel again.",
+                    buttons: [{ type: "ok" }]
+                });
             }
-        }, 15000); // Даем 15 секунд на буст и проверку
+        });
     },
     async completeQuest(userId, questName, reward) {
-        const response = await API.fetch("/update_quest", {
+        const response = await API.fetch("/update_quest_new", { // Используем /update_quest_new вместо /update_quest
             method: "POST",
             body: {
                 user_id: userId,
@@ -688,6 +739,13 @@ const Quests = {
             Game.state.coins = response.new_coins;
             Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
             this.updateQuestStatus();
+            tg.showPopup({
+                title: "Success",
+                message: `Quest completed! You earned ${reward} $LUCU.`,
+                buttons: [{ type: "ok" }]
+            });
+        } else {
+            throw new Error(response.message || "Failed to update quest");
         }
     },
     switchTab(tab) {
