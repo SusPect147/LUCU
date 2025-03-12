@@ -771,17 +771,22 @@ async function initializeApp() {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     const screenWidth = window.screen.width;
     const screenHeight = window.screen.height;
-    const isSmallScreen = screenWidth <= 768 && screenHeight <= 1024; // Типичные размеры мобильных устройств
+    const isSmallScreen = screenWidth <= 768 && screenHeight <= 1024;
 
-    // Проверка: мобильный User-Agent ИЛИ сенсорный экран И маленький экран
     const isMobileDevice = (isMobileUA || isTouchDevice) && isSmallScreen;
 
     if (!isMobileDevice) {
+        const tg = window.Telegram?.WebApp;
+        const username = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || "User";
         document.body.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <h2>Sorry!</h2>
-                <p>This game is only available on mobile devices.</p>
-                <p>Please open it from your phone using the Telegram app.</p>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+                <p style="font-size: 18px; margin-bottom: 20px;">
+                    Hey, ${username}! You need to play this game only from your <span style="color: red;">phone</span> Telegram!
+                </p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=t.me/LuckyCubesbot" alt="QR Code" style="margin: 20px 0;">
+                <p style="font-size: 18px; margin-top: 20px;">
+                    Scan this QR code with your phone to join the game!
+                </p>
             </div>
         `;
         return;
