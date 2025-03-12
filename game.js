@@ -713,7 +713,7 @@ const Quests = {
                 body: { user_id: userId }
             });
             if (response.success) {
-                await this.completeQuest(userId, fluffy"boost_channel", 500);
+                await this.completeQuest(userId, "boost_channel", 500);
             } else {
                 tg.showPopup({
                     title: "Error",
