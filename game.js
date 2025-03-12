@@ -779,7 +779,7 @@ async function initializeApp() {
         const tg = window.Telegram?.WebApp;
         const username = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || "User";
         document.body.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #000; color: #fff; font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #fff; font-family: Arial, sans-serif; text-align: center; padding: 20px;">
                 <p style="font-size: 18px; margin-bottom: 20px;">
                     Hey, ${username}! Playing from desktop Telegram is boring! Join via your <span style="color: red;">phone</span>!
                 </p>
