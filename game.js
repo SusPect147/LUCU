@@ -696,10 +696,12 @@ async handleDiceStatus(userId) {
     try {
         // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
         await Telegram.WebApp.setEmojiStatus('5361800828313167608'); // Замените на актуальный ID для 🎲
-        setTimeout(() => this.completeQuest(userId, "dice_status"), 6000);
+        // Сразу начисляем награду и обновляем UI
+        await this.completeQuest(userId, "dice_status");
+        this.updateQuestStatus(); // Обновляем UI мгновенно
     } catch (error) {
         console.error("Failed to set emoji status:", error);
-        // Убираем fallback на открытие пака эмодзи, так как теперь устанавливаем напрямую
+        // В случае ошибки не начисляем награду
     }
 },
 
