@@ -690,18 +690,20 @@ async handleDiceStatus(userId) {
     const userData = await API.fetch(`/get_user_data_new/${userId}`);
     if (!userData.is_premium && !tg.initDataUnsafe.user?.is_premium) {
         console.log("Premium subscription required for dice_status quest");
+        Telegram.WebApp.showAlert("This quest requires a Telegram Premium subscription.");
         return;
     }
 
     try {
-        // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
-        await Telegram.WebApp.setEmojiStatus('5384541907051357217'); // Замените на актуальный ID для 🎲
-        // Сразу начисляем награду и обновляем UI
+        // Устанавливаем эмодзи 🎲 из набора LuckyCube
+        await Telegram.WebApp.setEmojiStatus('5375467650472241478'); // ID для 🎲
+        // Сразу завершаем квест, так как setEmojiStatus выполнился успешно
         await this.completeQuest(userId, "dice_status");
         this.updateQuestStatus(); // Обновляем UI мгновенно
+        Telegram.WebApp.showAlert("Dice emoji set successfully! You earned 500 $LUCU.");
     } catch (error) {
         console.error("Failed to set emoji status:", error);
-        // В случае ошибки не начисляем награду
+        Telegram.WebApp.showAlert("Failed to set the dice emoji. Please try again.");
     }
 },
 
