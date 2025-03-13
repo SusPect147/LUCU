@@ -694,23 +694,22 @@ const Quests = {
         setTimeout(() => this.completeQuest(userId, "forward_message"), 6000);
     },
 
-    async handleDiceStatus(userId) {
-        const userData = await API.fetch(`/get_user_data_new/${userId}`);
-        if (!userData.is_premium && !tg.initDataUnsafe.user?.is_premium) {
-            console.log("Premium subscription required for dice_status quest");
-            return;
-        }
+async handleDiceStatus(userId) {
+    const userData = await API.fetch(`/get_user_data_new/${userId}`);
+    if (!userData.is_premium && !tg.initDataUnsafe.user?.is_premium) {
+        console.log("Premium subscription required for dice_status quest");
+        return;
+    }
 
-        try {
-            // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
-            await Telegram.WebApp.setEmojiStatus('5361800828313167608'); // Замените на актуальный ID для 🎲
-            setTimeout(() => this.completeQuest(userId, "dice_status"), 6000);
-        } catch (error) {
-            console.error("Failed to set emoji status:", error);
-            tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
-            setTimeout(() => this.checkPendingQuests(userId), 6000);
-        }
-    },
+    try {
+        // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
+        await Telegram.WebApp.setEmojiStatus('5361800828313167608'); // Замените на актуальный ID для 🎲
+        setTimeout(() => this.completeQuest(userId, "dice_status"), 6000);
+    } catch (error) {
+        console.error("Failed to set emoji status:", error);
+        // Убираем fallback на открытие пака эмодзи, так как теперь устанавливаем напрямую
+    }
+},
 
     async handleDiceNickname(userId) {
         await this.refreshUserData();
