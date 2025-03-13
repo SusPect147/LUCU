@@ -545,7 +545,7 @@ const Quests = {
         this.elements.questsList.querySelectorAll(".quest-btn").forEach(button => {
             button.addEventListener("click", () => {
                 const questName = button.getAttribute("data-quest");
-                if (questName) { // Проверка на null
+                if (questName) {
                     this.handleQuest(questName);
                 } else {
                     console.error("Quest name is null or undefined");
@@ -672,13 +672,13 @@ const Quests = {
     },
 
     async handleSubscription(userId) {
-        await this.refreshUserData(); // Обновляем данные перед проверкой
+        await this.refreshUserData();
         const subscriptionResponse = await API.fetch("/check_subscription", {
             method: "POST",
             body: { user_id: userId }
         });
 
-        if (subscriptionResponse.success) {
+        if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
             await this.completeQuest(userId, "subscription_quest");
         } else {
             tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
@@ -695,9 +695,11 @@ const Quests = {
         tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
         tg.showPopup({
             title: "Forward Message",
-            message: "Forward the message to any chat using the opened share menu, then return here.",
+            message: "Forward the message to any chat using the opened share menu. Reward will be given in 6 seconds.",
             buttons: [{ type: "ok", text: "I've sent it" }]
-        }, () => this.checkPendingQuests(userId));
+        }, () => {
+            setTimeout(() => this.completeQuest(userId, "forward_message"), 6000);
+        });
     },
 
     async handleDiceStatus(userId) {
@@ -711,58 +713,32 @@ const Quests = {
             return;
         }
 
-        // Ограничение до 3 кнопок
-        const buttons = [
-            { type: "default", text: "🎲", id: "dice" },
-            { type: "default", text: "Add Manually", id: "manual" },
-            { type: "cancel", text: "Cancel", id: "cancel" }
-        ];
-
+        tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
         tg.showPopup({
-            title: "Set Status Emoji",
-            message: "Choose to add 🎲 to your status:",
-            buttons: buttons
-        }, async (popupData) => {
-            if (!popupData || !popupData.button_id || popupData.button_id === "cancel") return;
-
-            if (popupData.button_id === "dice") {
-                tg.openLink("https://t.me/addemoji/LuckyCube");
-                tg.showPopup({
-                    title: "Add Emoji",
-                    message: "Add the first emoji (🎲) from LuckyCube to your status, then return here.",
-                    buttons: [{ type: "ok", text: "I've added it" }]
-                }, () => this.checkPendingQuests(userId));
-            } else if (popupData.button_id === "manual") {
-                tg.showPopup({
-                    title: "Manual Action",
-                    message: "Add 🎲 to your status in Telegram Settings, then return here.",
-                    buttons: [{ type: "ok", text: "I've added it" }]
-                }, () => this.checkPendingQuests(userId));
-            }
-        });
+            title: "Add Status Emoji",
+            message: "Add the first emoji (🎲) from LuckyCube to your status, then return here.",
+            buttons: [{ type: "ok", text: "I've added it" }]
+        }, () => this.checkPendingQuests(userId));
     },
 
     async handleDiceNickname(userId) {
         const user = tg.initDataUnsafe.user;
         const hasDice = (user.first_name?.includes("🎲") || user.username?.includes("🎲") || user.last_name?.includes("🎲"));
         
-        if (hasDice) {
+        await this.refreshUserData(); // Обновляем данные перед проверкой
+        const checkResponse = await API.fetch("/check_dice_nickname", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        if (hasDice || checkResponse.success) {
             await this.completeQuest(userId, "dice_nickname");
         } else {
-            const checkResponse = await API.fetch("/check_dice_nickname", {
-                method: "POST",
-                body: { user_id: userId }
-            });
-
-            if (checkResponse.success) {
-                await this.completeQuest(userId, "dice_nickname");
-            } else {
-                tg.showPopup({
-                    title: "Add Dice to Nickname",
-                    message: "Add 🎲 to your Telegram nickname (first name, last name, or username) in Settings, then return here.",
-                    buttons: [{ type: "ok", text: "I've added it" }]
-                }, () => this.checkPendingQuests(userId));
-            }
+            tg.showPopup({
+                title: "Add Dice to Nickname",
+                message: "Add 🎲 to your Telegram nickname (first name, last name, or username) in Settings, then return here.",
+                buttons: [{ type: "ok", text: "I've added it" }]
+            }, () => this.checkPendingQuests(userId));
         }
     },
 
