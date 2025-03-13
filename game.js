@@ -1111,7 +1111,6 @@ async function initializeApp() {
 
         const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData;
-        await Quests.checkPendingQuests(userId); // Проверяем ожидающие квесты при загрузке
 
         if (userData.ban === "yes") {
             loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
