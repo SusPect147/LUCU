@@ -528,8 +528,9 @@ const Quests = {
     },
 
     init() {
-        // Открытие меню квестов
-        this.elements.button.addEventListener("click", () => {
+        // Открытие меню квестов с обновлением данных
+        this.elements.button.addEventListener("click", async () => {
+            await this.refreshUserData();
             this.updateQuestStatus();
             UI.toggleMenu(this.elements.menu, true);
         });
@@ -556,16 +557,30 @@ const Quests = {
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
 
-        // Начальное обновление статуса квестов
-        this.updateQuestStatus();
+        // Периодическое обновление данных каждые 30 секунд, если меню открыто
+        this.refreshInterval = setInterval(async () => {
+            if (!this.elements.menu.classList.contains("hidden")) {
+                await this.refreshUserData();
+                this.updateQuestStatus();
+            }
+        }, 30000);
 
         // Проверка ожидающих квестов при возвращении в приложение
-        tg.onEvent("viewport_changed", () => {
+        tg.onEvent("viewport_changed", async () => {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (userId) {
-                this.checkPendingQuests(userId); // Передаем userId
-            }
+            if (userId) await this.checkPendingQuests(userId);
         });
+    },
+
+    async refreshUserData() {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) return;
+        try {
+            const userData = await API.fetch(`/get_user_data_new/${userId}`);
+            AppState.userData = { ...AppState.userData, ...userData };
+        } catch (error) {
+            console.error("Failed to refresh user data:", error);
+        }
     },
 
     updateQuestStatus() {
@@ -583,6 +598,7 @@ const Quests = {
         Object.entries(questButtons).forEach(([quest, button]) => {
             if (!button) return;
             const status = data.quests[quest] || "no";
+            button.disabled = false;
             if (status === "yes") {
                 button.textContent = "Done!";
                 button.classList.add("completed");
@@ -594,13 +610,11 @@ const Quests = {
                 button.classList.remove("completed");
                 button.style.background = "rgb(0, 139, 0)";
                 button.style.cursor = "pointer";
-                button.disabled = false;
             } else {
                 button.textContent = "Go";
                 button.classList.remove("completed");
                 button.style.background = "";
                 button.style.cursor = "pointer";
-                button.disabled = false;
             }
         });
     },
@@ -616,12 +630,12 @@ const Quests = {
             return;
         }
 
+        const questStatus = AppState.userData.quests[questName] || "no";
+        if (questStatus === "yes") return;
+
         try {
-            const questStatus = AppState.userData.quests[questName] || "no";
-            if (questStatus === "yes") {
-                return; // Квест уже завершен, ничего не делаем
-            } else if (questStatus === "pending") {
-                await this.completeQuest(userId, questName, this.getQuestReward(questName));
+            if (questStatus === "pending") {
+                await this.completeQuest(userId, questName);
             } else {
                 switch (questName) {
                     case "subscription_quest":
@@ -645,11 +659,13 @@ const Quests = {
             }
         } catch (error) {
             console.error(`Error handling quest ${questName}:`, error);
-            tg.showPopup({
-                title: "Error",
-                message: `Failed to process quest: ${error.message}. Please try again.`,
-                buttons: [{ type: "ok" }]
-            });
+            if (!error.message.includes("WebAppPopupOpened")) {
+                tg.showPopup({
+                    title: "Error",
+                    message: `Failed to process quest: ${error.message}. Please try again later.`,
+                    buttons: [{ type: "ok" }]
+                });
+            }
         }
     },
 
@@ -660,17 +676,13 @@ const Quests = {
         });
 
         if (subscriptionResponse.success) {
-            if (AppState.userData.quests["subscription_quest"] !== "yes") {
-                await this.completeQuest(userId, "subscription_quest", 250);
-            }
+            await this.completeQuest(userId, "subscription_quest");
         } else {
             tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
             tg.showPopup({
                 title: "Subscribe",
-                message: `Subscribe to the @${CONFIG.CHANNEL_USERNAME} channel, then return here.`,
-                buttons: [
-                    { type: "ok", text: "I've subscribed" }
-                ]
+                message: `Subscribe to @${CONFIG.CHANNEL_USERNAME}, then return here.`,
+                buttons: [{ type: "ok", text: "I've subscribed" }]
             }, () => this.checkPendingQuests(userId));
         }
     },
@@ -680,14 +692,11 @@ const Quests = {
         tg.showPopup({
             title: "Forward Message",
             message: `Forward this message to any chat: "${message}", then return here.`,
-            buttons: [
-                { type: "ok", text: "I've sent it" }
-            ]
+            buttons: [{ type: "ok", text: "I've sent it" }]
         }, () => this.checkPendingQuests(userId));
     },
 
     async handleDiceStatus(userId) {
-        // Проверяем, является ли пользователь премиум
         const userData = await API.fetch(`/get_user_data_new/${userId}`);
         if (!userData.is_premium) {
             tg.showPopup({
@@ -698,8 +707,7 @@ const Quests = {
             return;
         }
 
-        // Показываем меню выбора эмодзи для статуса
-        const emojiOptions = ["🎲", "🍀", "⭐"];
+        const emojiOptions = ["🎲", "🍀"];
         const buttons = emojiOptions.map(emoji => ({
             type: "default",
             text: emoji
@@ -719,15 +727,11 @@ const Quests = {
                 });
 
                 if (setStatusResponse.success) {
-                    tg.showPopup({
-                        title: "Success",
-                        message: `Emoji ${selectedEmoji} added to your status! Return to claim your reward.`,
-                        buttons: [{ type: "ok" }]
-                    }, () => this.checkPendingQuests(userId));
+                    await this.checkPendingQuests(userId);
                 } else {
                     tg.showPopup({
                         title: "Manual Action Required",
-                        message: `Failed to set emoji automatically. Add ${selectedEmoji} to your status manually in Telegram Settings, then return here.`,
+                        message: `Add ${selectedEmoji} to your status in Telegram Settings, then return here.`,
                         buttons: [{ type: "ok", text: "I've added it" }]
                     }, () => this.checkPendingQuests(userId));
                 }
@@ -736,13 +740,20 @@ const Quests = {
     },
 
     async handleDiceNickname(userId) {
-        tg.showPopup({
-            title: "Add Emoji to Nickname",
-            message: "Go to Telegram Settings and add 🎲 to your nickname (anywhere in the name), then return here.",
-            buttons: [
-                { type: "ok", text: "I've added it" }
-            ]
-        }, () => this.checkPendingQuests(userId));
+        const checkResponse = await API.fetch("/check_dice_nickname", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        if (checkResponse.success) {
+            await this.completeQuest(userId, "dice_nickname");
+        } else {
+            tg.showPopup({
+                title: "Add Dice to Nickname",
+                message: "Add 🎲 to your Telegram nickname in Settings, then return here.",
+                buttons: [{ type: "ok", text: "I've added it" }]
+            }, () => this.checkPendingQuests(userId));
+        }
     },
 
     async handleBoostChannel(userId) {
@@ -750,71 +761,11 @@ const Quests = {
         tg.showPopup({
             title: "Boost the Channel",
             message: "Boost our channel, then return here.",
-            buttons: [
-                { type: "ok", text: "I've boosted it" }
-            ]
+            buttons: [{ type: "ok", text: "I've boosted it" }]
         }, () => this.checkPendingQuests(userId));
     },
 
-    // Исправленный checkPendingQuests
-    checkPendingQuests: async (userId) => {
-        const userData = await API.fetch(`/get_user_data_new/${userId}`); // Заменяем fetchUserData
-        if (!userData || !userData.quests) return;
-
-        // Обновляем AppState.userData
-        AppState.userData = { ...AppState.userData, ...userData };
-
-        // Определяем награды для квестов
-        const questRewards = {
-            "subscription_quest": 250,
-            "forward_message": 500,
-            "dice_status": 500,
-            "dice_nickname": 100,
-            "boost_channel": 500
-        };
-
-        for (const quest in userData.quests) {
-            if (userData.quests[quest] === "pending") {
-                console.log(`Checking pending quest: ${quest}`);
-                try {
-                    const response = await fetch(`${CONFIG.API_BASE_URL}/update_quest_new`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${localStorage.getItem("authToken")}`, // Используем authToken
-                            "X-Telegram-Init-Data": tg.initData
-                        },
-                        body: JSON.stringify({
-                            user_id: userData.user_id,
-                            quest: quest,
-                            status: "yes"
-                        })
-                    });
-                    const data = await response.json();
-                    if (data.message === "Quest updated successfully") {
-                        // Проверяем, открыт ли уже попап, чтобы избежать ошибки WebAppPopupOpened
-                        if (!tg.isPopupOpen) {
-                            tg.showPopup({
-                                title: "Success",
-                                message: `Quest completed! You earned ${questRewards[quest] || 0} $LUCU.`,
-                                buttons: [{ text: "OK", id: "ok" }]
-                            });
-                        }
-                        // Обновляем локальное состояние
-                        AppState.userData.quests[quest] = "yes";
-                        AppState.userData.coins = data.new_coins;
-                        Game.state.coins = data.new_coins;
-                        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(data.new_coins)} $LUCU`;
-                        Quests.updateQuestStatus();
-                    }
-                } catch (error) {
-                    console.error(`Error completing quest ${quest}:`, error);
-                }
-            }
-        }
-    },
-
-    async completeQuest(userId, questName, reward) {
+    async completeQuest(userId, questName) {
         try {
             const response = await API.fetch("/update_quest_new", {
                 method: "POST",
@@ -831,19 +782,40 @@ const Quests = {
                 Game.state.coins = response.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
                 this.updateQuestStatus();
-                // Проверяем, открыт ли уже попап
                 if (!tg.isPopupOpen) {
                     tg.showPopup({
                         title: "Success",
-                        message: `Quest completed! You earned ${reward} $LUCU.`,
+                        message: `Quest completed! You earned ${this.getQuestReward(questName)} $LUCU.`,
                         buttons: [{ type: "ok" }]
                     });
                 }
             } else {
-                console.warn(`Quest ${questName} not updated: ${response.message}`);
+                throw new Error(response.message || "Failed to update quest");
             }
         } catch (error) {
-            console.error(`Error completing quest ${questName}:`, error);
+            if (error.status === 429) {
+                tg.showPopup({
+                    title: "Too Fast!",
+                    message: "Please wait a moment before claiming again.",
+                    buttons: [{ type: "ok" }]
+                });
+            } else {
+                throw error;
+            }
+        }
+    },
+
+    async checkPendingQuests(userId) {
+        await this.refreshUserData();
+        const userData = AppState.userData;
+        if (!userData || !userData.quests) return;
+
+        for (const quest in userData.quests) {
+            if (userData.quests[quest] === "pending") {
+                console.log(`Checking pending quest: ${quest}`);
+                await this.completeQuest(userId, quest);
+                await Utils.wait(1000); // Добавляем задержку для избежания rate limiting
+            }
         }
     },
 
