@@ -563,7 +563,7 @@ const Quests = {
         tg.onEvent("viewport_changed", () => {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
             if (userId) {
-                this.checkPendingQuests(userId);
+                this.checkPendingQuests(userId); // Передаем userId
             }
         });
     },
@@ -756,39 +756,63 @@ const Quests = {
         }, () => this.checkPendingQuests(userId));
     },
 
-async function checkPendingQuests() {
-    const userData = await fetchUserData();
-    for (const quest in userData.quests) {
-        if (userData.quests[quest] === "pending") {
-            console.log(`Checking pending quest: ${quest}`);
-            try {
-                const response = await fetch(`${API_BASE_URL}/update_quest_new`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${localStorage.getItem("token")}`
-                    },
-                    body: JSON.stringify({
-                        user_id: userData.user_id,
-                        quest: quest,
-                        status: "yes"
-                    })
-                });
-                const data = await response.json();
-                if (data.message === "Quest updated successfully") {
-                    WebApp.showPopup({
-                        title: "Success",
-                        message: `Quest completed! You earned ${questRewards[quest]} $LUCU.`,
-                        buttons: [{ text: "OK", id: "ok" }]
+    // Исправленный checkPendingQuests
+    checkPendingQuests: async (userId) => {
+        const userData = await API.fetch(`/get_user_data_new/${userId}`); // Заменяем fetchUserData
+        if (!userData || !userData.quests) return;
+
+        // Обновляем AppState.userData
+        AppState.userData = { ...AppState.userData, ...userData };
+
+        // Определяем награды для квестов
+        const questRewards = {
+            "subscription_quest": 250,
+            "forward_message": 500,
+            "dice_status": 500,
+            "dice_nickname": 100,
+            "boost_channel": 500
+        };
+
+        for (const quest in userData.quests) {
+            if (userData.quests[quest] === "pending") {
+                console.log(`Checking pending quest: ${quest}`);
+                try {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}/update_quest_new`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${localStorage.getItem("authToken")}`, // Используем authToken
+                            "X-Telegram-Init-Data": tg.initData
+                        },
+                        body: JSON.stringify({
+                            user_id: userData.user_id,
+                            quest: quest,
+                            status: "yes"
+                        })
                     });
-                    userData.quests[quest] = "yes"; // Обновляем локально
+                    const data = await response.json();
+                    if (data.message === "Quest updated successfully") {
+                        // Проверяем, открыт ли уже попап, чтобы избежать ошибки WebAppPopupOpened
+                        if (!tg.isPopupOpen) {
+                            tg.showPopup({
+                                title: "Success",
+                                message: `Quest completed! You earned ${questRewards[quest] || 0} $LUCU.`,
+                                buttons: [{ text: "OK", id: "ok" }]
+                            });
+                        }
+                        // Обновляем локальное состояние
+                        AppState.userData.quests[quest] = "yes";
+                        AppState.userData.coins = data.new_coins;
+                        Game.state.coins = data.new_coins;
+                        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(data.new_coins)} $LUCU`;
+                        Quests.updateQuestStatus();
+                    }
+                } catch (error) {
+                    console.error(`Error completing quest ${quest}:`, error);
                 }
-            } catch (error) {
-                console.error(`Error completing quest ${quest}:`, error);
             }
         }
-    }
-},
+    },
 
     async completeQuest(userId, questName, reward) {
         try {
@@ -807,11 +831,14 @@ async function checkPendingQuests() {
                 Game.state.coins = response.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
                 this.updateQuestStatus();
-                tg.showPopup({
-                    title: "Success",
-                    message: `Quest completed! You earned ${reward} $LUCU.`,
-                    buttons: [{ type: "ok" }]
-                });
+                // Проверяем, открыт ли уже попап
+                if (!tg.isPopupOpen) {
+                    tg.showPopup({
+                        title: "Success",
+                        message: `Quest completed! You earned ${reward} $LUCU.`,
+                        buttons: [{ type: "ok" }]
+                    });
+                }
             } else {
                 console.warn(`Quest ${questName} not updated: ${response.message}`);
             }
@@ -1112,6 +1139,7 @@ async function initializeApp() {
 
         const userData = await API.fetch(`/get_user_data/${userId}`);
         AppState.userData = userData;
+        await Quests.checkPendingQuests(userId); // Проверяем ожидающие квесты при загрузке
 
         if (userData.ban === "yes") {
             loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
