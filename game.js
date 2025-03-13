@@ -528,36 +528,34 @@ const Quests = {
     },
 
     init() {
-        // Открытие меню квестов с предварительным обновлением UI
         this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
-            this.updateQuestStatus(); // Сначала показываем текущее состояние
-            this.refreshUserData(); // Затем обновляем данные асинхронно
+            this.updateQuestStatus();
+            this.refreshUserData();
         });
 
-        // Закрытие меню по клику на фон
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) {
                 UI.toggleMenu(this.elements.menu, false);
             }
         });
 
-        // Обработка свайпа вниз для закрытия меню
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
 
-        // Привязка обработчиков к кнопкам квестов
         this.elements.questsList.querySelectorAll(".quest-btn").forEach(button => {
             button.addEventListener("click", () => {
                 const questName = button.getAttribute("data-quest");
-                this.handleQuest(questName);
+                if (questName) { // Проверка на null
+                    this.handleQuest(questName);
+                } else {
+                    console.error("Quest name is null or undefined");
+                }
             });
         });
 
-        // Переключение вкладок
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
 
-        // Периодическое обновление данных каждые 30 секунд
         this.refreshInterval = setInterval(async () => {
             if (!this.elements.menu.classList.contains("hidden")) {
                 await this.refreshUserData();
@@ -565,13 +563,11 @@ const Quests = {
             }
         }, 30000);
 
-        // Проверка ожидающих квестов при возвращении в приложение
         tg.onEvent("viewport_changed", async () => {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
             if (userId) await this.checkPendingQuests(userId);
         });
 
-        // Начальная загрузка данных
         this.refreshUserData();
     },
 
@@ -580,7 +576,6 @@ const Quests = {
         if (!userId) return;
         try {
             const userData = await API.fetch(`/get_user_data_new/${userId}`);
-            // Обновляем только если данные изменились
             if (JSON.stringify(AppState.userData) !== JSON.stringify(userData)) {
                 AppState.userData = { ...AppState.userData, ...userData };
                 this.updateQuestStatus();
@@ -677,6 +672,7 @@ const Quests = {
     },
 
     async handleSubscription(userId) {
+        await this.refreshUserData(); // Обновляем данные перед проверкой
         const subscriptionResponse = await API.fetch("/check_subscription", {
             method: "POST",
             body: { user_id: userId }
@@ -696,16 +692,16 @@ const Quests = {
 
     async handleForwardMessage(userId) {
         const message = `This game pays more than your job. Work? No! Play! Work? No, play! Join now and win big! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
+        tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
         tg.showPopup({
             title: "Forward Message",
-            message: `Forward this message to any chat: "${message}", then return here.`,
+            message: "Forward the message to any chat using the opened share menu, then return here.",
             buttons: [{ type: "ok", text: "I've sent it" }]
         }, () => this.checkPendingQuests(userId));
     },
 
     async handleDiceStatus(userId) {
         const userData = await API.fetch(`/get_user_data_new/${userId}`);
-        // Исправляем проверку премиума
         if (!userData.is_premium && !tg.initDataUnsafe.user?.is_premium) {
             tg.showPopup({
                 title: "Premium Required",
@@ -715,42 +711,40 @@ const Quests = {
             return;
         }
 
-        const emojiOptions = ["🎲", "🍀", "⭐"];
-        const buttons = emojiOptions.map(emoji => ({
-            type: "default",
-            text: emoji
-        }));
-        buttons.push({ type: "cancel", text: "Cancel" });
+        // Ограничение до 3 кнопок
+        const buttons = [
+            { type: "default", text: "🎲", id: "dice" },
+            { type: "default", text: "Add Manually", id: "manual" },
+            { type: "cancel", text: "Cancel", id: "cancel" }
+        ];
 
         tg.showPopup({
             title: "Set Status Emoji",
-            message: "Choose an emoji to add to your status:",
+            message: "Choose to add 🎲 to your status:",
             buttons: buttons
         }, async (popupData) => {
-            if (popupData.button_id && popupData.button_id !== "cancel") {
-                const selectedEmoji = popupData.button_id;
-                const setStatusResponse = await API.fetch("/set_dice_status", {
-                    method: "POST",
-                    body: { user_id: userId, emoji: selectedEmoji }
-                });
+            if (!popupData || !popupData.button_id || popupData.button_id === "cancel") return;
 
-                if (setStatusResponse.success) {
-                    await this.checkPendingQuests(userId);
-                } else {
-                    tg.showPopup({
-                        title: "Manual Action Required",
-                        message: `Add ${selectedEmoji} to your status in Telegram Settings, then return here.`,
-                        buttons: [{ type: "ok", text: "I've added it" }]
-                    }, () => this.checkPendingQuests(userId));
-                }
+            if (popupData.button_id === "dice") {
+                tg.openLink("https://t.me/addemoji/LuckyCube");
+                tg.showPopup({
+                    title: "Add Emoji",
+                    message: "Add the first emoji (🎲) from LuckyCube to your status, then return here.",
+                    buttons: [{ type: "ok", text: "I've added it" }]
+                }, () => this.checkPendingQuests(userId));
+            } else if (popupData.button_id === "manual") {
+                tg.showPopup({
+                    title: "Manual Action",
+                    message: "Add 🎲 to your status in Telegram Settings, then return here.",
+                    buttons: [{ type: "ok", text: "I've added it" }]
+                }, () => this.checkPendingQuests(userId));
             }
         });
     },
 
     async handleDiceNickname(userId) {
-        // Проверяем локально перед запросом к API
         const user = tg.initDataUnsafe.user;
-        const hasDice = (user.first_name?.includes("🎲") || user.username?.includes("🎲"));
+        const hasDice = (user.first_name?.includes("🎲") || user.username?.includes("🎲") || user.last_name?.includes("🎲"));
         
         if (hasDice) {
             await this.completeQuest(userId, "dice_nickname");
@@ -765,7 +759,7 @@ const Quests = {
             } else {
                 tg.showPopup({
                     title: "Add Dice to Nickname",
-                    message: "Add 🎲 to your Telegram nickname in Settings (first name or username), then return here.",
+                    message: "Add 🎲 to your Telegram nickname (first name, last name, or username) in Settings, then return here.",
                     buttons: [{ type: "ok", text: "I've added it" }]
                 }, () => this.checkPendingQuests(userId));
             }
