@@ -528,11 +528,11 @@ const Quests = {
     },
 
     init() {
-        // Открытие меню квестов с обновлением данных
-        this.elements.button.addEventListener("click", async () => {
-            await this.refreshUserData();
-            this.updateQuestStatus();
+        // Открытие меню квестов с предварительным обновлением UI
+        this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
+            this.updateQuestStatus(); // Сначала показываем текущее состояние
+            this.refreshUserData(); // Затем обновляем данные асинхронно
         });
 
         // Закрытие меню по клику на фон
@@ -557,7 +557,7 @@ const Quests = {
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
 
-        // Периодическое обновление данных каждые 30 секунд, если меню открыто
+        // Периодическое обновление данных каждые 30 секунд
         this.refreshInterval = setInterval(async () => {
             if (!this.elements.menu.classList.contains("hidden")) {
                 await this.refreshUserData();
@@ -570,6 +570,9 @@ const Quests = {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
             if (userId) await this.checkPendingQuests(userId);
         });
+
+        // Начальная загрузка данных
+        this.refreshUserData();
     },
 
     async refreshUserData() {
@@ -577,7 +580,11 @@ const Quests = {
         if (!userId) return;
         try {
             const userData = await API.fetch(`/get_user_data_new/${userId}`);
-            AppState.userData = { ...AppState.userData, ...userData };
+            // Обновляем только если данные изменились
+            if (JSON.stringify(AppState.userData) !== JSON.stringify(userData)) {
+                AppState.userData = { ...AppState.userData, ...userData };
+                this.updateQuestStatus();
+            }
         } catch (error) {
             console.error("Failed to refresh user data:", error);
         }
@@ -698,7 +705,8 @@ const Quests = {
 
     async handleDiceStatus(userId) {
         const userData = await API.fetch(`/get_user_data_new/${userId}`);
-        if (!userData.is_premium) {
+        // Исправляем проверку премиума
+        if (!userData.is_premium && !tg.initDataUnsafe.user?.is_premium) {
             tg.showPopup({
                 title: "Premium Required",
                 message: "This quest requires a Telegram Premium subscription.",
@@ -707,7 +715,7 @@ const Quests = {
             return;
         }
 
-        const emojiOptions = ["🎲", "🍀"];
+        const emojiOptions = ["🎲", "🍀", "⭐"];
         const buttons = emojiOptions.map(emoji => ({
             type: "default",
             text: emoji
@@ -740,19 +748,27 @@ const Quests = {
     },
 
     async handleDiceNickname(userId) {
-        const checkResponse = await API.fetch("/check_dice_nickname", {
-            method: "POST",
-            body: { user_id: userId }
-        });
-
-        if (checkResponse.success) {
+        // Проверяем локально перед запросом к API
+        const user = tg.initDataUnsafe.user;
+        const hasDice = (user.first_name?.includes("🎲") || user.username?.includes("🎲"));
+        
+        if (hasDice) {
             await this.completeQuest(userId, "dice_nickname");
         } else {
-            tg.showPopup({
-                title: "Add Dice to Nickname",
-                message: "Add 🎲 to your Telegram nickname in Settings, then return here.",
-                buttons: [{ type: "ok", text: "I've added it" }]
-            }, () => this.checkPendingQuests(userId));
+            const checkResponse = await API.fetch("/check_dice_nickname", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+
+            if (checkResponse.success) {
+                await this.completeQuest(userId, "dice_nickname");
+            } else {
+                tg.showPopup({
+                    title: "Add Dice to Nickname",
+                    message: "Add 🎲 to your Telegram nickname in Settings (first name or username), then return here.",
+                    buttons: [{ type: "ok", text: "I've added it" }]
+                }, () => this.checkPendingQuests(userId));
+            }
         }
     },
 
@@ -814,7 +830,7 @@ const Quests = {
             if (userData.quests[quest] === "pending") {
                 console.log(`Checking pending quest: ${quest}`);
                 await this.completeQuest(userId, quest);
-                await Utils.wait(1000); // Добавляем задержку для избежания rate limiting
+                await Utils.wait(1000);
             }
         }
     },
