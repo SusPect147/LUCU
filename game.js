@@ -756,27 +756,39 @@ const Quests = {
         }, () => this.checkPendingQuests(userId));
     },
 
-    async checkPendingQuests(userId) {
-        try {
-            // Обновляем данные пользователя
-            const userDataResponse = await API.fetch(`/get_user_data_new/${userId}`);
-            AppState.userData = userDataResponse;
-
-            // Проверяем только квесты в состоянии "pending"
-            const pendingQuests = Object.entries(AppState.userData.quests)
-                .filter(([_, status]) => status === "pending");
-
-            for (const [questName] of pendingQuests) {
-                console.log(`Checking pending quest: ${questName}`);
-                const reward = this.getQuestReward(questName);
-                await this.completeQuest(userId, questName, reward);
+async function checkPendingQuests() {
+    const userData = await fetchUserData();
+    for (const quest in userData.quests) {
+        if (userData.quests[quest] === "pending") {
+            console.log(`Checking pending quest: ${quest}`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/update_quest_new`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    },
+                    body: JSON.stringify({
+                        user_id: userData.user_id,
+                        quest: quest,
+                        status: "yes"
+                    })
+                });
+                const data = await response.json();
+                if (data.message === "Quest updated successfully") {
+                    WebApp.showPopup({
+                        title: "Success",
+                        message: `Quest completed! You earned ${questRewards[quest]} $LUCU.`,
+                        buttons: [{ text: "OK", id: "ok" }]
+                    });
+                    userData.quests[quest] = "yes"; // Обновляем локально
+                }
+            } catch (error) {
+                console.error(`Error completing quest ${quest}:`, error);
             }
-
-            this.updateQuestStatus();
-        } catch (error) {
-            console.error("Error checking pending quests:", error);
         }
-    },
+    }
+},
 
     async completeQuest(userId, questName, reward) {
         try {
