@@ -528,6 +528,17 @@ const Quests = {
     },
 
     init() {
+        // Инициализация Telegram Web App
+        Telegram.WebApp.ready();
+        Telegram.WebApp.setHeaderColor("#000000");
+        Telegram.WebApp.setBackgroundColor("#000000");
+        Telegram.WebApp.setBottomBarColor("#0f0f0f");
+
+        // Настройка главной кнопки
+        Telegram.WebApp.MainButton.setText("Set emoji status");
+        Telegram.WebApp.MainButton.setParams({ color: "#111" });
+        Telegram.WebApp.MainButton.show();
+
         this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
             this.updateQuestStatus();
@@ -569,6 +580,11 @@ const Quests = {
         });
 
         this.refreshUserData();
+
+        // Обработчик для главной кнопки
+        Telegram.WebApp.MainButton.onClick(async () => {
+            await this.handleDiceStatus(tg.initDataUnsafe.user?.id?.toString());
+        });
     },
 
     async refreshUserData() {
@@ -686,20 +702,9 @@ const Quests = {
         }
 
         try {
-            if (TelegramAppsSDK.requestEmojiStatusAccess.isAvailable()) {
-                const accessGranted = await TelegramAppsSDK.requestEmojiStatusAccess();
-                if (accessGranted && TelegramAppsSDK.setEmojiStatus.isAvailable()) {
-                    // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
-                    await TelegramAppsSDK.setEmojiStatus('5361800828313167608'); // Замените на актуальный ID
-                    setTimeout(() => this.completeQuest(userId, "dice_status"), 6000);
-                } else {
-                    tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
-                    setTimeout(() => this.checkPendingQuests(userId), 6000);
-                }
-            } else {
-                tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
-                setTimeout(() => this.checkPendingQuests(userId), 6000);
-            }
+            // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
+            await Telegram.WebApp.setEmojiStatus('5361800828313167608'); // Замените на актуальный ID для 🎲
+            setTimeout(() => this.completeQuest(userId, "dice_status"), 6000);
         } catch (error) {
             console.error("Failed to set emoji status:", error);
             tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
