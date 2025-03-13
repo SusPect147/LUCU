@@ -517,8 +517,6 @@ const Skins = {
     }
 };
 
-import { requestEmojiStatusAccess, setEmojiStatus } from '@telegram-apps/sdk';
-
 const Quests = {
     elements: {
         menu: document.getElementById("quests-menu"),
@@ -688,25 +686,23 @@ const Quests = {
         }
 
         try {
-            if (requestEmojiStatusAccess.isAvailable()) {
-                const accessGranted = await requestEmojiStatusAccess();
-                if (accessGranted && setEmojiStatus.isAvailable()) {
-                    // Используем ID эмодзи из набора LuckyCube (предполагаемый ID для 🎲)
-                    await setEmojiStatus('5361800828313167608'); // ID для 🎲, может потребоваться корректировка
+            if (TelegramAppsSDK.requestEmojiStatusAccess.isAvailable()) {
+                const accessGranted = await TelegramAppsSDK.requestEmojiStatusAccess();
+                if (accessGranted && TelegramAppsSDK.setEmojiStatus.isAvailable()) {
+                    // Устанавливаем эмодзи 🎲 с ID из набора LuckyCube
+                    await TelegramAppsSDK.setEmojiStatus('5361800828313167608'); // Замените на актуальный ID
                     setTimeout(() => this.completeQuest(userId, "dice_status"), 6000);
                 } else {
-                    // Fallback на открытие набора эмодзи
-                    Telegram.WebApp.openTelegramLink("https://t.me/addemoji/LuckyCube");
+                    tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
                     setTimeout(() => this.checkPendingQuests(userId), 6000);
                 }
             } else {
-                // Если SDK метод недоступен, используем старую логику
-                Telegram.WebApp.openTelegramLink("https://t.me/addemoji/LuckyCube");
+                tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
                 setTimeout(() => this.checkPendingQuests(userId), 6000);
             }
         } catch (error) {
             console.error("Failed to set emoji status:", error);
-            Telegram.WebApp.openTelegramLink("https://t.me/addemoji/LuckyCube");
+            tg.openTelegramLink("https://t.me/addemoji/LuckyCube");
             setTimeout(() => this.checkPendingQuests(userId), 6000);
         }
     },
