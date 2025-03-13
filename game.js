@@ -530,14 +530,6 @@ const Quests = {
     init() {
         // Инициализация Telegram Web App
         Telegram.WebApp.ready();
-        Telegram.WebApp.setHeaderColor("#000000");
-        Telegram.WebApp.setBackgroundColor("#000000");
-        Telegram.WebApp.setBottomBarColor("#0f0f0f");
-
-        // Настройка главной кнопки
-        Telegram.WebApp.MainButton.setText("Set emoji status");
-        Telegram.WebApp.MainButton.setParams({ color: "#111" });
-        Telegram.WebApp.MainButton.show();
 
         this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
