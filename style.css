@@ -13,6 +13,17 @@
 .highlight {
  border: 2px solid #bd0a0a; /* например, зеленая рамка для выделения текущего игрока */
 }
+.tg-webapp-popup {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.tg-webapp-popup-button {
+    background-color: #008000;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
 /* Основные стили для body */
 body {
   margin: 0;
