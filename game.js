@@ -592,7 +592,7 @@ const Quests = {
             } else if (status === "pending") {
                 button.textContent = "Claim";
                 button.classList.remove("completed");
-                button.style.background = "rgb(0, 139, 0)"; // Зеленый для "готово к получению"
+                button.style.background = "rgb(0, 139, 0)";
                 button.style.cursor = "pointer";
                 button.disabled = false;
             } else {
@@ -621,10 +621,8 @@ const Quests = {
             if (questStatus === "yes") {
                 return; // Квест уже завершен, ничего не делаем
             } else if (questStatus === "pending") {
-                // Если квест в состоянии "pending", сразу завершаем его
                 await this.completeQuest(userId, questName, this.getQuestReward(questName));
             } else {
-                // Если квест еще не выполнен, выполняем соответствующее действие
                 switch (questName) {
                     case "subscription_quest":
                         await this.handleSubscription(userId);
@@ -669,23 +667,27 @@ const Quests = {
             tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
             tg.showPopup({
                 title: "Subscribe",
-                message: "Subscribe to the channel, then return here.",
-                buttons: [{ type: "ok", text: "I've subscribed" }]
+                message: `Subscribe to the @${CONFIG.CHANNEL_USERNAME} channel, then return here.`,
+                buttons: [
+                    { type: "ok", text: "I've subscribed" }
+                ]
             }, () => this.checkPendingQuests(userId));
         }
     },
 
     async handleForwardMessage(userId) {
-        const messageText = "Hey, jump into the game and check your luck level with me!";
+        const message = `This game pays more than your job. Work? No! Play! Work? No, play! Join now and win big! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
         tg.showPopup({
             title: "Forward Message",
-            message: `Send this message to any chat: "${messageText}", then return here.`,
-            buttons: [{ type: "ok", text: "I've sent it" }]
+            message: `Forward this message to any chat: "${message}", then return here.`,
+            buttons: [
+                { type: "ok", text: "I've sent it" }
+            ]
         }, () => this.checkPendingQuests(userId));
     },
 
     async handleDiceStatus(userId) {
-        // Проверяем, премиум ли пользователь
+        // Проверяем, является ли пользователь премиум
         const userData = await API.fetch(`/get_user_data_new/${userId}`);
         if (!userData.is_premium) {
             tg.showPopup({
@@ -696,32 +698,50 @@ const Quests = {
             return;
         }
 
-        // Предлагаем установить статус
-        const setStatusResponse = await API.fetch("/set_dice_status", {
-            method: "POST",
-            body: { user_id: userId }
-        });
+        // Показываем меню выбора эмодзи для статуса
+        const emojiOptions = ["🎲", "🍀", "⭐"];
+        const buttons = emojiOptions.map(emoji => ({
+            type: "default",
+            text: emoji
+        }));
+        buttons.push({ type: "cancel", text: "Cancel" });
 
-        if (setStatusResponse.success) {
-            tg.showPopup({
-                title: "Status Updated",
-                message: "Dice emoji added to your status! Return to claim your reward.",
-                buttons: [{ type: "ok" }]
-            }, () => this.checkPendingQuests(userId));
-        } else {
-            tg.showPopup({
-                title: "Manual Action Required",
-                message: "Go to Telegram Settings > Status and add 🎲 manually, then return here.",
-                buttons: [{ type: "ok", text: "I've added it" }]
-            }, () => this.checkPendingQuests(userId));
-        }
+        tg.showPopup({
+            title: "Set Status Emoji",
+            message: "Choose an emoji to add to your status:",
+            buttons: buttons
+        }, async (popupData) => {
+            if (popupData.button_id && popupData.button_id !== "cancel") {
+                const selectedEmoji = popupData.button_id;
+                const setStatusResponse = await API.fetch("/set_dice_status", {
+                    method: "POST",
+                    body: { user_id: userId, emoji: selectedEmoji }
+                });
+
+                if (setStatusResponse.success) {
+                    tg.showPopup({
+                        title: "Success",
+                        message: `Emoji ${selectedEmoji} added to your status! Return to claim your reward.`,
+                        buttons: [{ type: "ok" }]
+                    }, () => this.checkPendingQuests(userId));
+                } else {
+                    tg.showPopup({
+                        title: "Manual Action Required",
+                        message: `Failed to set emoji automatically. Add ${selectedEmoji} to your status manually in Telegram Settings, then return here.`,
+                        buttons: [{ type: "ok", text: "I've added it" }]
+                    }, () => this.checkPendingQuests(userId));
+                }
+            }
+        });
     },
 
     async handleDiceNickname(userId) {
         tg.showPopup({
-            title: "Add Dice to Nickname",
-            message: "Go to Telegram Settings and add 🎲 to your nickname, then return here.",
-            buttons: [{ type: "ok", text: "I've added it" }]
+            title: "Add Emoji to Nickname",
+            message: "Go to Telegram Settings and add 🎲 to your nickname (anywhere in the name), then return here.",
+            buttons: [
+                { type: "ok", text: "I've added it" }
+            ]
         }, () => this.checkPendingQuests(userId));
     },
 
@@ -730,7 +750,9 @@ const Quests = {
         tg.showPopup({
             title: "Boost the Channel",
             message: "Boost our channel, then return here.",
-            buttons: [{ type: "ok", text: "I've boosted it" }]
+            buttons: [
+                { type: "ok", text: "I've boosted it" }
+            ]
         }, () => this.checkPendingQuests(userId));
     },
 
@@ -807,6 +829,7 @@ const Quests = {
         }
     }
 };
+
 
 const Leaderboard = {
     elements: {
