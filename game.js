@@ -526,16 +526,25 @@ const Quests = {
         questsList: document.getElementById("quests-list"),
         achievementsList: document.getElementById("achievements-list")
     },
+
     init() {
+        // Открытие меню квестов
         this.elements.button.addEventListener("click", () => {
             this.updateQuestStatus();
             UI.toggleMenu(this.elements.menu, true);
         });
+
+        // Закрытие меню по клику на фон
         this.elements.menu.addEventListener("click", e => {
-            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+            if (e.target === this.elements.menu) {
+                UI.toggleMenu(this.elements.menu, false);
+            }
         });
+
+        // Обработка свайпа вниз для закрытия меню
         UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-        
+
+        // Привязка обработчиков к кнопкам квестов
         this.elements.questsList.querySelectorAll(".quest-btn").forEach(button => {
             button.addEventListener("click", () => {
                 const questName = button.getAttribute("data-quest");
@@ -543,11 +552,14 @@ const Quests = {
             });
         });
 
+        // Переключение вкладок
         this.elements.questsTab.addEventListener("click", () => this.switchTab("quests"));
         this.elements.achievementsTab.addEventListener("click", () => this.switchTab("achievements"));
+
+        // Начальное обновление статуса квестов
         this.updateQuestStatus();
 
-        // Обработчик возвращения в приложение
+        // Проверка ожидающих квестов при возвращении в приложение
         tg.onEvent("viewport_changed", () => {
             const userId = tg?.initDataUnsafe?.user?.id?.toString();
             if (userId) {
@@ -555,12 +567,13 @@ const Quests = {
             }
         });
     },
+
     updateQuestStatus() {
         const data = AppState.userData;
         if (!data || !data.quests) return;
 
         const questButtons = {
-            "subscription_quest": this.elements.questsList.querySelector('[data-quest="subscription_quest"]') || this.elements.questsList.querySelector(".quest-btn"),
+            "subscription_quest": this.elements.questsList.querySelector('[data-quest="subscription_quest"]'),
             "forward_message": this.elements.questsList.querySelector('[data-quest="forward_message"]'),
             "dice_status": this.elements.questsList.querySelector('[data-quest="dice_status"]'),
             "dice_nickname": this.elements.questsList.querySelector('[data-quest="dice_nickname"]'),
@@ -569,13 +582,19 @@ const Quests = {
 
         Object.entries(questButtons).forEach(([quest, button]) => {
             if (!button) return;
-            const isCompleted = data.quests[quest] === "yes";
-            if (isCompleted) {
+            const status = data.quests[quest] || "no";
+            if (status === "yes") {
                 button.textContent = "Done!";
                 button.classList.add("completed");
                 button.style.background = "rgb(139, 0, 0)";
                 button.style.cursor = "default";
                 button.disabled = true;
+            } else if (status === "pending") {
+                button.textContent = "Claim";
+                button.classList.remove("completed");
+                button.style.background = "rgb(0, 139, 0)"; // Зеленый для "готово к получению"
+                button.style.cursor = "pointer";
+                button.disabled = false;
             } else {
                 button.textContent = "Go";
                 button.classList.remove("completed");
@@ -585,38 +604,57 @@ const Quests = {
             }
         });
     },
+
     async handleQuest(questName) {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) {
-            tg.showPopup({ title: "Error", message: "User ID not found. Please restart the app in Telegram.", buttons: [{ type: "ok" }] });
+            tg.showPopup({
+                title: "Error",
+                message: "User ID not found. Please restart the app in Telegram.",
+                buttons: [{ type: "ok" }]
+            });
             return;
         }
 
         try {
-            switch (questName) {
-                case "subscription_quest":
-                    await this.handleSubscription(userId);
-                    break;
-                case "forward_message":
-                    await this.handleForwardMessage(userId);
-                    break;
-                case "dice_status":
-                    await this.handleDiceStatus(userId);
-                    break;
-                case "dice_nickname":
-                    await this.handleDiceNickname(userId);
-                    break;
-                case "boost_channel":
-                    await this.handleBoostChannel(userId);
-                    break;
-                default:
-                    console.error(`Unknown quest: ${questName}`);
+            const questStatus = AppState.userData.quests[questName] || "no";
+            if (questStatus === "yes") {
+                return; // Квест уже завершен, ничего не делаем
+            } else if (questStatus === "pending") {
+                // Если квест в состоянии "pending", сразу завершаем его
+                await this.completeQuest(userId, questName, this.getQuestReward(questName));
+            } else {
+                // Если квест еще не выполнен, выполняем соответствующее действие
+                switch (questName) {
+                    case "subscription_quest":
+                        await this.handleSubscription(userId);
+                        break;
+                    case "forward_message":
+                        await this.handleForwardMessage(userId);
+                        break;
+                    case "dice_status":
+                        await this.handleDiceStatus(userId);
+                        break;
+                    case "dice_nickname":
+                        await this.handleDiceNickname(userId);
+                        break;
+                    case "boost_channel":
+                        await this.handleBoostChannel(userId);
+                        break;
+                    default:
+                        console.error(`Unknown quest: ${questName}`);
+                }
             }
         } catch (error) {
             console.error(`Error handling quest ${questName}:`, error);
-            tg.showPopup({ title: "Error", message: `Error: ${error.message}. Please try again.`, buttons: [{ type: "ok" }] });
+            tg.showPopup({
+                title: "Error",
+                message: `Failed to process quest: ${error.message}. Please try again.`,
+                buttons: [{ type: "ok" }]
+            });
         }
     },
+
     async handleSubscription(userId) {
         const subscriptionResponse = await API.fetch("/check_subscription", {
             method: "POST",
@@ -624,7 +662,9 @@ const Quests = {
         });
 
         if (subscriptionResponse.success) {
-            await this.completeQuest(userId, "subscription_quest", 250);
+            if (AppState.userData.quests["subscription_quest"] !== "yes") {
+                await this.completeQuest(userId, "subscription_quest", 250);
+            }
         } else {
             tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
             tg.showPopup({
@@ -634,6 +674,7 @@ const Quests = {
             }, () => this.checkPendingQuests(userId));
         }
     },
+
     async handleForwardMessage(userId) {
         const messageText = "Hey, jump into the game and check your luck level with me!";
         tg.showPopup({
@@ -642,13 +683,40 @@ const Quests = {
             buttons: [{ type: "ok", text: "I've sent it" }]
         }, () => this.checkPendingQuests(userId));
     },
+
     async handleDiceStatus(userId) {
-        tg.showPopup({
-            title: "Add Dice to Status",
-            message: "Go to Telegram Settings > Status and add 🎲, then return here.",
-            buttons: [{ type: "ok", text: "I've added it" }]
-        }, () => this.checkPendingQuests(userId));
+        // Проверяем, премиум ли пользователь
+        const userData = await API.fetch(`/get_user_data_new/${userId}`);
+        if (!userData.is_premium) {
+            tg.showPopup({
+                title: "Premium Required",
+                message: "This quest requires a Telegram Premium subscription.",
+                buttons: [{ type: "ok" }]
+            });
+            return;
+        }
+
+        // Предлагаем установить статус
+        const setStatusResponse = await API.fetch("/set_dice_status", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        if (setStatusResponse.success) {
+            tg.showPopup({
+                title: "Status Updated",
+                message: "Dice emoji added to your status! Return to claim your reward.",
+                buttons: [{ type: "ok" }]
+            }, () => this.checkPendingQuests(userId));
+        } else {
+            tg.showPopup({
+                title: "Manual Action Required",
+                message: "Go to Telegram Settings > Status and add 🎲 manually, then return here.",
+                buttons: [{ type: "ok", text: "I've added it" }]
+            }, () => this.checkPendingQuests(userId));
+        }
     },
+
     async handleDiceNickname(userId) {
         tg.showPopup({
             title: "Add Dice to Nickname",
@@ -656,6 +724,7 @@ const Quests = {
             buttons: [{ type: "ok", text: "I've added it" }]
         }, () => this.checkPendingQuests(userId));
     },
+
     async handleBoostChannel(userId) {
         tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}?boost`);
         tg.showPopup({
@@ -664,36 +733,21 @@ const Quests = {
             buttons: [{ type: "ok", text: "I've boosted it" }]
         }, () => this.checkPendingQuests(userId));
     },
+
     async checkPendingQuests(userId) {
         try {
-            // Проверяем подписку
-            const subResponse = await API.fetch("/check_subscription", { method: "POST", body: { user_id: userId } });
-            if (subResponse.success && AppState.userData.quests["subscription_quest"] !== "yes") {
-                await this.completeQuest(userId, "subscription_quest", 250);
-            }
+            // Обновляем данные пользователя
+            const userDataResponse = await API.fetch(`/get_user_data_new/${userId}`);
+            AppState.userData = userDataResponse;
 
-            // Проверяем пересылку сообщения
-            const forwardResponse = await API.fetch("/check_forward_message", { method: "POST", body: { user_id: userId } });
-            if (forwardResponse.success && AppState.userData.quests["forward_message"] !== "yes") {
-                await this.completeQuest(userId, "forward_message", 500);
-            }
+            // Проверяем только квесты в состоянии "pending"
+            const pendingQuests = Object.entries(AppState.userData.quests)
+                .filter(([_, status]) => status === "pending");
 
-            // Проверяем статус с кубиком
-            const statusResponse = await API.fetch("/check_dice_status", { method: "POST", body: { user_id: userId } });
-            if (statusResponse.success && AppState.userData.quests["dice_status"] !== "yes") {
-                await this.completeQuest(userId, "dice_status", 500);
-            }
-
-            // Проверяем ник с кубиком
-            const nicknameResponse = await API.fetch("/check_dice_nickname", { method: "POST", body: { user_id: userId } });
-            if (nicknameResponse.success && AppState.userData.quests["dice_nickname"] !== "yes") {
-                await this.completeQuest(userId, "dice_nickname", 100);
-            }
-
-            // Проверяем буст канала
-            const boostResponse = await API.fetch("/check_boost_channel", { method: "POST", body: { user_id: userId } });
-            if (boostResponse.success && AppState.userData.quests["boost_channel"] !== "yes") {
-                await this.completeQuest(userId, "boost_channel", 500);
+            for (const [questName] of pendingQuests) {
+                console.log(`Checking pending quest: ${questName}`);
+                const reward = this.getQuestReward(questName);
+                await this.completeQuest(userId, questName, reward);
             }
 
             this.updateQuestStatus();
@@ -701,34 +755,51 @@ const Quests = {
             console.error("Error checking pending quests:", error);
         }
     },
+
     async completeQuest(userId, questName, reward) {
-        const response = await API.fetch("/update_quest_new", {
-            method: "POST",
-            body: {
-                user_id: userId,
-                quest: questName,
-                status: "yes"
-            }
-        });
-        if (response.message === "Quest updated successfully") {
-            AppState.userData.coins = response.new_coins;
-            AppState.userData.quests = AppState.userData.quests || {};
-            AppState.userData.quests[questName] = "yes";
-            Game.state.coins = response.new_coins;
-            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-            this.updateQuestStatus();
-            tg.showPopup({
-                title: "Success",
-                message: `Quest completed! You earned ${reward} $LUCU.`,
-                buttons: [{ type: "ok" }]
+        try {
+            const response = await API.fetch("/update_quest_new", {
+                method: "POST",
+                body: {
+                    user_id: userId,
+                    quest: questName,
+                    status: "yes"
+                }
             });
-        } else {
-            throw new Error(response.message || "Failed to update quest");
+
+            if (response.message === "Quest updated successfully") {
+                AppState.userData.coins = response.new_coins;
+                AppState.userData.quests[questName] = "yes";
+                Game.state.coins = response.new_coins;
+                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+                this.updateQuestStatus();
+                tg.showPopup({
+                    title: "Success",
+                    message: `Quest completed! You earned ${reward} $LUCU.`,
+                    buttons: [{ type: "ok" }]
+                });
+            } else {
+                console.warn(`Quest ${questName} not updated: ${response.message}`);
+            }
+        } catch (error) {
+            console.error(`Error completing quest ${questName}:`, error);
         }
     },
+
+    getQuestReward(questName) {
+        const rewards = {
+            "subscription_quest": 250,
+            "forward_message": 500,
+            "dice_status": 500,
+            "dice_nickname": 100,
+            "boost_channel": 500
+        };
+        return rewards[questName] || 0;
+    },
+
     switchTab(tab) {
         this.elements.questsTab.classList.toggle("active", tab === "quests");
-        this.elements.achievementsTab.classList.toggle("active", tab !== "quests");
+        this.elements.achievementsTab.classList.toggle("active", tab === "achievements");
         this.elements.questsList.classList.toggle("hidden", tab !== "quests");
         this.elements.achievementsList.classList.toggle("hidden", tab === "quests");
         if (tab === "achievements") {
@@ -736,6 +807,7 @@ const Quests = {
         }
     }
 };
+
 const Leaderboard = {
     elements: {
         menu: document.getElementById("leaderboard-menu"),
