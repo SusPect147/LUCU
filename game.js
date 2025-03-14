@@ -987,7 +987,6 @@ const Particles = {
 };
 
 async function initializeApp() {
-    // Проверяем наличие Telegram WebApp API
     if (!window.Telegram?.WebApp) {
         console.error("Telegram WebApp API is not available");
         alert("Please open this app in Telegram to continue.");
@@ -995,80 +994,61 @@ async function initializeApp() {
     }
 
     const tg = window.Telegram.WebApp;
-    tg.ready(); // Инициализируем WebApp
-    tg.expand(); // Разворачиваем приложение на полный экран
+    tg.ready();
+    tg.expand();
 
-    // Логируем начальные данные для отладки
-    console.log("Initializing app with Telegram initData:", tg.initData);
-
-    // Устанавливаем базовые заголовки API без токена (токен добавим после авторизации)
     API.defaultHeaders = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
 
     try {
-        // Отправляем запрос на сервер для инициализации сессии
         const response = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
             headers: API.defaultHeaders
         });
 
-        // Проверяем успешность ответа
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Initialization failed: ${response.status} - ${errorText}`);
         }
 
-        // Получаем данные из ответа
         const { token, is_premium } = await response.json();
 
-        // Сохраняем токен в localStorage для последующих запросов
         localStorage.setItem("authToken", token);
 
-        // Обновляем заголовки API с добавлением токена авторизации
         API.defaultHeaders["Authorization"] = `Bearer ${token}`;
 
-        // Сохраняем состояние приложения
-        AppState.isPremium = is_premium || false; // Устанавливаем премиум-статус (по умолчанию false)
-        AppState.userId = tg.initDataUnsafe?.user?.id || null; // Получаем ID пользователя из initData
+        AppState.isPremium = is_premium || false;
+        AppState.userId = tg.initDataUnsafe?.user?.id || null;
 
         if (!AppState.userId) {
             throw new Error("User ID not found in Telegram initData");
         }
 
-        // Загружаем данные пользователя с сервера
         const userData = await API.fetch(`/get_user_data_new/${AppState.userId}`);
         if (!userData || userData.error) {
             throw new Error("Failed to load user data");
         }
 
-        // Обновляем состояние приложения данными пользователя
         AppState.userData = userData;
-        console.log("User data loaded:", AppState.userData);
 
-        // Инициализируем интерфейс после успешной загрузки данных
-        updateUI(); // Предполагается, что эта функция обновляет интерфейс
-        await Quests.checkPendingQuests(AppState.userId); // Проверяем незавершенные квесты
+        await Quests.checkPendingQuests(AppState.userId);
 
     } catch (error) {
         console.error("Error during app initialization:", error);
 
-        // Показываем пользователю сообщение об ошибке
         Telegram.WebApp.showAlert(
             error.message.includes("Unauthorized")
                 ? "Authorization failed. Please restart the app."
                 : `An error occurred: ${error.message}. Please try again later.`
         );
 
-        // Если критическая ошибка, можно закрыть приложение
         if (error.message.includes("User ID not found") || error.message.includes("Unauthorized")) {
             Telegram.WebApp.close();
         }
     } finally {
-        // Устанавливаем флаг готовности приложения
         AppState.isInitialized = true;
-        console.log("App initialization completed");
     }
 }
 
