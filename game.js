@@ -667,30 +667,45 @@ const Quests = {
 
 async handleSubscription(userId) {
     await this.refreshUserData();
-    const subscriptionResponse = await API.fetch("/check_subscription", {
-        method: "POST",
-        body: { user_id: userId }
-    });
-    console.log("Subscription check response:", subscriptionResponse);
+    try {
+        const subscriptionResponse = await API.fetch("/check_subscription", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+        console.log("Subscription check response:", subscriptionResponse);
 
-    if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
-        await this.completeQuest(userId, "subscription_quest");
-    } else {
-        Telegram.WebApp.showAlert("Please subscribe to the channel to complete this quest.");
-        tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
-        setTimeout(() => this.checkPendingQuests(userId), 6000);
+        if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
+            await this.completeQuest(userId, "subscription_quest");
+            Telegram.WebApp.showAlert("Subscribed successfully! You earned 250 $LUCU.");
+        } else {
+            Telegram.WebApp.showAlert("Please subscribe to the channel to complete this quest.");
+            tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
+            setTimeout(async () => {
+                await this.checkPendingQuests(userId);
+                const userData = await API.fetch(`/get_user_data_new/${userId}`);
+                if (userData.quests["subscription_quest"] === "pending") {
+                    await this.completeQuest(userId, "subscription_quest");
+                }
+            }, 6000);
+        }
+    } catch (error) {
+        console.error("Error checking subscription:", error);
+        Telegram.WebApp.showAlert("An error occurred while checking your subscription. Please try again.");
     }
 },
 
 async handleForwardMessage(userId) {
     const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
     tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
-    Telegram.WebApp.showAlert("Please forward the message to any chat and return to claim your reward.");
+    Telegram.WebApp.showAlert("Please forward the message to any chat and wait 6 seconds to claim your reward.");
     setTimeout(async () => {
-        await this.checkPendingQuests(userId);
+        await this.refreshUserData();
         const userData = await API.fetch(`/get_user_data_new/${userId}`);
         if (userData.quests["forward_message"] === "pending") {
             await this.completeQuest(userId, "forward_message");
+            Telegram.WebApp.showAlert("Message forwarded! You earned 500 $LUCU.");
+        } else {
+            Telegram.WebApp.showAlert("Please forward the message to claim your reward.");
         }
     }, 6000);
 },
@@ -724,20 +739,23 @@ async handleDiceStatus(userId) {
     
 async handleDiceNickname(userId) {
     await this.refreshUserData();
-    const user = tg.initDataUnsafe.user;
-    const hasDice = (user.first_name?.includes("🎲") || user.username?.includes("🎲") || user.last_name?.includes("🎲"));
-    
-    const checkResponse = await API.fetch("/check_dice_nickname", {
-        method: "POST",
-        body: { user_id: userId }
-    });
-    console.log("Dice nickname check response:", checkResponse);
+    try {
+        const checkResponse = await API.fetch("/check_dice_nickname", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+        console.log("Dice nickname check response:", checkResponse);
 
-    if (hasDice || checkResponse.success) {
-        await this.completeQuest(userId, "dice_nickname");
-    } else {
-        Telegram.WebApp.showAlert("Please add the 🎲 emoji to your Telegram nickname and try again.");
-        setTimeout(() => this.checkPendingQuests(userId), 6000);
+        if (checkResponse.success) {
+            await this.completeQuest(userId, "dice_nickname");
+            Telegram.WebApp.showAlert("Dice emoji found in your nickname! You earned 100 $LUCU.");
+        } else {
+            Telegram.WebApp.showAlert("Please add the 🎲 emoji to your Telegram nickname (username, first name, or last name) and try again.");
+            setTimeout(() => this.checkPendingQuests(userId), 6000);
+        }
+    } catch (error) {
+        console.error("Error checking dice nickname:", error);
+        Telegram.WebApp.showAlert("An error occurred while checking your nickname. Please try again.");
     }
 },
 
@@ -969,180 +987,88 @@ const Particles = {
 };
 
 async function initializeApp() {
-    if (!window.Telegram?.WebApp?.initData) {
-        document.body.innerHTML = "<p style='text-align: center;'>Please open this app in Telegram</p>";
+    // Проверяем наличие Telegram WebApp API
+    if (!window.Telegram?.WebApp) {
+        console.error("Telegram WebApp API is not available");
+        alert("Please open this app in Telegram to continue.");
         return;
     }
 
     const tg = window.Telegram.WebApp;
-    const loadingScreen = document.getElementById('loading-screen');
-    const loadingText = document.getElementById('loading-text');
-    const loadingCube = document.getElementById('loading-cube');
-    const playerInfo = document.getElementById('player-info');
-    const playerCoins = document.getElementById('player-coins');
-    const playerBestLuck = document.getElementById('player-best-luck');
-    loadingScreen.style.display = 'flex';
-    loadingText.textContent = 'Loading 0%';
-    loadingCube.style.display = 'block';
-    loadingScreen.offsetHeight;
+    tg.ready(); // Инициализируем WebApp
+    tg.expand(); // Разворачиваем приложение на полный экран
+
+    // Логируем начальные данные для отладки
+    console.log("Initializing app with Telegram initData:", tg.initData);
+
+    // Устанавливаем базовые заголовки API без токена (токен добавим после авторизации)
+    API.defaultHeaders = {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": tg.initData
+    };
 
     try {
-        tg.expand();
-        tg.requestFullscreen();
-    } catch (fullscreenError) {}
-
-    try {
-        // Инициализация с JWT
-        const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': tg.initData
-            }
-        });
-        if (!initResponse.ok) {
-            throw new Error('Failed to initialize session');
-        }
-        const { token } = await initResponse.json();
-        localStorage.setItem('authToken', token);
-
-        // Обновляем defaultHeaders для всех последующих запросов
-        API.defaultHeaders = {
-            "Content-Type": "application/json",
-            "X-Telegram-Init-Data": tg.initData,
-            "Authorization": `Bearer ${token}`
-        };
-
-        const skinConfig = Game.getSkinConfig();
-        const imagesToPreload = [
-            ...Object.values(skinConfig).flatMap(skin => 
-                [...skin.default.map(item => item.src), ...skin.rainbow.map(item => item.src)]
-            ),
-            CONFIG.FALLBACK_AVATAR,
-            "pictures/other png/друзья.png",
-            "pictures/other png/квесты.png",
-            "pictures/other png/магазин.png",
-            "pictures/other png/таблица лидеров.png",
-            "pictures/cubics/cubeee.png"
-        ].filter((value, index, self) => self.indexOf(value) === index);
-
-        const preloadImages = async (imageUrls) => {
-            const totalImages = imageUrls.length;
-            if (totalImages === 0) {
-                loadingText.textContent = 'Loading 40%';
-                return;
-            }
-            let loadedImages = 0;
-            const loadImageWithTimeout = (url) => {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.src = url;
-                    const timeout = setTimeout(() => {
-                        loadedImages++;
-                        const progress = Math.round((loadedImages / totalImages) * 40);
-                        loadingText.textContent = `Loading ${progress}%`;
-                        resolve();
-                    }, 5000);
-                    img.onload = () => {
-                        clearTimeout(timeout);
-                        loadedImages++;
-                        const progress = Math.round((loadedImages / totalImages) * 40);
-                        loadingText.textContent = `Loading ${progress}%`;
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        clearTimeout(timeout);
-                        loadedImages++;
-                        const progress = Math.round((loadedImages / totalImages) * 40);
-                        loadingText.textContent = `Loading ${progress}%`;
-                        resolve();
-                    };
-                });
-            };
-            await Promise.all(imageUrls.map(url => loadImageWithTimeout(url)));
-        };
-
-        await preloadImages(imagesToPreload);
-        await loadConfig(); // Теперь вызываем после получения токена
-        if (!CONFIG.API_BASE_URL) throw new Error("Failed to load API configuration");
-        loadingText.textContent = 'Loading 50%';
-        Particles.init();
-        loadingText.textContent = 'Loading 60%';
-
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) throw new Error("User ID not found in Telegram init data");
-
-        const userData = await API.fetch(`/get_user_data/${userId}`);
-        AppState.userData = userData;
-
-        if (userData.ban === "yes") {
-            loadingText.textContent = "You are banned, but are you sure you want to enter the game?";
-            loadingCube.src = "ban.gif";
-            playerInfo.classList.add('hidden');
-            await Promise.race([
-                new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
-                Utils.wait(10000)
-            ]);
-            loadingScreen.classList.add('hidden');
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                Game.init();
-                Skins.init();
-                Quests.init();
-                Leaderboard.init();
-                Profile.init();
-                Friends.init();
-                Game.state.equippedSkin = "banned";
-                Game.setInitialCube();
-            }, 500);
-            return;
-        }
-
-        loadingText.textContent = 'Loading 75%';
-        const user = tg.initDataUnsafe.user;
-        const username = `${user.first_name}${user.last_name ? " " + user.last_name : ""}` || "Unknown";
-        const photoUrl = user.photo_url || CONFIG.FALLBACK_AVATAR;
-
-        const updateProfileResponse = await API.fetch("/debug_update_profile", {
+        // Отправляем запрос на сервер для инициализации сессии
+        const response = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
-            body: { user_id: userId, username: username, photo_url: photoUrl }
+            headers: API.defaultHeaders
         });
 
-        AppState.userData.username = username;
-        AppState.userData.photo_url = photoUrl;
-
-        const referralData = await API.fetch(`/get_referral_count/${userId}`);
-        AppState.userData.referral_count = referralData.referral_count || 0;
-
-        const equippedSkin = userData.equipped_skin || "classic";
-        loadingCube.src = skinConfig[equippedSkin].initial + `?t=${Date.now()}`;
-        playerCoins.textContent = `Coins: ${Utils.formatCoins(userData.coins || 0)} $LUCU`;
-        playerBestLuck.textContent = `Best Luck: ${userData.min_luck === 1001 || userData.min_luck === undefined ? 'N/A' : Utils.formatNumber(userData.min_luck)}`;
-        playerInfo.classList.remove('hidden');
-        loadingText.textContent = 'Press to enter the game';
-
-        await Promise.race([
-            new Promise(resolve => loadingScreen.addEventListener('click', () => resolve(), { once: true })),
-            Utils.wait(10000)
-        ]);
-        loadingScreen.classList.add('hidden');
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            Game.init();
-            Skins.init();
-            Quests.init();
-            Leaderboard.init();
-            Profile.init();
-            Friends.init();
-            tonConnectUI.uiOptions = { twaReturnUrl: "https://t.me/LuckyCubesbot" };
-        }, 500);
-    } catch (error) {
-        if (error.message.includes("Server is experiencing issues")) {
-            loadingText.textContent = "Server error: Please try again later.";
-        } else {
-            loadingText.textContent = `Error: ${error.message}. Click to refresh.`;
+        // Проверяем успешность ответа
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Initialization failed: ${response.status} - ${errorText}`);
         }
-        loadingScreen.addEventListener('click', () => window.location.reload(), { once: true });
+
+        // Получаем данные из ответа
+        const { token, is_premium } = await response.json();
+
+        // Сохраняем токен в localStorage для последующих запросов
+        localStorage.setItem("authToken", token);
+
+        // Обновляем заголовки API с добавлением токена авторизации
+        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+
+        // Сохраняем состояние приложения
+        AppState.isPremium = is_premium || false; // Устанавливаем премиум-статус (по умолчанию false)
+        AppState.userId = tg.initDataUnsafe?.user?.id || null; // Получаем ID пользователя из initData
+
+        if (!AppState.userId) {
+            throw new Error("User ID not found in Telegram initData");
+        }
+
+        // Загружаем данные пользователя с сервера
+        const userData = await API.fetch(`/get_user_data_new/${AppState.userId}`);
+        if (!userData || userData.error) {
+            throw new Error("Failed to load user data");
+        }
+
+        // Обновляем состояние приложения данными пользователя
+        AppState.userData = userData;
+        console.log("User data loaded:", AppState.userData);
+
+        // Инициализируем интерфейс после успешной загрузки данных
+        updateUI(); // Предполагается, что эта функция обновляет интерфейс
+        await Quests.checkPendingQuests(AppState.userId); // Проверяем незавершенные квесты
+
+    } catch (error) {
+        console.error("Error during app initialization:", error);
+
+        // Показываем пользователю сообщение об ошибке
+        Telegram.WebApp.showAlert(
+            error.message.includes("Unauthorized")
+                ? "Authorization failed. Please restart the app."
+                : `An error occurred: ${error.message}. Please try again later.`
+        );
+
+        // Если критическая ошибка, можно закрыть приложение
+        if (error.message.includes("User ID not found") || error.message.includes("Unauthorized")) {
+            Telegram.WebApp.close();
+        }
+    } finally {
+        // Устанавливаем флаг готовности приложения
+        AppState.isInitialized = true;
+        console.log("App initialization completed");
     }
 }
 
