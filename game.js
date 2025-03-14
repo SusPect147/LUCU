@@ -795,18 +795,6 @@ async completeQuest(userId, questName) {
                 status: "yes"
             }
         });
-        if (response.message !== "Quest updated successfully") {
-            throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
-        }
-        AppState.userData.coins = response.new_coins;
-        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-        Quests.refreshUserData();
-        return response;
-    } catch (error) {
-        console.error(`Error completing quest ${questName}:`, error);
-        throw error;
-    }
-},
 
         if (response.message === "Quest updated successfully") {
             AppState.userData.coins = response.new_coins;
