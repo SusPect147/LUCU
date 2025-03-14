@@ -1032,6 +1032,133 @@ const Particles = {
     }
 };
 
+// Собираем все изображения из outcomes
+const outcomes = {
+    "banned": {
+        "default": [{"range": 100, "src": "ban.gif", "coins": -1}],
+        "rainbow": [{"range": 100, "src": "ban.gif", "coins": -100}]
+    },
+    "classic": {
+        "default": [
+            {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1},
+            {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2},
+            {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3},
+            {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4},
+            {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5},
+            {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6}
+        ],
+        "rainbow": [
+            {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 2},
+            {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 4},
+            {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 6},
+            {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 8},
+            {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 10},
+            {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 12}
+        ]
+    },
+    "negative": {
+        "default": [
+            {"range": 40, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2},
+            {"range": 65, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3},
+            {"range": 80, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4},
+            {"range": 90, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5},
+            {"range": 97, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6},
+            {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7}
+        ],
+        "rainbow": [
+            {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
+            {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
+            {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
+            {"range": 85, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 10},
+            {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
+            {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
+        ]
+    },
+    "Emerald": {
+        "default": [
+            {"range": 40, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3},
+            {"range": 65, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4},
+            {"range": 80, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5},
+            {"range": 90, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6},
+            {"range": 97, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7},
+            {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8}
+        ],
+        "rainbow": [
+            {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
+            {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
+            {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
+            {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-perevernutiy.gif", "coins": 12},
+            {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
+            {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
+        ]
+    },
+    "Pixel": {
+        "default": [
+            {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10},
+            {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11},
+            {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12},
+            {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13},
+            {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14},
+            {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15}
+        ],
+        "rainbow": [
+            {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 20},
+            {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 22},
+            {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 24},
+            {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 26},
+            {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 28},
+            {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 30}
+        ]
+    }
+};
+
+// Дополнительные изображения
+const additionalImages = [
+    "pictures/other png/$LUCU.png",
+    "pictures/other png/Logo.png",
+    "pictures/other png/friends-11.png",
+    "pictures/other png/logotypeCUBICK.png",
+    "pictures/other png/telegram-logo.png",
+    "pictures/other png/друзья.png",
+    "pictures/other png/квесты.png",
+    "pictures/other png/магазин.png",
+    "pictures/other png/таблица лидеров.png",
+    "pictures/other png/телега.jpg",
+    "pictures/other png/телеграм-лого.gif"
+];
+
+// Собираем все уникальные пути к изображениям из outcomes
+const imageAssets = new Set();
+Object.keys(outcomes).forEach(type => {
+    Object.keys(outcomes[type]).forEach(variant => {
+        outcomes[type][variant].forEach(outcome => {
+            imageAssets.add(outcome.src);
+        });
+    });
+});
+// Добавляем дополнительные изображения
+additionalImages.forEach(img => imageAssets.add(img));
+
+// Преобразуем Set в массив
+const imageAssetsArray = Array.from(imageAssets);
+
+// Функция предзагрузки изображений
+async function preloadImages(imageUrls) {
+    const promises = imageUrls.map(url => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve(url);
+            img.onerror = () => {
+                console.warn(`Failed to preload image: ${url}`);
+                resolve(url); // Продолжаем даже при ошибке загрузки
+            };
+        });
+    });
+    return Promise.all(promises);
+}
+
+// Основная функция инициализации приложения
 async function initializeApp() {
     if (!window.Telegram?.WebApp) {
         console.error("Telegram WebApp API is not available");
@@ -1043,28 +1170,48 @@ async function initializeApp() {
     tg.ready();
     tg.expand();
 
+    // Функция обновления прогресса
+    const updateProgress = (percentage) => {
+        const progressElement = document.getElementById("progress");
+        if (progressElement) {
+            progressElement.textContent = `${percentage}%`;
+            if (percentage === 100) {
+                setTimeout(() => progressElement.style.display = "none", 500);
+            }
+        }
+        console.log(`Initialization progress: ${percentage}%`);
+    };
+
+    updateProgress(0);
+
+    // Настройка заголовков API
     API.defaultHeaders = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
 
     try {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/init`, {
+        // 1. Запускаем предзагрузку изображений параллельно
+        const preloadPromise = preloadImages(imageAssetsArray)
+            .then(() => console.log("All images preloaded successfully"))
+            .catch(err => console.error("Image preloading failed:", err));
+
+        // 2. Инициализация API
+        updateProgress(25);
+        const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
-            headers: API.defaultHeaders
+            headers: API.defaultHeaders,
+            signal: AbortSignal.timeout(5000) // Таймаут 5 секунд
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Initialization failed: ${response.status} - ${errorText}`);
+        if (!initResponse.ok) {
+            const errorText = await initResponse.text();
+            throw new Error(`API initialization failed: ${initResponse.status} - ${errorText}`);
         }
 
-        const { token, is_premium } = await response.json();
-
+        const { token, is_premium } = await initResponse.json();
         localStorage.setItem("authToken", token);
-
         API.defaultHeaders["Authorization"] = `Bearer ${token}`;
-
         AppState.isPremium = is_premium || false;
         AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
 
@@ -1072,34 +1219,46 @@ async function initializeApp() {
             throw new Error("User ID not found in Telegram initData");
         }
 
-        const userData = await API.fetch(`/get_user_data_new/${AppState.userId}`);
-        if (!userData || userData.error) {
+        // 3. Загрузка данных пользователя
+        updateProgress(50);
+        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+            signal: AbortSignal.timeout(5000) // Таймаут 5 секунд
+        });
+
+        if (!userDataResponse || userDataResponse.error) {
             throw new Error("Failed to load user data");
         }
 
-        AppState.userData = userData;
+        AppState.userData = userDataResponse;
 
-        // Инициализируем интерфейс квестов перед проверкой
+        // 4. Инициализация квестов и проверка pending-квестов
+        updateProgress(75);
         Quests.init();
         await Quests.refreshUserData();
         await Quests.checkPendingQuests(AppState.userId);
 
+        // 5. Ожидание завершения предзагрузки изображений
+        updateProgress(90);
+        await preloadPromise;
+
+        // Завершение
+        updateProgress(100);
+        AppState.isInitialized = true;
+        console.log("App fully initialized");
+
     } catch (error) {
-        console.error("Error during app initialization:", error);
-        // Показываем только одно сообщение об ошибке
+        console.error("Initialization error:", error);
+        updateProgress(100); // Прогресс доходит до 100% даже при ошибке
         Telegram.WebApp.showAlert(
             error.message.includes("Unauthorized")
                 ? "Authorization failed. Please restart the app."
-                : `An error occurred during initialization: ${error.message}. Please try again later.`
+                : `Initialization failed: ${error.message}. Please try again later.`
         );
         if (error.message.includes("User ID not found") || error.message.includes("Unauthorized")) {
             Telegram.WebApp.close();
         }
-    } finally {
-        AppState.isInitialized = true;
     }
 }
 
-
-
+// Запуск приложения
 initializeApp();
