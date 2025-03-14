@@ -713,12 +713,6 @@ const Quests = {
             const userData = await API.fetch(`/get_user_data_new/${userId}`);
             console.log("User data from server:", userData);
 
-            if (!userData.is_premium) {
-                console.log("Premium subscription required for dice_status quest");
-                Telegram.WebApp.showAlert("This quest requires a Telegram Premium subscription.");
-                return;
-            }
-
             await Telegram.WebApp.setEmojiStatus('5384541907051357217');
             const response = await this.completeQuest(userId, "dice_status");
             if (response.message === "Quest updated successfully") {
