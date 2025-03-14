@@ -795,36 +795,20 @@ async completeQuest(userId, questName) {
                 status: "yes"
             }
         });
-
-        if (response.message === "Quest updated successfully") {
-            AppState.userData.coins = response.new_coins;
-            AppState.userData.quests[questName] = "yes";
-            Game.state.coins = response.new_coins;
-            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-
-            // Обновляем UI только если интерфейс квестов инициализирован
-            if (Quests.elements.questsList) {
-                const button = Quests.elements.questsList.querySelector(`[data-quest="${questName}"]`);
-                if (button) {
-                    button.textContent = "Done!";
-                    button.classList.add("completed");
-                    button.style.background = "rgb(139, 0, 0)";
-                    button.style.cursor = "default";
-                    button.disabled = true;
-                } else {
-                    console.warn(`Button for quest ${questName} not found. UI will update on next refresh.`);
-                }
-            }
-            return response;
-        } else {
+        if (response.message !== "Quest updated successfully") {
             throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
         }
+        AppState.userData.coins = response.new_coins;
+        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+        Quests.refreshUserData();
+        return response;
     } catch (error) {
         console.error(`Error completing quest ${questName}:`, error);
-        throw error; // Ошибка будет обработана вызывающей функцией
+        throw error;
     }
 },
 
+    
 async checkPendingQuests(userId) {
     await this.refreshUserData();
     const userData = AppState.userData;
