@@ -528,7 +528,6 @@ const Quests = {
     },
 
     init() {
-        // Инициализация Telegram Web App
         Telegram.WebApp.ready();
 
         this.elements.button.addEventListener("click", () => {
@@ -573,7 +572,6 @@ const Quests = {
 
         this.refreshUserData();
 
-        // Обработчик для главной кнопки
         Telegram.WebApp.MainButton.onClick(async () => {
             await this.handleDiceStatus(tg.initDataUnsafe.user?.id?.toString());
         });
@@ -665,99 +663,97 @@ const Quests = {
         }
     },
 
-async handleSubscription(userId) {
-    await this.refreshUserData();
-    try {
-        const subscriptionResponse = await API.fetch("/check_subscription", {
-            method: "POST",
-            body: { user_id: userId }
-        });
-        console.log("Subscription check response:", subscriptionResponse);
-
-        if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
-            await this.completeQuest(userId, "subscription_quest");
-            Telegram.WebApp.showAlert("Subscribed successfully! You earned 250 $LUCU.");
-        } else {
-            Telegram.WebApp.showAlert("Please subscribe to the channel to complete this quest.");
-            tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
-            setTimeout(async () => {
-                await this.checkPendingQuests(userId);
-                const userData = await API.fetch(`/get_user_data_new/${userId}`);
-                if (userData.quests["subscription_quest"] === "pending") {
-                    await this.completeQuest(userId, "subscription_quest");
-                }
-            }, 6000);
-        }
-    } catch (error) {
-        console.error("Error checking subscription:", error);
-        Telegram.WebApp.showAlert("An error occurred while checking your subscription. Please try again.");
-    }
-},
-
-async handleForwardMessage(userId) {
-    const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
-    tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
-    Telegram.WebApp.showAlert("Please forward the message to any chat and wait 6 seconds to claim your reward.");
-    setTimeout(async () => {
+    async handleSubscription(userId) {
         await this.refreshUserData();
-        const userData = await API.fetch(`/get_user_data_new/${userId}`);
-        if (userData.quests["forward_message"] === "pending") {
-            await this.completeQuest(userId, "forward_message");
-            Telegram.WebApp.showAlert("Message forwarded! You earned 500 $LUCU.");
-        } else {
-            Telegram.WebApp.showAlert("Please forward the message to claim your reward.");
-        }
-    }, 6000);
-},
+        try {
+            const subscriptionResponse = await API.fetch("/check_subscription", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            console.log("Subscription check response:", subscriptionResponse);
 
-async handleDiceStatus(userId) {
-    try {
-        // Получаем данные пользователя
-        const userData = await API.fetch(`/get_user_data_new/${userId}`);
-        console.log("User data from server:", userData); // Логируем данные с сервера
-
-        if (!userData.is_premium) {
-            console.log("Premium subscription required for dice_status quest");
-            Telegram.WebApp.showAlert("This quest requires a Telegram Premium subscription.");
-            return;
+            if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
+                await this.completeQuest(userId, "subscription_quest");
+                Telegram.WebApp.showAlert("Subscribed successfully! You earned 250 $LUCU.");
+            } else {
+                Telegram.WebApp.showAlert("Please subscribe to the channel to complete this quest.");
+                tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}`);
+                setTimeout(async () => {
+                    await this.checkPendingQuests(userId);
+                    const userData = await API.fetch(`/get_user_data_new/${userId}`);
+                    if (userData.quests["subscription_quest"] === "pending") {
+                        await this.completeQuest(userId, "subscription_quest");
+                    }
+                }, 6000);
+            }
+        } catch (error) {
+            console.error("Error checking subscription:", error);
+            Telegram.WebApp.showAlert("An error occurred while checking your subscription. Please try again.");
         }
+    },
 
-        // Устанавливаем эмодзи "1️⃣" из DiceCubeEmoji (или нужный ID)
-        await Telegram.WebApp.setEmojiStatus('5384541907051357217');
-        const response = await this.completeQuest(userId, "dice_status");
-        if (response.message === "Quest updated successfully") {
-            this.updateQuestStatus();
-            Telegram.WebApp.showAlert("Status updated! You earned 500 $LUCU.");
-        } else {
-            Telegram.WebApp.showAlert("Failed to complete the quest. Please try again.");
-        }
-    } catch (error) {
-        console.error("Failed to set emoji status or complete quest:", error);
-        Telegram.WebApp.showAlert("An error occurred. Please try again.");
-    }
-},
-    
-async handleDiceNickname(userId) {
-    await this.refreshUserData();
-    try {
-        const checkResponse = await API.fetch("/check_dice_nickname", {
-            method: "POST",
-            body: { user_id: userId }
-        });
-        console.log("Dice nickname check response:", checkResponse);
+    async handleForwardMessage(userId) {
+        const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
+        tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
+        Telegram.WebApp.showAlert("Please forward the message to any chat and wait 6 seconds to claim your reward.");
+        setTimeout(async () => {
+            await this.refreshUserData();
+            const userData = await API.fetch(`/get_user_data_new/${userId}`);
+            if (userData.quests["forward_message"] === "pending") {
+                await this.completeQuest(userId, "forward_message");
+                Telegram.WebApp.showAlert("Message forwarded! You earned 500 $LUCU.");
+            } else {
+                Telegram.WebApp.showAlert("Please forward the message to claim your reward.");
+            }
+        }, 6000);
+    },
 
-        if (checkResponse.success) {
-            await this.completeQuest(userId, "dice_nickname");
-            Telegram.WebApp.showAlert("Dice emoji found in your nickname! You earned 100 $LUCU.");
-        } else {
-            Telegram.WebApp.showAlert("Please add the 🎲 emoji to your Telegram nickname (username, first name, or last name) and try again.");
-            setTimeout(() => this.checkPendingQuests(userId), 6000);
+    async handleDiceStatus(userId) {
+        try {
+            const userData = await API.fetch(`/get_user_data_new/${userId}`);
+            console.log("User data from server:", userData);
+
+            if (!userData.is_premium) {
+                console.log("Premium subscription required for dice_status quest");
+                Telegram.WebApp.showAlert("This quest requires a Telegram Premium subscription.");
+                return;
+            }
+
+            await Telegram.WebApp.setEmojiStatus('5384541907051357217');
+            const response = await this.completeQuest(userId, "dice_status");
+            if (response.message === "Quest updated successfully") {
+                this.updateQuestStatus();
+                Telegram.WebApp.showAlert("Status updated! You earned 500 $LUCU.");
+            } else {
+                Telegram.WebApp.showAlert("Failed to complete the quest. Please try again.");
+            }
+        } catch (error) {
+            console.error("Failed to set emoji status or complete quest:", error);
+            Telegram.WebApp.showAlert("An error occurred. Please try again.");
         }
-    } catch (error) {
-        console.error("Error checking dice nickname:", error);
-        Telegram.WebApp.showAlert("An error occurred while checking your nickname. Please try again.");
-    }
-},
+    },
+
+    async handleDiceNickname(userId) {
+        await this.refreshUserData();
+        try {
+            const checkResponse = await API.fetch("/check_dice_nickname", {
+                method: "POST",
+                body: { user_id: userId }
+            });
+            console.log("Dice nickname check response:", checkResponse);
+
+            if (checkResponse.success) {
+                await this.completeQuest(userId, "dice_nickname");
+                Telegram.WebApp.showAlert("Dice emoji found in your nickname! You earned 100 $LUCU.");
+            } else {
+                Telegram.WebApp.showAlert("Please add the 🎲 emoji to your Telegram nickname (username, first name, or last name) and try again.");
+                setTimeout(() => this.checkPendingQuests(userId), 6000);
+            }
+        } catch (error) {
+            console.error("Error checking dice nickname:", error);
+            Telegram.WebApp.showAlert("An error occurred while checking your nickname. Please try again.");
+        }
+    },
 
     async handleBoostChannel(userId) {
         tg.openLink(`https://t.me/${CONFIG.CHANNEL_USERNAME}?boost`);
@@ -769,7 +765,7 @@ async handleDiceNickname(userId) {
             const response = await API.fetch("/update_quest_new", {
                 method: "POST",
                 body: {
-                    user_id: userId,
+                    user_id: String(userId),  // Гарантируем, что userId отправляется как строка
                     quest: questName,
                     status: "yes"
                 }
@@ -781,9 +777,14 @@ async handleDiceNickname(userId) {
                 Game.state.coins = response.new_coins;
                 Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
                 this.updateQuestStatus();
+                return response;  // Возвращаем ответ для дальнейшей обработки
+            } else {
+                throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
             }
         } catch (error) {
             console.error(`Error completing quest ${questName}:`, error);
+            Telegram.WebApp.showAlert(`Failed to complete quest ${questName}. Please try again.`);
+            throw error;
         }
     },
 
@@ -796,7 +797,7 @@ async handleDiceNickname(userId) {
             if (userData.quests[quest] === "pending") {
                 console.log(`Checking pending quest: ${quest}`);
                 await this.completeQuest(userId, quest);
-                await Utils.wait(1000);
+                await Utils.wait(1000);  // Задержка между обработкой квестов
             }
         }
     },
@@ -1020,7 +1021,7 @@ async function initializeApp() {
         API.defaultHeaders["Authorization"] = `Bearer ${token}`;
 
         AppState.isPremium = is_premium || false;
-        AppState.userId = tg.initDataUnsafe?.user?.id || null;
+        AppState.userId = tg.initDataUnsafe?.user?.id?.toString();  // Преобразуем в строку сразу
 
         if (!AppState.userId) {
             throw new Error("User ID not found in Telegram initData");
