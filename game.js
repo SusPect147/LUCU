@@ -776,17 +776,19 @@ async completeQuest(userId, questName) {
             AppState.userData.quests[questName] = "yes";
             Game.state.coins = response.new_coins;
             Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-            
-            // Обновляем UI только если кнопка существует
-            const button = Quests.elements.questsList.querySelector(`[data-quest="${questName}"]`);
-            if (button) {
-                button.textContent = "Done!";
-                button.classList.add("completed");
-                button.style.background = "rgb(139, 0, 0)";
-                button.style.cursor = "default";
-                button.disabled = true;
-            } else {
-                console.warn(`Button for quest ${questName} not found in DOM yet. UI will update later.`);
+
+            // Обновляем UI только если интерфейс квестов инициализирован
+            if (Quests.elements.questsList) {
+                const button = Quests.elements.questsList.querySelector(`[data-quest="${questName}"]`);
+                if (button) {
+                    button.textContent = "Done!";
+                    button.classList.add("completed");
+                    button.style.background = "rgb(139, 0, 0)";
+                    button.style.cursor = "default";
+                    button.disabled = true;
+                } else {
+                    console.warn(`Button for quest ${questName} not found. UI will update on next refresh.`);
+                }
             }
             return response;
         } else {
@@ -794,8 +796,7 @@ async completeQuest(userId, questName) {
         }
     } catch (error) {
         console.error(`Error completing quest ${questName}:`, error);
-        Telegram.WebApp.showAlert(`Failed to complete quest ${questName}. Please try again.`);
-        throw error;
+        throw error; // Ошибка будет обработана вызывающей функцией
     }
 },
 
@@ -807,19 +808,41 @@ async checkPendingQuests(userId) {
     for (const quest in userData.quests) {
         if (userData.quests[quest] === "pending") {
             console.log(`Checking pending quest: ${quest}`);
-            if (quest === "dice_nickname") {
-                // Проверяем, есть ли кубик в нике
-                const checkResponse = await API.fetch("/check_dice_nickname", {
-                    method: "POST",
-                    body: { user_id: userId }
-                });
-                if (!checkResponse.success) {
-                    console.log(`Dice not found in nickname for user ${userId}. Skipping completion.`);
-                    continue; // Пропускаем завершение, если кубика нет
-                }
+            let canComplete = false;
+
+            // Проверяем условия для каждого квеста
+            switch (quest) {
+                case "subscription_quest":
+                    const subResponse = await API.fetch("/check_subscription", {
+                        method: "POST",
+                        body: { user_id: userId }
+                    });
+                    canComplete = subResponse.success;
+                    break;
+                case "dice_nickname":
+                    const diceResponse = await API.fetch("/check_dice_nickname", {
+                        method: "POST",
+                        body: { user_id: userId }
+                    });
+                    canComplete = diceResponse.success;
+                    break;
+                // Добавьте проверки для других квестов по аналогии, если нужно
+                default:
+                    console.warn(`No condition check defined for quest: ${quest}`);
+                    continue;
             }
-            await this.completeQuest(userId, quest);
-            await Utils.wait(1000); // Задержка между обработкой квестов
+
+            if (canComplete) {
+                try {
+                    await this.completeQuest(userId, quest);
+                    Telegram.WebApp.showAlert(`Quest ${quest} completed successfully!`);
+                } catch (error) {
+                    console.log(`Quest ${quest} conditions met but completion failed: ${error.message}`);
+                }
+            } else {
+                console.log(`Conditions for quest ${quest} not met. Skipping completion.`);
+            }
+            await Utils.wait(1000); // Задержка между проверками
         }
     }
 },
@@ -1056,17 +1079,18 @@ async function initializeApp() {
 
         AppState.userData = userData;
 
-        // Инициализируем UI перед проверкой квестов
+        // Инициализируем интерфейс квестов перед проверкой
         Quests.init();
         await Quests.refreshUserData();
         await Quests.checkPendingQuests(AppState.userId);
 
     } catch (error) {
         console.error("Error during app initialization:", error);
+        // Показываем только одно сообщение об ошибке
         Telegram.WebApp.showAlert(
             error.message.includes("Unauthorized")
                 ? "Authorization failed. Please restart the app."
-                : `An error occurred: ${error.message}. Please try again later.`
+                : `An error occurred during initialization: ${error.message}. Please try again later.`
         );
         if (error.message.includes("User ID not found") || error.message.includes("Unauthorized")) {
             Telegram.WebApp.close();
@@ -1075,5 +1099,7 @@ async function initializeApp() {
         AppState.isInitialized = true;
     }
 }
+
+
 
 initializeApp();
