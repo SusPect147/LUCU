@@ -1168,13 +1168,20 @@ async function initializeApp() {
     tg.ready();
     tg.expand();
 
+    // Базовый URL для изображений
+    const baseUrl = "https://suspect147.github.io/LUCU/";
+    const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
+
     // Функция обновления прогресса
     const updateProgress = (percentage) => {
-        const progressElement = document.getElementById("progress");
+        const progressElement = document.getElementById("loading-text");
         if (progressElement) {
-            progressElement.textContent = `${percentage}%`;
+            progressElement.textContent = `Loading ${percentage}%`;
             if (percentage === 100) {
-                setTimeout(() => progressElement.style.display = "none", 500);
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById("loading-screen");
+                    if (loadingScreen) loadingScreen.style.display = "none";
+                }, 500); // Скрываем экран загрузки через 0.5 секунды
             }
         }
         console.log(`Initialization progress: ${percentage}%`);
@@ -1189,12 +1196,16 @@ async function initializeApp() {
     };
 
     try {
-        // 1. Запускаем предзагрузку изображений параллельно
-        const preloadPromise = preloadImages(imageAssetsArray)
+        // 1. Загрузка конфигурации
+        await loadConfig();
+        updateProgress(10);
+
+        // 2. Запускаем предзагрузку изображений параллельно
+        const preloadPromise = preloadImages(imageAssetsArrayWithBase)
             .then(() => console.log("All images preloaded successfully"))
             .catch(err => console.error("Image preloading failed:", err));
 
-        // 2. Инициализация API
+        // 3. Инициализация API
         updateProgress(25);
         const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
@@ -1217,7 +1228,7 @@ async function initializeApp() {
             throw new Error("User ID not found in Telegram initData");
         }
 
-        // 3. Загрузка данных пользователя
+        // 4. Загрузка данных пользователя
         updateProgress(50);
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
             signal: AbortSignal.timeout(5000) // Таймаут 5 секунд
@@ -1229,13 +1240,21 @@ async function initializeApp() {
 
         AppState.userData = userDataResponse;
 
-        // 4. Инициализация квестов и проверка pending-квестов
+        // 5. Инициализация компонентов игры
         updateProgress(75);
+        Game.init();
+        Skins.init();
         Quests.init();
+        Leaderboard.init();
+        Profile.init();
+        Friends.init();
+        Particles.init();
+
+        // 6. Проверка pending-квестов
         await Quests.refreshUserData();
         await Quests.checkPendingQuests(AppState.userId);
 
-        // 5. Ожидание завершения предзагрузки изображений
+        // 7. Ожидание завершения предзагрузки изображений
         updateProgress(90);
         await preloadPromise;
 
