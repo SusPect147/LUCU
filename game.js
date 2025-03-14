@@ -21,7 +21,8 @@ async function loadConfig() {
             }
         });
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         const data = await response.json();
         Object.assign(CONFIG, {
@@ -30,6 +31,16 @@ async function loadConfig() {
         });
     } catch (error) {
         console.error("Failed to load config:", error);
+        if (tg && error.message.includes("401")) {
+            tg.WebApp.openPopup({
+                message: "Authorization failed. Please restart the app.",
+                buttons: [{ text: "OK", id: "ok" }]
+            });
+        }
+        Object.assign(CONFIG, {
+            API_BASE_URL: "https://backend12-production-1210.up.railway.app",
+            CHANNEL_USERNAME: "LuckyCubesChannel"
+        });
     }
 }
 
@@ -723,38 +734,27 @@ const Quests = {
         }, 6000);
     },
 
-    async handleDiceStatus(userId) {
+async handleDiceStatus(userId) {
     try {
-        // 1. Загружаем данные пользователя
-        const userData = await API.fetch(`/get_user_data_new/${userId}`);
-        console.log("User data from server:", userData);
-
-        // 2. Проверяем наличие премиум-подписки перед действием
-        if (!userData.is_premium) {
-            console.log("Premium subscription required for dice_status quest");
-            Telegram.WebApp.showAlert("This quest requires a Telegram Premium subscription.");
-            return; // Прерываем выполнение, если нет премиума
-        }
-
-        // 3. Устанавливаем эмодзи-статус
-        await new Promise((resolve, reject) => {
-            Telegram.WebApp.setEmojiStatus('5384541907051357217');
-            Telegram.WebApp.onEvent('emoji_status_set', () => resolve());
-            Telegram.WebApp.onEvent('emoji_status_error', () => reject(new Error("Failed to set emoji status")));
-            setTimeout(() => reject(new Error("Timeout waiting for emoji status")), 5000); // Таймаут 5 секунд
+        const response = await Quests.completeQuest(String(userId), "dice_status");
+        tg.WebApp.setEmojiStatus({ custom_emoji_id: "5384541907051357217" });
+        tg.WebApp.openPopup({
+            message: "Quest completed successfully!",
+            buttons: [{ text: "OK", id: "ok" }]
         });
-
-        // 4. Завершаем квест после успешной установки
-        const response = await this.completeQuest(userId, "dice_status");
-        if (response.message === "Quest updated successfully") {
-            this.updateQuestStatus();
-            Telegram.WebApp.showAlert("Status updated! You earned 500 $LUCU.");
-        } else {
-            Telegram.WebApp.showAlert("Failed to complete the quest. Please try again.");
-        }
     } catch (error) {
-        console.error("Error in handleDiceStatus:", error);
-        Telegram.WebApp.showAlert("An error occurred. Please try again.");
+        console.error("Failed to set emoji status or complete quest:", error);
+        if (error.message.includes("This quest requires Telegram Premium")) {
+            tg.WebApp.openPopup({
+                message: "This quest requires Telegram Premium. Please upgrade your account to proceed.",
+                buttons: [{ text: "OK", id: "ok" }]
+            });
+        } else {
+            tg.WebApp.openPopup({
+                message: `Error: ${error.message}. Please try again.`,
+                buttons: [{ text: "OK", id: "ok" }]
+            });
+        }
     }
 },
 
@@ -795,6 +795,18 @@ async completeQuest(userId, questName) {
                 status: "yes"
             }
         });
+        if (response.message !== "Quest updated successfully") {
+            throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
+        }
+        AppState.userData.coins = response.new_coins;
+        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+        Quests.refreshUserData();
+        return response;
+    } catch (error) {
+        console.error(`Error completing quest ${questName}:`, error);
+        throw error;
+    }
+},
 
         if (response.message === "Quest updated successfully") {
             AppState.userData.coins = response.new_coins;
