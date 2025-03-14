@@ -9,13 +9,28 @@ const CONFIG = {
 
 async function loadConfig() {
     try {
-        const response = await API.fetch("/get_config");
-        const data = await response;
+        const telegramInitData = window.Telegram.WebApp.initData || "";
+        if (!telegramInitData) {
+            throw new Error("Telegram initData is required for API requests");
+        }
+        const response = await fetch(`${CONFIG.API_BASE_URL}/get_config`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": telegramInitData
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
         Object.assign(CONFIG, {
             API_BASE_URL: data.API_BASE_URL,
             CHANNEL_USERNAME: data.CHANNEL_USERNAME
         });
-    } catch (error) {}
+    } catch (error) {
+        console.error("Failed to load config:", error);
+    }
 }
 
 const tg = window.Telegram?.WebApp;
@@ -709,23 +724,39 @@ const Quests = {
     },
 
     async handleDiceStatus(userId) {
-        try {
-            const userData = await API.fetch(`/get_user_data_new/${userId}`);
-            console.log("User data from server:", userData);
+    try {
+        // 1. Загружаем данные пользователя
+        const userData = await API.fetch(`/get_user_data_new/${userId}`);
+        console.log("User data from server:", userData);
 
-            await Telegram.WebApp.setEmojiStatus('5384541907051357217');
-            const response = await this.completeQuest(userId, "dice_status");
-            if (response.message === "Quest updated successfully") {
-                this.updateQuestStatus();
-                Telegram.WebApp.showAlert("Status updated! You earned 500 $LUCU.");
-            } else {
-                Telegram.WebApp.showAlert("Failed to complete the quest. Please try again.");
-            }
-        } catch (error) {
-            console.error("Failed to set emoji status or complete quest:", error);
-            Telegram.WebApp.showAlert("An error occurred. Please try again.");
+        // 2. Проверяем наличие премиум-подписки перед действием
+        if (!userData.is_premium) {
+            console.log("Premium subscription required for dice_status quest");
+            Telegram.WebApp.showAlert("This quest requires a Telegram Premium subscription.");
+            return; // Прерываем выполнение, если нет премиума
         }
-    },
+
+        // 3. Устанавливаем эмодзи-статус
+        await new Promise((resolve, reject) => {
+            Telegram.WebApp.setEmojiStatus('5384541907051357217');
+            Telegram.WebApp.onEvent('emoji_status_set', () => resolve());
+            Telegram.WebApp.onEvent('emoji_status_error', () => reject(new Error("Failed to set emoji status")));
+            setTimeout(() => reject(new Error("Timeout waiting for emoji status")), 5000); // Таймаут 5 секунд
+        });
+
+        // 4. Завершаем квест после успешной установки
+        const response = await this.completeQuest(userId, "dice_status");
+        if (response.message === "Quest updated successfully") {
+            this.updateQuestStatus();
+            Telegram.WebApp.showAlert("Status updated! You earned 500 $LUCU.");
+        } else {
+            Telegram.WebApp.showAlert("Failed to complete the quest. Please try again.");
+        }
+    } catch (error) {
+        console.error("Error in handleDiceStatus:", error);
+        Telegram.WebApp.showAlert("An error occurred. Please try again.");
+    }
+},
 
     async handleDiceNickname(userId) {
         await this.refreshUserData();
@@ -1150,7 +1181,6 @@ async function preloadImages(imageUrls) {
     return Promise.all(promises);
 }
 
-// Основная функция инициализации приложения
 async function initializeApp() {
     if (!window.Telegram?.WebApp) {
         console.error("Telegram WebApp API is not available");
@@ -1175,7 +1205,7 @@ async function initializeApp() {
                 setTimeout(() => {
                     const loadingScreen = document.getElementById("loading-screen");
                     if (loadingScreen) loadingScreen.style.display = "none";
-                }, 500); // Скрываем экран загрузки через 0.5 секунды
+                }, 500);
             }
         }
         console.log(`Initialization progress: ${percentage}%`);
@@ -1204,7 +1234,7 @@ async function initializeApp() {
         const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
             headers: API.defaultHeaders,
-            signal: AbortSignal.timeout(5000) // Таймаут 5 секунд
+            signal: AbortSignal.timeout(5000)
         });
 
         if (!initResponse.ok) {
@@ -1225,7 +1255,7 @@ async function initializeApp() {
         // 4. Загрузка данных пользователя
         updateProgress(50);
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(5000) // Таймаут 5 секунд
+            signal: AbortSignal.timeout(5000)
         });
 
         if (!userDataResponse || userDataResponse.error) {
@@ -1259,7 +1289,7 @@ async function initializeApp() {
 
     } catch (error) {
         console.error("Initialization error:", error);
-        updateProgress(100); // Прогресс доходит до 100% даже при ошибке
+        updateProgress(100);
         Telegram.WebApp.showAlert(
             error.message.includes("Unauthorized")
                 ? "Authorization failed. Please restart the app."
