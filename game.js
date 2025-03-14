@@ -1087,7 +1087,7 @@ const outcomes = {
             {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
             {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
             {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
-            {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-perevernutiy.gif", "coins": 12},
+            {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 12},
             {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
             {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
         ]
@@ -1117,14 +1117,12 @@ const additionalImages = [
     "pictures/other png/$LUCU.png",
     "pictures/other png/Logo.png",
     "pictures/other png/friends-11.png",
-    "pictures/other png/logotypeCUBICK.png",
     "pictures/other png/telegram-logo.png",
     "pictures/other png/друзья.png",
     "pictures/other png/квесты.png",
     "pictures/other png/магазин.png",
     "pictures/other png/таблица лидеров.png",
-    "pictures/other png/телега.jpg",
-    "pictures/other png/телеграм-лого.gif"
+    "pictures/other png/телега.jpg"
 ];
 
 // Собираем все уникальные пути к изображениям из outcomes
