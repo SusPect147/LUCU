@@ -61,10 +61,6 @@ const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     buttonRootId: "ton-connect"
 });
 
-const AppState = {
-    userData: null
-};
-
 const Utils = {
     formatCoins(amount) {
         if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
