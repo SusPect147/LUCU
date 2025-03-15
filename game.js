@@ -59,17 +59,17 @@ const tg = window.Telegram?.WebApp;
 // В game.js заменяем блок инициализации TON Connect UI
 let tonConnectUI;
 let tonConnectAttempts = 0;
-const maxTonConnectAttempts = 5;
+const maxTonConnectAttempts = 2;
 
 async function initializeTonConnect() {
     if (!window.TON_CONNECT_UI) {
         tonConnectAttempts++;
         if (tonConnectAttempts <= maxTonConnectAttempts) {
-            console.warn(`TON Connect SDK is not loaded. Attempt ${tonConnectAttempts}/${maxTonConnectAttempts}. Retrying in 1 second...`);
-            setTimeout(initializeTonConnect, 1000);
+            console.warn(`TON Connect SDK is not loaded. Attempt ${tonConnectAttempts}/${maxTonConnectAttempts}. Retrying in 2 seconds...`);
+            setTimeout(initializeTonConnect, 5000); // Увеличиваем задержку до 2 секунд
         } else {
             console.error("TON Connect SDK failed to load after maximum attempts.");
-            Telegram.WebApp.showAlert("Failed to load TON wallet integration. Please reload the page.");
+            Telegram.WebApp.showAlert("TON wallet integration unavailable. Please reload the page or continue without it.");
         }
         return;
     }
@@ -90,7 +90,7 @@ async function initializeTonConnect() {
         });
     } catch (error) {
         console.error("Failed to initialize TON Connect UI:", error);
-        Telegram.WebApp.showAlert("Failed to initialize TON wallet. Please reload the page.");
+        Telegram.WebApp.showAlert("TON wallet unavailable. You can continue without it.");
     }
 }
 
@@ -1332,21 +1332,7 @@ async function minimalInit(tg) {
 
     if (!tg) {
         console.error("Telegram WebApp API is not available");
-        alert("Please open this app in Telegram to continue.");
         return false;
-    }
-
-    // Проверяем iframe, но не прерываем работу
-    if (window.self !== window.top) {
-        console.warn("App is running inside an iframe (possibly web version of Telegram)");
-        // Показываем уведомление только один раз
-        if (!localStorage.getItem("iframeWarningShown")) {
-            tg.showPopup({
-                message: "Running in web version of Telegram may limit some features. For full functionality, consider using the Telegram app.",
-                buttons: [{ text: "Continue", id: "continue" }]
-            });
-            localStorage.setItem("iframeWarningShown", "true");
-        }
     }
 
     tg.ready();
@@ -1361,11 +1347,10 @@ async function minimalInit(tg) {
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
     AppState.userData = null;
 
-try {
-    updateProgress(20);
-    let token = null;
+    try {
+        updateProgress(20);
+        let token = null;
 
-    if (!token) {
         const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
             headers: API.defaultHeaders,
@@ -1374,44 +1359,54 @@ try {
 
         if (!initResponse.ok) {
             const errorText = await initResponse.text();
-            throw new Error(`API initialization failed: ${initResponse.status} - ${errorText}`);
+            console.warn(`API initialization failed: ${initResponse.status} - ${errorText}`);
+            // Используем запасные значения вместо прерывания
+            token = null;
+        } else {
+            const initData = await initResponse.json();
+            token = initData.token;
+            API.defaultHeaders["Authorization"] = `Bearer ${token}`;
         }
 
-        const initData = await initResponse.json();
-        token = initData.token;
-        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
-    }
+        updateProgress(25);
+        await loadConfig(token, tg);
 
-    updateProgress(25);
-    await loadConfig(token, tg);
+        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+            signal: AbortSignal.timeout(5000)
+        });
+        AppState.userData = userDataResponse || {
+            coins: 0,
+            rolls: 0,
+            min_luck: 1001,
+            owned_skins: [],
+            equipped_skin: CONFIG.DEFAULT_SKIN,
+            quests: {},
+            referral_count: 0,
+            beta_player: "no",
+            ban: "no"
+        };
 
-    const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-        signal: AbortSignal.timeout(5000)
-    });
-    AppState.userData = userDataResponse || {
-        coins: 0,
-        rolls: 0,
-        min_luck: 1001,
-        owned_skins: [],
-        equipped_skin: CONFIG.DEFAULT_SKIN,
-        quests: {},
-        referral_count: 0,
-        beta_player: "no",
-        ban: "no"
-    };
-
-    updateProgress(30);
-    return true;
-} catch (error) {
-    console.error("Minimal initialization error:", error);
-    setTimeout(() => {
+        updateProgress(30);
+        return true;
+    } catch (error) {
+        console.error("Minimal initialization error:", error);
         tg.showPopup({
-            message: `Initialization failed: ${error.message}. Please try again later or contact support.`,
+            message: `Failed to connect to server. Using offline mode. Some features may be unavailable.`,
             buttons: [{ text: "OK", id: "ok" }]
         });
-    }, 500); // Задержка 500 мс
-    return false;
-}
+        AppState.userData = {
+            coins: 0,
+            rolls: 0,
+            min_luck: 1001,
+            owned_skins: [],
+            equipped_skin: CONFIG.DEFAULT_SKIN,
+            quests: {},
+            referral_count: 0,
+            beta_player: "no",
+            ban: "no"
+        };
+        return true; // Продолжаем работу в оффлайн-режиме
+    }
 }
 
 async function fullInit(tg) {
@@ -1555,19 +1550,23 @@ async function initializeApp() {
 
     updateProgress(0);
 
-    // Проверяем Telegram WebApp
-    if (!Telegram.WebApp) {
-        console.error("Telegram WebApp not available");
-        alert("Please open this app in Telegram.");
-        return;
+    // Проверяем наличие Telegram WebApp API
+    if (!window.Telegram || !window.Telegram.WebApp) {
+        console.error("This app must be opened in Telegram.");
+        const errorMessage = document.createElement("div");
+        errorMessage.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; background: #333; padding: 20px; border-radius: 10px;";
+        errorMessage.textContent = "Please open this app in Telegram to play.";
+        document.body.appendChild(errorMessage);
+        return; // Прерываем выполнение
     }
 
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand();
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
     updateProgress(10);
 
     // Минимальная инициализация
-    const minimalSuccess = await minimalInit(Telegram.WebApp);
+    const minimalSuccess = await minimalInit(tg);
     if (!minimalSuccess) return;
 
     updateProgress(50);
@@ -1583,7 +1582,7 @@ async function initializeApp() {
     Particles.init();
     updateProgress(75);
 
-    // Скрываем экран загрузки после минимальной инициализации
+    // Скрываем экран загрузки
     if (loadingScreen) {
         loadingScreen.style.transition = "opacity 0.5s";
         loadingScreen.style.opacity = "0";
@@ -1594,14 +1593,14 @@ async function initializeApp() {
     const baseUrl = "https://suspect147.github.io/LUCU/";
     const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
     preloadImagesWithProgress(imageAssetsArrayWithBase, (progress) => {
-        const adjustedProgress = 75 + (progress * 0.25); // От 75% до 100%
+        const adjustedProgress = 75 + (progress * 0.25);
         updateProgress(Math.round(adjustedProgress));
     }).then(() => {
         console.log("All images preloaded");
         AppState.isInitialized = true;
     }).catch(error => {
         console.error("Image preloading failed:", error);
-        AppState.isInitialized = true; // Завершаем инициализацию даже при ошибке
+        AppState.isInitialized = true; // Завершаем даже при ошибке
     });
 
     console.log("App initialized");
