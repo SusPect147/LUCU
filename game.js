@@ -7,7 +7,16 @@ const CONFIG = {
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
 };
 
-async function loadConfig() {
+// Добавление в AppState (если еще не добавлено)
+const AppState = {
+    userData: null,
+    isPremium: false,      // Добавлено для хранения статуса премиума
+    userId: null,          // Добавлено для хранения ID пользователя
+    isInitialized: false   // Добавлено для отслеживания статуса инициализации
+};
+
+// Измененная функция loadConfig
+async function loadConfig(token, tg) { // Добавлены параметры token и tg
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
         if (!telegramInitData) {
@@ -17,7 +26,8 @@ async function loadConfig() {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-Telegram-Init-Data": telegramInitData
+                "X-Telegram-Init-Data": telegramInitData,
+                "Authorization": `Bearer ${token}` // Добавлен заголовок Authorization
             }
         });
         if (!response.ok) {
@@ -32,11 +42,12 @@ async function loadConfig() {
     } catch (error) {
         console.error("Failed to load config:", error);
         if (tg && error.message.includes("401")) {
-            tg.WebApp.openPopup({
+            tg.showPopup({ // Изменено на showPopup и используется параметр tg
                 message: "Authorization failed. Please restart the app.",
                 buttons: [{ text: "OK", id: "ok" }]
             });
         }
+        // Значения по умолчанию
         Object.assign(CONFIG, {
             API_BASE_URL: "https://backend12-production-1210.up.railway.app",
             CHANNEL_USERNAME: "LuckyCubesChannel"
@@ -1165,6 +1176,7 @@ async function preloadImages(imageUrls) {
     return Promise.all(promises);
 }
 
+// Измененная функция initializeApp
 async function initializeApp() {
     if (!window.Telegram?.WebApp) {
         console.error("Telegram WebApp API is not available");
@@ -1176,11 +1188,9 @@ async function initializeApp() {
     tg.ready();
     tg.expand();
 
-    // Базовый URL для изображений
     const baseUrl = "https://suspect147.github.io/LUCU/";
     const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
 
-    // Функция обновления прогресса
     const updateProgress = (percentage) => {
         const progressElement = document.getElementById("loading-text");
         if (progressElement) {
@@ -1197,24 +1207,15 @@ async function initializeApp() {
 
     updateProgress(0);
 
-    // Настройка заголовков API
+    // Настройка базовых заголовков API
     API.defaultHeaders = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
 
     try {
-        // 1. Загрузка конфигурации
-        await loadConfig();
+        // 1. Инициализация через /init для получения токена
         updateProgress(10);
-
-        // 2. Запускаем предзагрузку изображений параллельно
-        const preloadPromise = preloadImages(imageAssetsArrayWithBase)
-            .then(() => console.log("All images preloaded successfully"))
-            .catch(err => console.error("Image preloading failed:", err));
-
-        // 3. Инициализация API
-        updateProgress(25);
         const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
             headers: API.defaultHeaders,
@@ -1228,13 +1229,22 @@ async function initializeApp() {
 
         const { token, is_premium } = await initResponse.json();
         localStorage.setItem("authToken", token);
-        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+        API.defaultHeaders["Authorization"] = `Bearer ${token}`; // Обновляем заголовки с токеном
         AppState.isPremium = is_premium || false;
         AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
 
         if (!AppState.userId) {
             throw new Error("User ID not found in Telegram initData");
         }
+
+        // 2. Загрузка конфигурации после получения токена
+        updateProgress(25);
+        await loadConfig(token, tg); // Перемещен вызов loadConfig и переданы token и tg
+
+        // 3. Запускаем предзагрузку изображений параллельно
+        const preloadPromise = preloadImages(imageAssetsArrayWithBase)
+            .then(() => console.log("All images preloaded successfully"))
+            .catch(err => console.error("Image preloading failed:", err));
 
         // 4. Загрузка данных пользователя
         updateProgress(50);
@@ -1274,16 +1284,17 @@ async function initializeApp() {
     } catch (error) {
         console.error("Initialization error:", error);
         updateProgress(100);
-        Telegram.WebApp.showAlert(
-            error.message.includes("Unauthorized")
+        tg.showPopup({
+            message: error.message.includes("Unauthorized")
                 ? "Authorization failed. Please restart the app."
-                : `Initialization failed: ${error.message}. Please try again later.`
-        );
+                : `Initialization failed: ${error.message}. Please try again later.`,
+            buttons: [{ text: "OK", id: "ok" }]
+        });
         if (error.message.includes("User ID not found") || error.message.includes("Unauthorized")) {
-            Telegram.WebApp.close();
+            tg.close();
         }
     }
 }
 
-// Запуск приложения
+// Запуск приложения (без изменений)
 initializeApp();
