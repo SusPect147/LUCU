@@ -824,19 +824,17 @@ const Quests = {
     },
 async handleDiceStatus(userId) {
     try {
-        // Проверяем, является ли пользователь Premium
         if (!AppState.isPremium) {
-            Telegram.WebApp.showAlert("This quest requires Telegram Premium. Please upgrade your account to proceed.");
+            Telegram.WebApp.showAlert("This quest requires Telegram Premium. Please upgrade your account.");
             console.log("User is not Premium. Cannot set emoji status.");
             return;
         }
 
-        // Устанавливаем кастомный эмодзи с ID 5377602234957746168 (1️⃣)
-        const customEmojiId = "5377602234957746168";
+        // Используем custom_emoji_id первого эмодзи из DiceCubeEmoji (1️⃣)
+        const customEmojiId = "5384541907051357217";
         console.log(`Attempting to set emoji status with custom_emoji_id: ${customEmojiId}`);
         await Telegram.WebApp.setEmojiStatus(customEmojiId);
 
-        // Даём время Telegram обработать запрос и ждём проверки сервером
         setTimeout(async () => {
             try {
                 const response = await API.fetch("/check_dice_status", {
@@ -848,23 +846,21 @@ async handleDiceStatus(userId) {
                     await this.completeQuest(userId, "dice_status");
                     Telegram.WebApp.showAlert("Dice status set successfully! Quest completed.");
                 } else {
-                    Telegram.WebApp.showAlert("Failed to verify dice status. Please try again.");
+                    Telegram.WebApp.showAlert("Failed to verify status. Please try again.");
                     console.warn("Server verification failed:", response);
                 }
             } catch (serverError) {
-                console.error("Server error during dice status verification:", serverError);
-                Telegram.WebApp.showAlert("Server error while verifying status. Please try again later.");
+                console.error("Server error during status check:", serverError);
+                Telegram.WebApp.showAlert("Server error. Please try again later.");
             }
         }, 6000);
     } catch (error) {
-        console.error("Failed to handle dice status quest:", error);
-
-        // Обработка специфичной ошибки SUGGESTED_EMOJI_INVALID
+        console.error("Error setting emoji status:", error);
         if (error.message && error.message.includes("SUGGESTED_EMOJI_INVALID")) {
-            Telegram.WebApp.showAlert("This emoji (1️⃣) is not supported for status. Please contact support or try a different emoji.");
-            console.warn(`Emoji with custom_emoji_id ${customEmojiId} is not valid for status.`);
+            Telegram.WebApp.showAlert("This emoji (1️⃣) is not supported for status. Contact support.");
+            console.warn(`Emoji ID ${customEmojiId} is invalid for status.`);
         } else {
-            Telegram.WebApp.showAlert("Error setting emoji status: " + error.message);
+            Telegram.WebApp.showAlert("Unexpected error: " + error.message);
         }
     }
 },
