@@ -1309,7 +1309,6 @@ async function minimalInit(tg) {
 
     AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
-    AppState.userData = null;
 
     try {
         updateProgress(20);
@@ -1324,51 +1323,37 @@ async function minimalInit(tg) {
         if (!initResponse.ok) {
             const errorText = await initResponse.text();
             console.warn(`API initialization failed: ${initResponse.status} - ${errorText}`);
-            token = null;
-        } else {
-            const initData = await initResponse.json();
-            token = initData.token;
-            API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+            throw new Error("Failed to initialize API");
         }
+
+        const initData = await initResponse.json();
+        token = initData.token;
+        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+        AppState.isPremium = initData.is_premium || AppState.isPremium;
 
         updateProgress(25);
         await loadConfig(token, tg);
 
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+        console.log("Server response:", userDataResponse)
             signal: AbortSignal.timeout(5000)
         });
-        AppState.userData = userDataResponse || {
-            coins: 0,
-            rolls: 0,
-            min_luck: 1001,
-            owned_skins: [],
-            equipped_skin: AppConfig.DEFAULT_SKIN,
-            quests: {},
-            referral_count: 0,
-            beta_player: "no",
-            ban: "no"
-        };
+
+        if (!userDataResponse) {
+            throw new Error("Failed to fetch user data");
+        }
+
+        AppState.userData = userDataResponse;
 
         updateProgress(30);
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
         tg.showPopup({
-            message: `Failed to connect to server. Using offline mode. Some features may be unavailable.`,
+            message: `Failed to connect to server. Please try again later.`,
             buttons: [{ text: "OK", id: "ok" }]
         });
-        AppState.userData = {
-            coins: 0,
-            rolls: 0,
-            min_luck: 1001,
-            owned_skins: [],
-            equipped_skin: AppConfig.DEFAULT_SKIN,
-            quests: {},
-            referral_count: 0,
-            beta_player: "no",
-            ban: "no"
-        };
-        return true; // Продолжаем работу даже при ошибке авторизации
+        return false;
     }
 }
 
@@ -1394,28 +1379,18 @@ async function fullInit(tg) {
             throw new Error("Failed to load user data");
         }
 
-        AppState.userData = { ...AppState.userData, ...userDataResponse };
-        localStorage.setItem("userData", JSON.stringify(AppState.userData));
+        AppState.userData = userDataResponse;
 
         Game.updateFromAppState();
         Skins.updateFromAppState();
         Friends.updateFriendsCount();
     } catch (error) {
         console.error("User data fetch error:", error);
-        if (!AppState.userData) {
-            AppState.userData = {
-                coins: 0,
-                rolls: 0,
-                min_luck: 1001,
-                owned_skins: [],
-                equipped_skin: AppConfig.DEFAULT_SKIN,
-                quests: {},
-                referral_count: 0,
-                beta_player: "no",
-                ban: "no"
-            };
-            localStorage.setItem("userData", JSON.stringify(AppState.userData));
-        }
+        tg.showPopup({
+            message: `Failed to load user data. Please try again.`,
+            buttons: [{ text: "OK", id: "ok" }]
+        });
+        return;
     }
 
     updateProgress(60);
@@ -1466,7 +1441,7 @@ async function initializeApp() {
     updateProgress(50);
 
     document.body.classList.add("gray-gradient");
-    await fullInit(tg); // Вызов исправленной функции fullInit
+    await fullInit(tg);
 
     if (loadingScreen) {
         loadingScreen.style.transition = "opacity 0.5s";
@@ -1474,20 +1449,10 @@ async function initializeApp() {
         setTimeout(() => loadingScreen.style.display = "none", 500);
     }
 
-    const baseUrl = "https://suspect147.github.io/LUCU/";
-    const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
-    preloadImagesWithProgress(imageAssetsArrayWithBase, (progress) => {
-        const adjustedProgress = 75 + (progress * 0.25);
-        updateProgress(Math.round(adjustedProgress));
-    }).then(() => {
-        console.log("All images preloaded");
-        AppState.isInitialized = true;
-    }).catch(error => {
-        console.error("Image preloading failed:", error);
-        AppState.isInitialized = true;
-    });
-
+    AppState.isInitialized = true;
     console.log("App initialized");
 }
+
+
 
 document.addEventListener("DOMContentLoaded", initializeApp);
