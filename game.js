@@ -80,7 +80,6 @@ async function initializeTonConnect() {
             manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
             buttonRootId: "ton-connect"
         });
-        console.log("TON Connect UI initialized successfully");
         tonConnectUI.onStatusChange(walletInfo => {
             if (walletInfo) {
                 console.log("Wallet connected:", walletInfo);
@@ -796,7 +795,6 @@ const Quests = {
                 method: "POST",
                 body: JSON.stringify({ user_id: userId })
             });
-            console.log("Subscription check response:", subscriptionResponse);
 
             if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
                 await this.completeQuest(userId, "subscription_quest");
@@ -914,7 +912,6 @@ const Quests = {
 
         for (const quest in userData.quests) {
             if (userData.quests[quest] === "pending") {
-                console.log(`Checking pending quest: ${quest}`);
                 let canComplete = false;
 
                 switch (quest) {
@@ -1264,7 +1261,6 @@ function updateProgress(percentage) {
             }, 500);
         }
     }
-    console.log(`Initialization progress: ${percentage}%`);
 }
 
 async function preloadImagesWithProgress(imageUrls, onProgress) {
@@ -1335,7 +1331,6 @@ async function minimalInit(tg) {
         await loadConfig(token, tg);
 
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-        console.log("Server response:", userDataResponse)
             signal: AbortSignal.timeout(5000)
         });
 
@@ -1407,7 +1402,6 @@ async function fullInit(tg) {
     await Quests.checkPendingQuests(AppState.userId);
 
     AppState.isInitialized = true;
-    console.log("App fully initialized");
 }
 
 async function initializeApp() {
@@ -1415,7 +1409,6 @@ async function initializeApp() {
     const loadingText = document.getElementById("loading-text");
 
     const updateProgress = (percent) => {
-        console.log(`Initialization progress: ${percent}%`);
         if (loadingText) loadingText.textContent = `Loading ${percent}%`;
     };
 
@@ -1450,7 +1443,6 @@ async function initializeApp() {
     }
 
     AppState.isInitialized = true;
-    console.log("App initialized");
 }
 
 
