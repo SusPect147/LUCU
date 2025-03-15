@@ -742,26 +742,29 @@ const Quests = {
     },
 
 async handleDiceStatus(userId) {
+    const tg = window.Telegram.WebApp; // Получаем tg из глобальной области
     try {
+        if (!AppState.isPremium) {
+            tg.showPopup({
+                message: "This quest requires Telegram Premium. Please upgrade your account to proceed.",
+                buttons: [{ text: "OK", id: "ok" }]
+            });
+            return;
+        }
+
+        // Если у пользователя есть премиум, выполняем задание
         const response = await Quests.completeQuest(String(userId), "dice_status");
-        tg.WebApp.setEmojiStatus({ custom_emoji_id: "5384541907051357217" });
-        tg.WebApp.openPopup({
+        tg.setEmojiStatus({ custom_emoji_id: "5384541907051357217" });
+        tg.showPopup({
             message: "Quest completed successfully!",
             buttons: [{ text: "OK", id: "ok" }]
         });
     } catch (error) {
         console.error("Failed to set emoji status or complete quest:", error);
-        if (error.message.includes("This quest requires Telegram Premium")) {
-            tg.WebApp.openPopup({
-                message: "This quest requires Telegram Premium. Please upgrade your account to proceed.",
-                buttons: [{ text: "OK", id: "ok" }]
-            });
-        } else {
-            tg.WebApp.openPopup({
-                message: `Error: ${error.message}. Please try again.`,
-                buttons: [{ text: "OK", id: "ok" }]
-            });
-        }
+        tg.showPopup({
+            message: `Error: ${error.message}. Please try again.`,
+            buttons: [{ text: "OK", id: "ok" }]
+        });
     }
 },
 
@@ -1203,14 +1206,12 @@ async function initializeApp() {
 
     updateProgress(0);
 
-    // Настройка базовых заголовков API
     API.defaultHeaders = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
 
     try {
-        // 1. Инициализация через /init для получения токена
         updateProgress(10);
         const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
             method: "POST",
@@ -1225,24 +1226,22 @@ async function initializeApp() {
 
         const { token, is_premium } = await initResponse.json();
         localStorage.setItem("authToken", token);
-        API.defaultHeaders["Authorization"] = `Bearer ${token}`; // Обновляем заголовки с токеном
-        AppState.isPremium = is_premium || false;
+        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+        AppState.isPremium = is_premium === true; // Убедимся, что isPremium строго true/false
         AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
 
         if (!AppState.userId) {
             throw new Error("User ID not found in Telegram initData");
         }
 
-        // 2. Загрузка конфигурации после получения токена
         updateProgress(25);
-        await loadConfig(token, tg); // Перемещен вызов loadConfig и переданы token и tg
+        await loadConfig(token, tg);
 
-        // 3. Запускаем предзагрузку изображений параллельно
+        // Остальной код остается без изменений
         const preloadPromise = preloadImages(imageAssetsArrayWithBase)
             .then(() => console.log("All images preloaded successfully"))
             .catch(err => console.error("Image preloading failed:", err));
 
-        // 4. Загрузка данных пользователя
         updateProgress(50);
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
             signal: AbortSignal.timeout(5000)
@@ -1254,7 +1253,6 @@ async function initializeApp() {
 
         AppState.userData = userDataResponse;
 
-        // 5. Инициализация компонентов игры
         updateProgress(75);
         Game.init();
         Skins.init();
@@ -1264,15 +1262,12 @@ async function initializeApp() {
         Friends.init();
         Particles.init();
 
-        // 6. Проверка pending-квестов
         await Quests.refreshUserData();
         await Quests.checkPendingQuests(AppState.userId);
 
-        // 7. Ожидание завершения предзагрузки изображений
         updateProgress(90);
         await preloadPromise;
 
-        // Завершение
         updateProgress(100);
         AppState.isInitialized = true;
         console.log("App fully initialized");
