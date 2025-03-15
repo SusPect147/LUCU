@@ -9,26 +9,13 @@ const CONFIG = {
 
 // Добавление в AppState (если еще не добавлено)
 const AppState = {
-    userData: null,
-    isPremium: false,      // Добавлено для хранения статуса премиума
-    userId: null,          // Добавлено для хранения ID пользователя
-    isInitialized: false   // Добавлено для отслеживания статуса инициализации
+    userData: null,       // Изначально null, будет заполнено позже
+    isPremium: false,
+    userId: null,
+    isInitialized: false
 };
 
-AppState.userData = {
-    coins: 0,
-    rolls: 0,
-    min_luck: 1001,
-    owned_skins: [],
-    equipped_skin: CONFIG.DEFAULT_SKIN,
-    quests: {},
-    referral_count: 0,
-    beta_player: "no",
-    ban: "no",
-    ...AppState.userData, // Существующие данные
-    ...userDataResponse // Новые данные с сервера
-};
-localStorage.setItem("userData", JSON.stringify(AppState.userData));
+
 // Измененная функция loadConfig
 async function loadConfig(token, tg) { // Добавлены параметры token и tg
     try {
@@ -1285,7 +1272,7 @@ async function minimalInit(tg) {
         "X-Telegram-Init-Data": tg.initData
     };
 
-    // Устанавливаем userId из Telegram
+    // Устанавливаем userId и isPremium из Telegram
     AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
 
@@ -1293,7 +1280,7 @@ async function minimalInit(tg) {
     const storedUserData = localStorage.getItem("userData");
     if (storedUserData) {
         AppState.userData = JSON.parse(storedUserData);
-    } else if (!AppState.userData) {
+    } else {
         // Устанавливаем дефолтные значения, если данных нет
         AppState.userData = {
             coins: 0,
@@ -1345,6 +1332,7 @@ async function minimalInit(tg) {
                 localStorage.removeItem("authToken");
                 return minimalInit(tg); // Повторяем инициализацию
             }
+            // Обновляем AppState.userData с данными с сервера
             AppState.userData = { ...AppState.userData, ...userDataResponse };
         } else {
             // Если токен есть, добавляем его в заголовки
@@ -1406,19 +1394,31 @@ async function fullInit(tg) {
         if (!userDataResponse || userDataResponse.error) {
             throw new Error("Failed to load user data");
         }
-// В fullInit после успешного получения userDataResponse
-AppState.userData = { ...AppState.userData, ...userDataResponse };
-localStorage.setItem("userData", JSON.stringify(AppState.userData)); // Сохраняем в localStorage
+
         // Обновляем только новые данные, сохраняя существующий прогресс
         AppState.userData = { ...AppState.userData, ...userDataResponse };
+        localStorage.setItem("userData", JSON.stringify(AppState.userData)); // Сохраняем в localStorage
+
+        // Обновляем UI с новыми данными
         Game.updateFromAppState();
         Skins.updateFromAppState();
         Friends.updateFriendsCount();
     } catch (error) {
         console.error("User data fetch error:", error);
         if (!AppState.userData) {
-            // Инициализируем только если данных ещё нет
-            AppState.userData = {};
+            // Устанавливаем дефолтные значения, если данных нет вообще
+            AppState.userData = {
+                coins: 0,
+                rolls: 0,
+                min_luck: 1001,
+                owned_skins: [],
+                equipped_skin: CONFIG.DEFAULT_SKIN,
+                quests: {},
+                referral_count: 0,
+                beta_player: "no",
+                ban: "no"
+            };
+            localStorage.setItem("userData", JSON.stringify(AppState.userData));
         }
     }
 
@@ -1453,6 +1453,8 @@ async function initializeApp() {
     // Шаг 2: Полная инициализация с сохранением прогресса
     await fullInit(tg);
 }
+
+
 
 // Запуск приложения
 initializeApp();
