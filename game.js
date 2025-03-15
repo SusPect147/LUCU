@@ -15,6 +15,20 @@ const AppState = {
     isInitialized: false   // Добавлено для отслеживания статуса инициализации
 };
 
+AppState.userData = {
+    coins: 0,
+    rolls: 0,
+    min_luck: 1001,
+    owned_skins: [],
+    equipped_skin: CONFIG.DEFAULT_SKIN,
+    quests: {},
+    referral_count: 0,
+    beta_player: "no",
+    ban: "no",
+    ...AppState.userData, // Существующие данные
+    ...userDataResponse // Новые данные с сервера
+};
+localStorage.setItem("userData", JSON.stringify(AppState.userData));
 // Измененная функция loadConfig
 async function loadConfig(token, tg) { // Добавлены параметры token и tg
     try {
@@ -287,71 +301,110 @@ const Game = {
         }
         this.rollCube();
     },
-    async rollCube() {
-        if (this.state.isAnimating) {
-            return;
+async rollCube() {
+    // Проверяем, не идёт ли анимация
+    if (this.state.isAnimating) return;
+
+    this.state.isAnimating = true;
+
+    try {
+        // Получаем userId из Telegram
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
+
+        // Запрашиваем результат броска с сервера
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            body: { user_id: userId }
+        });
+
+        // Проверяем корректность ответа
+        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
-        this.state.isAnimating = true;
-        try {
-            const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                body: { user_id: userId }
-            });
-            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
+
+        // Обновляем изображение кубика и запускаем прогресс
+        this.elements.cube.src = response.outcome_src;
+        this.startProgress(CONFIG.ANIMATION_DURATION);
+
+        // Обновляем AppState.userData и сохраняем в localStorage
+        AppState.userData = {
+            ...AppState.userData,
+            coins: response.coins,
+            rolls: response.total_rolls,
+            min_luck: Math.min(AppState.userData.min_luck || 1001, response.luck),
+            equipped_skin: response.equipped_skin
+        };
+        localStorage.setItem("userData", JSON.stringify(AppState.userData));
+
+        // Логика для небаненных пользователей
+        if (AppState.userData.ban !== "yes") {
+            // Обновляем фон
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+
+            // Обновляем монеты с задержкой
+            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            }, coinUpdateDelay);
+
+            // Ждём завершения анимации
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
+
+            // Обновляем лучший результат удачи
+            if (response.luck < this.state.bestLuck) {
+                this.state.bestLuck = response.luck;
             }
-            this.elements.cube.src = response.outcome_src;
-            this.startProgress(CONFIG.ANIMATION_DURATION);
-            if (AppState.userData.ban !== "yes") {
-                document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
-                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                }, coinUpdateDelay);
-                await Utils.wait(CONFIG.ANIMATION_DURATION);
-                if (response.luck < this.state.bestLuck) {
-                    this.state.bestLuck = response.luck;
-                }
-                this.state.rolls = response.total_rolls;
-                this.state.equippedSkin = response.equipped_skin;
-                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-                this.updateAchievementProgress(response.total_rolls);
-                if (response.is_rainbow) {
-                    document.body.classList.remove("pink-gradient");
-                    document.body.classList.add("gray-gradient");
-                }
-            } else {
-                const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                    AppState.userData.coins = response.coins;
-                }, coinUpdateDelay);
-                await Utils.wait(CONFIG.ANIMATION_DURATION);
+            this.state.rolls = response.total_rolls;
+            this.state.equippedSkin = response.equipped_skin;
+
+            // Обновляем UI
+            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            this.updateAchievementProgress(response.total_rolls);
+
+            // Сбрасываем фон, если был радужный результат
+            if (response.is_rainbow) {
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
             }
-            this.setInitialCube();
-        } catch (error) {
-            if (error.message.includes("422")) {
-                this.elements.coinsDisplay.textContent = "Invalid request data";
-            } else if (error.message.includes("401")) {
-                this.elements.coinsDisplay.textContent = "Unauthorized access";
-            } else if (error.message.includes("403")) {
-                this.elements.coinsDisplay.textContent = "You are banned";
-            } else if (error.message.includes("429")) {
-                this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
-            } else {
-                this.elements.coinsDisplay.textContent = "Server error, try again later";
-            }
-            this.setInitialCube();
-            await Utils.wait(2000);
-        } finally {
-            this.state.isAnimating = false;
+        } else {
+            // Логика для забаненных пользователей
+            const coinUpdateDelay = CONFIG.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            }, coinUpdateDelay);
+            await Utils.wait(CONFIG.ANIMATION_DURATION);
         }
-    },
+
+        // Устанавливаем начальное изображение кубика
+        this.setInitialCube();
+    } catch (error) {
+        console.error("Roll cube error:", error);
+
+        // Обработка различных ошибок
+        if (error.message.includes("422")) {
+            this.elements.coinsDisplay.textContent = "Invalid request data";
+        } else if (error.message.includes("401")) {
+            this.elements.coinsDisplay.textContent = "Unauthorized access";
+        } else if (error.message.includes("403")) {
+            this.elements.coinsDisplay.textContent = "You are banned";
+        } else if (error.message.includes("429")) {
+            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
+        } else {
+            this.elements.coinsDisplay.textContent = "Server error, try again later";
+        }
+
+        // Восстанавливаем начальное состояние кубика
+        this.setInitialCube();
+        await Utils.wait(2000);
+    } finally {
+        // Сбрасываем флаг анимации
+        this.state.isAnimating = false;
+    }
+},
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
@@ -1175,74 +1228,177 @@ async function preloadImages(imageUrls) {
     return Promise.all(promises);
 }
 
-// Измененная функция initializeApp
-async function initializeApp() {
-    if (!window.Telegram?.WebApp) {
+// Функция для обновления прогресса загрузки
+function updateProgress(percentage) {
+    const progressElement = document.getElementById("loading-text");
+    if (progressElement) {
+        progressElement.textContent = `Loading ${percentage}%`;
+        if (percentage === 100) {
+            setTimeout(() => {
+                const loadingScreen = document.getElementById("loading-screen");
+                if (loadingScreen) loadingScreen.style.display = "none";
+            }, 500);
+        }
+    }
+    console.log(`Initialization progress: ${percentage}%`);
+}
+
+async function preloadImagesWithProgress(imageUrls, onProgress) {
+    let loadedCount = 0;
+    const total = imageUrls.length;
+    const promises = imageUrls.map(url => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                loadedCount++;
+                onProgress(Math.min((loadedCount / total) * 100, 100));
+                resolve(url);
+            };
+            img.onerror = () => {
+                loadedCount++;
+                onProgress(Math.min((loadedCount / total) * 100, 100));
+                console.warn(`Failed to load image: ${url}`);
+                resolve(url); // Продолжаем даже при ошибке
+            };
+        });
+    });
+    await Promise.all(promises); // Ждём завершения всех загрузок
+    onProgress(100); // Убеждаемся, что прогресс доходит до 100%
+}
+
+async function minimalInit(tg) {
+    // Проверяем доступность Telegram WebApp API
+    if (!tg) {
         console.error("Telegram WebApp API is not available");
         alert("Please open this app in Telegram to continue.");
-        return;
+        return false;
     }
 
-    const tg = window.Telegram.WebApp;
+    // Инициализируем Telegram WebApp
     tg.ready();
     tg.expand();
 
-    const baseUrl = "https://suspect147.github.io/LUCU/";
-    const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
-
-    const updateProgress = (percentage) => {
-        const progressElement = document.getElementById("loading-text");
-        if (progressElement) {
-            progressElement.textContent = `Loading ${percentage}%`;
-            if (percentage === 100) {
-                setTimeout(() => {
-                    const loadingScreen = document.getElementById("loading-screen");
-                    if (loadingScreen) loadingScreen.style.display = "none";
-                }, 500);
-            }
-        }
-        console.log(`Initialization progress: ${percentage}%`);
-    };
-
-    updateProgress(0);
-
+    // Устанавливаем начальные заголовки API
     API.defaultHeaders = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
 
+    // Устанавливаем userId из Telegram
+    AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
+    AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
+
+    // Восстанавливаем данные пользователя из localStorage
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+        AppState.userData = JSON.parse(storedUserData);
+    } else if (!AppState.userData) {
+        // Устанавливаем дефолтные значения, если данных нет
+        AppState.userData = {
+            coins: 0,
+            rolls: 0,
+            min_luck: 1001,
+            owned_skins: [],
+            equipped_skin: CONFIG.DEFAULT_SKIN,
+            quests: {},
+            referral_count: 0,
+            beta_player: "no",
+            ban: "no"
+        };
+    }
+
     try {
+        // Обновляем прогресс загрузки
         updateProgress(10);
-        const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
-            method: "POST",
-            headers: API.defaultHeaders,
-            signal: AbortSignal.timeout(5000)
-        });
 
-        if (!initResponse.ok) {
-            const errorText = await initResponse.text();
-            throw new Error(`API initialization failed: ${initResponse.status} - ${errorText}`);
+        // Проверяем наличие токена
+        let token = localStorage.getItem("authToken");
+        let isNewToken = false;
+
+        if (!token) {
+            // Если токена нет, запрашиваем новый
+            const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
+                method: "POST",
+                headers: API.defaultHeaders,
+                signal: AbortSignal.timeout(5000)
+            });
+
+            if (!initResponse.ok) {
+                throw new Error(`API initialization failed: ${initResponse.status}`);
+            }
+
+            const initData = await initResponse.json();
+            token = initData.token;
+            localStorage.setItem("authToken", token);
+            isNewToken = true;
+
+            // Обновляем заголовки с новым токеном
+            API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+
+            // Проверяем соответствие токена и userId
+            const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+                signal: AbortSignal.timeout(5000)
+            });
+            if (!userDataResponse || userDataResponse.user_id !== AppState.userId) {
+                console.warn("Token mismatch detected, clearing token and retrying...");
+                localStorage.removeItem("authToken");
+                return minimalInit(tg); // Повторяем инициализацию
+            }
+            AppState.userData = { ...AppState.userData, ...userDataResponse };
+        } else {
+            // Если токен есть, добавляем его в заголовки
+            API.defaultHeaders["Authorization"] = `Bearer ${token}`;
         }
 
-        const { token, is_premium } = await initResponse.json();
-        localStorage.setItem("authToken", token);
-        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
-        AppState.isPremium = is_premium === true; // Убедимся, что isPremium строго true/false
-        AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
-
-        if (!AppState.userId) {
-            throw new Error("User ID not found in Telegram initData");
-        }
-
+        // Загружаем конфигурацию
         updateProgress(25);
         await loadConfig(token, tg);
 
-        // Остальной код остается без изменений
-        const preloadPromise = preloadImages(imageAssetsArrayWithBase)
-            .then(() => console.log("All images preloaded successfully"))
-            .catch(err => console.error("Image preloading failed:", err));
+        // Синхронизируем данные пользователя, если они ещё неполные
+        if (!isNewToken && (!AppState.userData.coins || !AppState.userData.rolls)) {
+            const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+                signal: AbortSignal.timeout(5000)
+            });
+            if (userDataResponse && !userDataResponse.error) {
+                AppState.userData = { ...AppState.userData, ...userDataResponse };
+            } else {
+                console.warn("Failed to load user data in minimalInit, keeping existing data.");
+            }
+        }
 
-        updateProgress(50);
+        // Сохраняем данные в localStorage после всех обновлений
+        localStorage.setItem("userData", JSON.stringify(AppState.userData));
+        updateProgress(30);
+
+        return true;
+    } catch (error) {
+        console.error("Minimal initialization error:", error);
+        tg.showPopup({
+            message: `Initialization failed: ${error.message}. Please try again later.`,
+            buttons: [{ text: "OK", id: "ok" }]
+        });
+        return false;
+    }
+}
+
+// Полная инициализация (UI + фоновая загрузка)
+async function fullInit(tg) {
+    updateProgress(30);
+
+    // Инициализируем UI
+    Game.init();
+    Skins.init();
+    Quests.init();
+    Leaderboard.init();
+    Profile.init();
+    Friends.init();
+    Particles.init();
+
+    updateProgress(50);
+
+    // Синхронизация данных пользователя
+    try {
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
             signal: AbortSignal.timeout(5000)
         });
@@ -1250,42 +1406,53 @@ async function initializeApp() {
         if (!userDataResponse || userDataResponse.error) {
             throw new Error("Failed to load user data");
         }
-
-        AppState.userData = userDataResponse;
-
-        updateProgress(75);
-        Game.init();
-        Skins.init();
-        Quests.init();
-        Leaderboard.init();
-        Profile.init();
-        Friends.init();
-        Particles.init();
-
-        await Quests.refreshUserData();
-        await Quests.checkPendingQuests(AppState.userId);
-
-        updateProgress(90);
-        await preloadPromise;
-
-        updateProgress(100);
-        AppState.isInitialized = true;
-        console.log("App fully initialized");
-
+// В fullInit после успешного получения userDataResponse
+AppState.userData = { ...AppState.userData, ...userDataResponse };
+localStorage.setItem("userData", JSON.stringify(AppState.userData)); // Сохраняем в localStorage
+        // Обновляем только новые данные, сохраняя существующий прогресс
+        AppState.userData = { ...AppState.userData, ...userDataResponse };
+        Game.updateFromAppState();
+        Skins.updateFromAppState();
+        Friends.updateFriendsCount();
     } catch (error) {
-        console.error("Initialization error:", error);
-        updateProgress(100);
-        tg.showPopup({
-            message: error.message.includes("Unauthorized")
-                ? "Authorization failed. Please restart the app."
-                : `Initialization failed: ${error.message}. Please try again later.`,
-            buttons: [{ text: "OK", id: "ok" }]
-        });
-        if (error.message.includes("User ID not found") || error.message.includes("Unauthorized")) {
-            tg.close();
+        console.error("User data fetch error:", error);
+        if (!AppState.userData) {
+            // Инициализируем только если данных ещё нет
+            AppState.userData = {};
         }
     }
+
+    updateProgress(60);
+
+    // Фоновая загрузка изображений
+    const baseUrl = "https://suspect147.github.io/LUCU/";
+    const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
+
+    await preloadImagesWithProgress(imageAssetsArrayWithBase, (progress) => {
+        const adjustedProgress = 60 + (progress * 0.4); // От 60% до 100%
+        updateProgress(Math.round(adjustedProgress));
+    });
+
+    // Финальные шаги
+    await Quests.refreshUserData();
+    await Quests.checkPendingQuests(AppState.userId);
+
+    AppState.isInitialized = true;
+    console.log("App fully initialized");
 }
 
-// Запуск приложения (без изменений)
+// Главная функция запуска приложения
+async function initializeApp() {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+
+    // Шаг 1: Минимальная инициализация
+    const minimalSuccess = await minimalInit(tg);
+    if (!minimalSuccess) return;
+
+    // Шаг 2: Полная инициализация с сохранением прогресса
+    await fullInit(tg);
+}
+
+// Запуск приложения
 initializeApp();
