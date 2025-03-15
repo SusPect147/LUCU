@@ -818,11 +818,18 @@ const Quests = {
     async handleForwardMessage(userId) {
         const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
         tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
-        Telegram.WebApp.showAlert("Please forward the message to any chat and wait 6 seconds to claim your reward.");
+        Telegram.WebApp.showAlert("Please forward the message to any chat, then return here in 6 seconds to claim your reward.");
         setTimeout(async () => {
-            await this.refreshUserData();
-            const userData = await API.fetch(`/get_user_data_new/${userId}`);
-            if (userData.quests["forward_message"] === "pending") {
+            const confirm = await new Promise(resolve => {
+                tg.showPopup({
+                    message: "Did you forward the message? Click 'Yes' to claim your reward.",
+                    buttons: [
+                        { text: "Yes", id: "yes" },
+                        { text: "No", id: "no" }
+                    ]
+                }, buttonId => resolve(buttonId === "yes"));
+            });
+            if (confirm) {
                 await this.completeQuest(userId, "forward_message");
                 Telegram.WebApp.showAlert("Message forwarded! You earned 500 $LUCU.");
             } else {
@@ -841,14 +848,31 @@ const Quests = {
                 return;
             }
 
-            const response = await Quests.completeQuest(String(userId), "dice_status");
-            tg.setEmojiStatus({ custom_emoji_id: "5384541907051357217" });
             tg.showPopup({
-                message: "Quest completed successfully!",
+                message: "Please set your Telegram status to the dice emoji (🎲) in Settings > Edit Profile > Status, then return here.",
                 buttons: [{ text: "OK", id: "ok" }]
+            }, async () => {
+                setTimeout(async () => {
+                    const response = await API.fetch("/check_dice_status", {
+                        method: "POST",
+                        body: JSON.stringify({ user_id: userId })
+                    });
+                    if (response.success) {
+                        await this.completeQuest(userId, "dice_status");
+                        tg.showPopup({
+                            message: "Quest completed successfully! You earned 500 $LUCU.",
+                            buttons: [{ text: "OK", id: "ok" }]
+                        });
+                    } else {
+                        tg.showPopup({
+                            message: "The dice emoji (🎲) was not found in your status. Please set it and try again.",
+                            buttons: [{ text: "OK", id: "ok" }]
+                        });
+                    }
+                }, 6000); // Даем пользователю время установить статус
             });
         } catch (error) {
-            console.error("Failed to set emoji status or complete quest:", error);
+            console.error("Failed to handle dice status quest:", error);
             tg.showPopup({
                 message: `Error: ${error.message}. Please try again.`,
                 buttons: [{ text: "OK", id: "ok" }]
@@ -881,7 +905,19 @@ const Quests = {
     },
     async handleBoostChannel(userId) {
         tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}?boost`);
-        setTimeout(() => this.checkPendingQuests(userId), 6000);
+        Telegram.WebApp.showAlert("Please boost the channel and wait 6 seconds to claim your reward.");
+        setTimeout(async () => {
+            const boostResponse = await API.fetch("/check_boost_channel", {
+                method: "POST",
+                body: JSON.stringify({ user_id: userId })
+            });
+            if (boostResponse.success) {
+                await this.completeQuest(userId, "boost_channel");
+                Telegram.WebApp.showAlert("Channel boosted! You earned 500 $LUCU.");
+            } else {
+                Telegram.WebApp.showAlert("Please boost the channel to claim your reward.");
+            }
+        }, 6000);
     },
     async completeQuest(userId, questName) {
         try {
@@ -905,7 +941,7 @@ const Quests = {
             throw error;
         }
     },
-    async checkPendingQuests(userId) {
+        async checkPendingQuests(userId) {
         await this.refreshUserData();
         const userData = AppState.userData;
         if (!userData || !userData.quests) return;
@@ -928,6 +964,13 @@ const Quests = {
                             body: JSON.stringify({ user_id: userId })
                         });
                         canComplete = diceResponse.success;
+                        break;
+                    case "boost_channel":
+                        const boostResponse = await API.fetch("/check_boost_channel", {
+                            method: "POST",
+                            body: JSON.stringify({ user_id: userId })
+                        });
+                        canComplete = boostResponse.success;
                         break;
                     default:
                         console.warn(`No condition check defined for quest: ${quest}`);
