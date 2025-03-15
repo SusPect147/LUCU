@@ -7,14 +7,12 @@ const CONFIG = {
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
 };
 
-// Добавление в AppState (если еще не добавлено)
 const AppState = {
-    userData: null,       // Изначально null, будет заполнено позже
+    userData: null,
     isPremium: false,
     userId: null,
     isInitialized: false
 };
-
 
 // Измененная функция loadConfig
 async function loadConfig(token, tg) { // Добавлены параметры token и tg
@@ -60,11 +58,19 @@ const tg = window.Telegram?.WebApp;
 
 // В game.js заменяем блок инициализации TON Connect UI
 let tonConnectUI;
+let tonConnectAttempts = 0;
+const maxTonConnectAttempts = 5;
 
 async function initializeTonConnect() {
     if (!window.TON_CONNECT_UI) {
-        console.error("TON Connect SDK is not loaded. Retrying in 1 second...");
-        setTimeout(initializeTonConnect, 1000);
+        tonConnectAttempts++;
+        if (tonConnectAttempts <= maxTonConnectAttempts) {
+            console.warn(`TON Connect SDK is not loaded. Attempt ${tonConnectAttempts}/${maxTonConnectAttempts}. Retrying in 1 second...`);
+            setTimeout(initializeTonConnect, 1000);
+        } else {
+            console.error("TON Connect SDK failed to load after maximum attempts.");
+            Telegram.WebApp.showAlert("Failed to load TON wallet integration. Please reload the page.");
+        }
         return;
     }
 
@@ -74,8 +80,6 @@ async function initializeTonConnect() {
             buttonRootId: "ton-connect"
         });
         console.log("TON Connect UI initialized successfully");
-
-        // Проверка статуса подключения
         tonConnectUI.onStatusChange(walletInfo => {
             if (walletInfo) {
                 console.log("Wallet connected:", walletInfo);
@@ -138,15 +142,6 @@ const API = {
         if (!telegramInitData) {
             throw new Error("Telegram initData is required for API requests");
         }
-        // Исправляем config, создавая объект запроса
-        const config = {
-            method: options.method || "GET",
-            headers: {
-                ...this.defaultHeaders,
-                ...(options.headers || {})
-            },
-            body: options.body ? JSON.stringify(options.body) : null
-        };
         let attempts = 0;
         const maxAttempts = 3;
         while (attempts < maxAttempts) {
@@ -1341,18 +1336,17 @@ async function minimalInit(tg) {
         return false;
     }
 
-    // Проверяем iframe
+    // Проверяем iframe, но не прерываем работу
     if (window.self !== window.top) {
         console.warn("App is running inside an iframe (possibly web version of Telegram)");
-        tg.showPopup({
-            message: "Running in web version of Telegram may limit some features. For full functionality, open in the Telegram app.",
-            buttons: [{ text: "Continue", id: "continue" }, { text: "Open App", id: "open_app" }]
-        }, (buttonId) => {
-            if (buttonId === "open_app") {
-                window.location.href = "https://t.me/LuckyCubesbot";
-            }
-        });
-        // Продолжаем выполнение, не прерывая инициализацию
+        // Показываем уведомление только один раз
+        if (!localStorage.getItem("iframeWarningShown")) {
+            tg.showPopup({
+                message: "Running in web version of Telegram may limit some features. For full functionality, consider using the Telegram app.",
+                buttons: [{ text: "Continue", id: "continue" }]
+            });
+            localStorage.setItem("iframeWarningShown", "true");
+        }
     }
 
     tg.ready();
@@ -1365,57 +1359,59 @@ async function minimalInit(tg) {
 
     AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
-
     AppState.userData = null;
 
-    try {
-        updateProgress(20);
-        let token = null;
+try {
+    updateProgress(20);
+    let token = null;
 
-        if (!token) {
-            const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
-                method: "POST",
-                headers: API.defaultHeaders,
-                signal: AbortSignal.timeout(5000)
-            });
-
-            if (!initResponse.ok) {
-                throw new Error(`API initialization failed: ${initResponse.status}`);
-            }
-
-            const initData = await initResponse.json();
-            token = initData.token;
-            API.defaultHeaders["Authorization"] = `Bearer ${token}`;
-        }
-
-        updateProgress(25);
-        await loadConfig(token, tg);
-
-        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+    if (!token) {
+        const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
+            method: "POST",
+            headers: API.defaultHeaders,
             signal: AbortSignal.timeout(5000)
         });
-        AppState.userData = userDataResponse || {
-            coins: 0,
-            rolls: 0,
-            min_luck: 1001,
-            owned_skins: [],
-            equipped_skin: CONFIG.DEFAULT_SKIN,
-            quests: {},
-            referral_count: 0,
-            beta_player: "no",
-            ban: "no"
-        };
 
-        updateProgress(30);
-        return true;
-    } catch (error) {
-        console.error("Minimal initialization error:", error);
+        if (!initResponse.ok) {
+            const errorText = await initResponse.text();
+            throw new Error(`API initialization failed: ${initResponse.status} - ${errorText}`);
+        }
+
+        const initData = await initResponse.json();
+        token = initData.token;
+        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+    }
+
+    updateProgress(25);
+    await loadConfig(token, tg);
+
+    const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
+        signal: AbortSignal.timeout(5000)
+    });
+    AppState.userData = userDataResponse || {
+        coins: 0,
+        rolls: 0,
+        min_luck: 1001,
+        owned_skins: [],
+        equipped_skin: CONFIG.DEFAULT_SKIN,
+        quests: {},
+        referral_count: 0,
+        beta_player: "no",
+        ban: "no"
+    };
+
+    updateProgress(30);
+    return true;
+} catch (error) {
+    console.error("Minimal initialization error:", error);
+    setTimeout(() => {
         tg.showPopup({
-            message: `Initialization failed: ${error.message}. Please try again later.`,
+            message: `Initialization failed: ${error.message}. Please try again later or contact support.`,
             buttons: [{ text: "OK", id: "ok" }]
         });
-        return false;
-    }
+    }, 500); // Задержка 500 мс
+    return false;
+}
 }
 
 async function fullInit(tg) {
