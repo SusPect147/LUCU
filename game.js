@@ -57,10 +57,16 @@ async function loadConfig(token, tg) { // Добавлены параметры 
 }
 
 const tg = window.Telegram?.WebApp;
-const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-    manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
-    buttonRootId: "ton-connect"
-});
+
+let tonConnectUI;
+if (window.TON_CONNECT_UI) {
+    tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
+        buttonRootId: "ton-connect"
+    });
+} else {
+    console.error("TON Connect SDK is not loaded. Please ensure the script is included.");
+}
 
 const Utils = {
     formatCoins(amount) {
