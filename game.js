@@ -43,10 +43,7 @@ async function loadConfig(token, tg) {
     } catch (error) {
         console.error("Failed to load config:", error);
         if (tg && error.message.includes("401")) {
-            tg.showPopup({
-                message: "Authorization failed. Please restart the app.",
-                buttons: [{ text: "OK", id: "ok" }]
-            });
+            console.log("Authorization failed. Please restart the app.");
         }
         Object.assign(AppConfig, {
             API_BASE_URL: "https://backend12-production-1210.up.railway.app",
@@ -798,9 +795,7 @@ const Quests = {
 
             if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
                 await this.completeQuest(userId, "subscription_quest");
-                Telegram.WebApp.showAlert("Subscribed successfully! You earned 250 $LUCU.");
             } else {
-                Telegram.WebApp.showAlert("Please subscribe to the channel to complete this quest.");
                 tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}`);
                 setTimeout(async () => {
                     await this.checkPendingQuests(userId);
@@ -812,71 +807,41 @@ const Quests = {
             }
         } catch (error) {
             console.error("Error checking subscription:", error);
-            Telegram.WebApp.showAlert("An error occurred while checking your subscription. Please try again.");
         }
     },
     async handleForwardMessage(userId) {
         const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
         tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
-        Telegram.WebApp.showAlert("Please forward the message to any chat, then return here in 6 seconds to claim your reward.");
         setTimeout(async () => {
-            const confirm = await new Promise(resolve => {
-                tg.showPopup({
-                    message: "Did you forward the message? Click 'Yes' to claim your reward.",
-                    buttons: [
-                        { text: "Yes", id: "yes" },
-                        { text: "No", id: "no" }
-                    ]
-                }, buttonId => resolve(buttonId === "yes"));
+            const response = await API.fetch("/check_forward_message", { // Предполагаемая конечная точка API
+                method: "POST",
+                body: JSON.stringify({ user_id: userId })
             });
-            if (confirm) {
+            if (response.success) {
                 await this.completeQuest(userId, "forward_message");
-                Telegram.WebApp.showAlert("Message forwarded! You earned 500 $LUCU.");
-            } else {
-                Telegram.WebApp.showAlert("Please forward the message to claim your reward.");
             }
         }, 6000);
     },
     async handleDiceStatus(userId) {
-        const tg = window.Telegram.WebApp;
         try {
             if (!AppState.isPremium) {
-                tg.showPopup({
-                    message: "This quest requires Telegram Premium. Please upgrade your account to proceed.",
-                    buttons: [{ text: "OK", id: "ok" }]
-                });
+                console.log("This quest requires Telegram Premium. Please upgrade your account to proceed.");
                 return;
             }
 
-            tg.showPopup({
-                message: "Please set your Telegram status to the dice emoji (🎲) in Settings > Edit Profile > Status, then return here.",
-                buttons: [{ text: "OK", id: "ok" }]
-            }, async () => {
-                setTimeout(async () => {
-                    const response = await API.fetch("/check_dice_status", {
-                        method: "POST",
-                        body: JSON.stringify({ user_id: userId })
-                    });
-                    if (response.success) {
-                        await this.completeQuest(userId, "dice_status");
-                        tg.showPopup({
-                            message: "Quest completed successfully! You earned 500 $LUCU.",
-                            buttons: [{ text: "OK", id: "ok" }]
-                        });
-                    } else {
-                        tg.showPopup({
-                            message: "The dice emoji (🎲) was not found in your status. Please set it and try again.",
-                            buttons: [{ text: "OK", id: "ok" }]
-                        });
-                    }
-                }, 6000); // Даем пользователю время установить статус
-            });
+            await Telegram.WebApp.setEmojiStatus('5377602234957746168');
+            
+            setTimeout(async () => {
+                const response = await API.fetch("/check_dice_status", {
+                    method: "POST",
+                    body: JSON.stringify({ user_id: userId })
+                });
+                if (response.success) {
+                    await this.completeQuest(userId, "dice_status");
+                }
+            }, 6000);
         } catch (error) {
             console.error("Failed to handle dice status quest:", error);
-            tg.showPopup({
-                message: `Error: ${error.message}. Please try again.`,
-                buttons: [{ text: "OK", id: "ok" }]
-            });
         }
     },
     async handleDiceNickname(userId) {
@@ -892,20 +857,15 @@ const Quests = {
 
             if (response.success) {
                 await this.completeQuest(userId, "dice_nickname");
-                Telegram.WebApp.showAlert("Dice nickname quest completed! You earned 100 $LUCU.");
             } else {
-                Telegram.WebApp.showAlert(
-                    "Please add the 🎲 emoji to your Telegram nickname (username, first name, or last name) and try again."
-                );
+                console.log("Please add the 🎲 emoji to your Telegram nickname and try again.");
             }
         } catch (error) {
             console.error("Error checking dice nickname:", error);
-            Telegram.WebApp.showAlert("Error verifying nickname: " + error.message);
         }
     },
     async handleBoostChannel(userId) {
         tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}?boost`);
-        Telegram.WebApp.showAlert("Please boost the channel and wait 6 seconds to claim your reward.");
         setTimeout(async () => {
             const boostResponse = await API.fetch("/check_boost_channel", {
                 method: "POST",
@@ -913,9 +873,6 @@ const Quests = {
             });
             if (boostResponse.success) {
                 await this.completeQuest(userId, "boost_channel");
-                Telegram.WebApp.showAlert("Channel boosted! You earned 500 $LUCU.");
-            } else {
-                Telegram.WebApp.showAlert("Please boost the channel to claim your reward.");
             }
         }, 6000);
     },
@@ -941,7 +898,7 @@ const Quests = {
             throw error;
         }
     },
-        async checkPendingQuests(userId) {
+    async checkPendingQuests(userId) {
         await this.refreshUserData();
         const userData = AppState.userData;
         if (!userData || !userData.quests) return;
@@ -980,7 +937,6 @@ const Quests = {
                 if (canComplete) {
                     try {
                         await this.completeQuest(userId, quest);
-                        Telegram.WebApp.showAlert(`Quest ${quest} completed successfully!`);
                     } catch (error) {
                         console.log(`Quest ${quest} conditions met but completion failed: ${error.message}`);
                     }
@@ -1387,10 +1343,7 @@ async function minimalInit(tg) {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
-        tg.showPopup({
-            message: `Failed to connect to server. Please try again later.`,
-            buttons: [{ text: "OK", id: "ok" }]
-        });
+        console.log("Failed to connect to server. Please try again later.");
         return false;
     }
 }
@@ -1424,10 +1377,7 @@ async function fullInit(tg) {
         Friends.updateFriendsCount();
     } catch (error) {
         console.error("User data fetch error:", error);
-        tg.showPopup({
-            message: `Failed to load user data. Please try again.`,
-            buttons: [{ text: "OK", id: "ok" }]
-        });
+        console.log("Failed to load user data. Please try again.");
         return;
     }
 
@@ -1487,7 +1437,5 @@ async function initializeApp() {
 
     AppState.isInitialized = true;
 }
-
-
 
 document.addEventListener("DOMContentLoaded", initializeApp);
