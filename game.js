@@ -127,6 +127,7 @@ const Utils = {
         textarea.select();
         document.execCommand("copy");
         document.body.removeChild(textarea);
+    } // Здесь должна быть запятая, если за Utils следует другой объект, или ничего, если это конец
 };
 
 const API = {
@@ -137,7 +138,15 @@ const API = {
         if (!telegramInitData) {
             throw new Error("Telegram initData is required for API requests");
         }
-        if (options.body) config.body = JSON.stringify(options.body);
+        // Исправляем config, создавая объект запроса
+        const config = {
+            method: options.method || "GET",
+            headers: {
+                ...this.defaultHeaders,
+                ...(options.headers || {})
+            },
+            body: options.body ? JSON.stringify(options.body) : null
+        };
         let attempts = 0;
         const maxAttempts = 3;
         while (attempts < maxAttempts) {
