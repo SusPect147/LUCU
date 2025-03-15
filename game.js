@@ -1,11 +1,14 @@
-const AppConfig = {
-    CANVAS_ID: "particleCanvas",
-    DEFAULT_SKIN: "classic",
-    ANIMATION_DURATION: 3450,
-    PROGRESS_DURATION: 3,
-    API_BASE_URL: "https://backend12-production-1210.up.railway.app",
-    FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
-};
+// Проверяем, существует ли AppConfig, и если нет, создаем его
+if (typeof AppConfig === 'undefined') {
+    var AppConfig = {
+        CANVAS_ID: "particleCanvas",
+        DEFAULT_SKIN: "classic",
+        ANIMATION_DURATION: 3450,
+        PROGRESS_DURATION: 3,
+        API_BASE_URL: "https://backend12-production-1210.up.railway.app",
+        FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
+    };
+}
 
 const AppState = {
     userData: null,
@@ -14,7 +17,6 @@ const AppState = {
     isInitialized: false
 };
 
-// Измененная функция loadConfig
 async function loadConfig(token, tg) {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -337,7 +339,7 @@ const Game = {
                 headers: {
                     "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
                 },
-                body: { user_id: userId }
+                body: JSON.stringify({ user_id: userId })
             });
 
             if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
@@ -599,7 +601,7 @@ const Skins = {
                 headers: {
                     "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
                 },
-                body: { user_id: userId, skin_type: type }
+                body: JSON.stringify({ user_id: userId, skin_type: type })
             });
 
             if (response.success) {
@@ -792,7 +794,7 @@ const Quests = {
         try {
             const subscriptionResponse = await API.fetch("/check_subscription", {
                 method: "POST",
-                body: { user_id: userId }
+                body: JSON.stringify({ user_id: userId })
             });
             console.log("Subscription check response:", subscriptionResponse);
 
@@ -859,7 +861,7 @@ const Quests = {
         try {
             const response = await API.fetch("/check_dice_nickname", {
                 method: "POST",
-                body: { user_id: userId }
+                body: JSON.stringify({ user_id: userId })
             });
 
             if (typeof response.success !== "boolean") {
@@ -887,11 +889,11 @@ const Quests = {
         try {
             const response = await API.fetch("/update_quest_new", {
                 method: "POST",
-                body: {
+                body: JSON.stringify({
                     user_id: String(userId),
                     quest: questName,
                     status: "yes"
-                }
+                })
             });
             if (response.message !== "Quest updated successfully") {
                 throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
@@ -919,14 +921,14 @@ const Quests = {
                     case "subscription_quest":
                         const subResponse = await API.fetch("/check_subscription", {
                             method: "POST",
-                            body: { user_id: userId }
+                            body: JSON.stringify({ user_id: userId })
                         });
                         canComplete = subResponse.success;
                         break;
                     case "dice_nickname":
                         const diceResponse = await API.fetch("/check_dice_nickname", {
                             method: "POST",
-                            body: { user_id: userId }
+                            body: JSON.stringify({ user_id: userId })
                         });
                         canComplete = diceResponse.success;
                         break;
@@ -1102,7 +1104,7 @@ const Friends = {
         if (referrerId && userId && referrerId !== userId) {
             API.fetch("/handle_referral", {
                 method: "POST",
-                body: { user_id: userId, referrer_id: referrerId }
+                body: JSON.stringify({ user_id: userId, referrer_id: referrerId })
             }).catch(error => {});
         }
         this.updateFriendsCount();
@@ -1366,7 +1368,7 @@ async function minimalInit(tg) {
             beta_player: "no",
             ban: "no"
         };
-        return true;
+        return true; // Продолжаем работу даже при ошибке авторизации
     }
 }
 
