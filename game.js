@@ -62,44 +62,37 @@ const tg = window.Telegram?.WebApp;
 let tonConnectUI;
 
 async function initializeTonConnect() {
-    if (window.TON_CONNECT_UI) {
-        try {
-            tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
-                buttonRootId: "ton-connect"
-            });
-            console.log("TON Connect UI initialized successfully");
-
-            // Проверяем статус подключения
-            const wallet = await tonConnectUI.getWallets();
-            if (!tonConnectUI.connected) {
-                console.warn("Wallet not connected yet");
-                Telegram.WebApp.showAlert("Please connect your TON wallet to proceed.");
-            }
-
-            // Слушаем изменения статуса подключения
-            tonConnectUI.onStatusChange(walletInfo => {
-                if (walletInfo) {
-                    console.log("Wallet connected:", walletInfo);
-                } else {
-                    console.warn("Wallet disconnected");
-                    Telegram.WebApp.showAlert("Wallet disconnected. Please reconnect.");
-                }
-            });
-        } catch (error) {
-            console.error("Failed to initialize TON Connect UI:", error);
-            Telegram.WebApp.showAlert("Failed to initialize TON wallet. Please try again.");
-        }
-    } else {
+    if (!window.TON_CONNECT_UI) {
         console.error("TON Connect SDK is not loaded. Retrying in 1 second...");
         setTimeout(initializeTonConnect, 1000);
+        return;
+    }
+
+    try {
+        tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
+            buttonRootId: "ton-connect"
+        });
+        console.log("TON Connect UI initialized successfully");
+
+        // Проверка статуса подключения
+        tonConnectUI.onStatusChange(walletInfo => {
+            if (walletInfo) {
+                console.log("Wallet connected:", walletInfo);
+            } else {
+                console.warn("Wallet disconnected");
+                Telegram.WebApp.showAlert("Please connect your TON wallet to continue.");
+            }
+        });
+    } catch (error) {
+        console.error("Failed to initialize TON Connect UI:", error);
+        Telegram.WebApp.showAlert("Failed to initialize TON wallet. Please reload the page.");
     }
 }
 
-document.addEventListener("DOMContentLoaded", initializeTonConnect);
-
-// Вызываем функцию при загрузке
-document.addEventListener("DOMContentLoaded", initializeTonConnect);
+document.addEventListener("DOMContentLoaded", () => {
+    initializeTonConnect();
+});
 
 const Utils = {
     formatCoins(amount) {
@@ -134,7 +127,6 @@ const Utils = {
         textarea.select();
         document.execCommand("copy");
         document.body.removeChild(textarea);
-    }
 };
 
 const API = {
@@ -145,11 +137,6 @@ const API = {
         if (!telegramInitData) {
             throw new Error("Telegram initData is required for API requests");
         }
-        const config = {
-            method: "GET",
-            headers: { ...this.defaultHeaders, ...options.headers },
-            ...options
-        };
         if (options.body) config.body = JSON.stringify(options.body);
         let attempts = 0;
         const maxAttempts = 3;
@@ -1345,6 +1332,20 @@ async function minimalInit(tg) {
         return false;
     }
 
+    // Проверяем iframe
+    if (window.self !== window.top) {
+        console.warn("App is running inside an iframe (possibly web version of Telegram)");
+        tg.showPopup({
+            message: "Running in web version of Telegram may limit some features. For full functionality, open in the Telegram app.",
+            buttons: [{ text: "Continue", id: "continue" }, { text: "Open App", id: "open_app" }]
+        }, (buttonId) => {
+            if (buttonId === "open_app") {
+                window.location.href = "https://t.me/LuckyCubesbot";
+            }
+        });
+        // Продолжаем выполнение, не прерывая инициализацию
+    }
+
     tg.ready();
     tg.expand();
 
@@ -1352,21 +1353,15 @@ async function minimalInit(tg) {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
-if (window.self !== window.top) {
-        console.warn("App is running inside an iframe");
-        Telegram.WebApp.showAlert("Please open this app directly in Telegram for full functionality.");
-        window.location.href = "https://t.me/LuckyCubesbot";
-        return false;
-    }
+
     AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
 
-    // Убираем использование localStorage
-    AppState.userData = null; // Данные будут загружены с сервера
+    AppState.userData = null;
 
     try {
         updateProgress(20);
-        let token = null; // Убираем localStorage.getItem("authToken")
+        let token = null;
 
         if (!token) {
             const initResponse = await fetch(`${CONFIG.API_BASE_URL}/init`, {
