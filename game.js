@@ -1370,65 +1370,6 @@ async function minimalInit(tg) {
     }
 }
 
-async fullInit(tg) {
-    updateProgress(30);
-
-    Game.init();
-    Skins.init();
-    Quests.init();
-    Leaderboard.init();
-    Profile.init();
-    Friends.init();
-    Particles.init();
-
-    updateProgress(50);
-
-    try {
-        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(5000)
-        });
-
-        if (!userDataResponse || userDataResponse.error) {
-            throw new Error("Failed to load user data");
-        }
-
-        AppState.userData = userDataResponse;
-        Game.updateFromAppState();
-        Skins.updateFromAppState();
-        Friends.updateFriendsCount();
-    } catch (error) {
-        console.error("User data fetch error:", error);
-        if (!AppState.userData) {
-            AppState.userData = {
-                coins: 0,
-                rolls: 0,
-                min_luck: 1001,
-                owned_skins: [],
-                equipped_skin: AppConfig.DEFAULT_SKIN,
-                quests: {},
-                referral_count: 0,
-                beta_player: "no",
-                ban: "no"
-            };
-        }
-    }
-
-    updateProgress(60);
-
-    const baseUrl = "https://suspect147.github.io/LUCU/";
-    const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
-    await preloadImagesWithProgress(imageAssetsArrayWithBase, (progress) => {
-        const adjustedProgress = 60 + (progress * 0.4);
-        updateProgress(Math.round(adjustedProgress));
-    });
-
-    await Quests.refreshUserData();
-    await Quests.checkPendingQuests(AppState.userId);
-
-    AppState.isInitialized = true;
-    console.log("App fully initialized");
-}
-
 async function fullInit(tg) {
     updateProgress(30);
 
@@ -1523,14 +1464,7 @@ async function initializeApp() {
     updateProgress(50);
 
     document.body.classList.add("gray-gradient");
-    Game.init();
-    Skins.init();
-    Quests.init();
-    Leaderboard.init();
-    Profile.init();
-    Friends.init();
-    Particles.init();
-    updateProgress(75);
+    await fullInit(tg); // Вызов исправленной функции fullInit
 
     if (loadingScreen) {
         loadingScreen.style.transition = "opacity 0.5s";
