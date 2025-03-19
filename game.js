@@ -9,7 +9,7 @@ if (typeof AppConfig === 'undefined') {
         FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
     };
 }
-
+ 
 const AppState = {
     userData: null,
     isPremium: false,
