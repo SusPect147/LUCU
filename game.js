@@ -92,28 +92,17 @@ async function initializeTonConnect() {
     }
 }
 
+// game.js
 async function initializeAnalytics() {
     try {
         const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
             method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-            }
+            headers: API.defaultHeaders, // Убедитесь, что здесь есть X-Telegram-Init-Data
         });
-        if (!response.ok) {
-            throw new Error(`Failed to initialize analytics: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Failed to initialize analytics: ${response.status}`);
         const data = await response.json();
-        if (window.telegramAnalytics && data.success) {
-            window.telegramAnalytics.init({
-                token: data.token,
-                appName: data.appName
-            });
-            console.log("Telegram Analytics initialized successfully");
-        } else {
-            console.warn("Telegram Analytics SDK not loaded or initialization failed");
-        }
+        AppState.analyticsToken = data.token;
+        console.log("Analytics initialized with token:", data.token);
     } catch (error) {
         console.error("Error initializing analytics:", error);
     }
@@ -1400,10 +1389,10 @@ async function minimalInit(tg) {
     tg.ready();
     tg.expand();
 
-    API.defaultHeaders = {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": tg.initData
-    };
+API.defaultHeaders = {
+    "Content-Type": "application/json",
+    "X-Telegram-Init-Data": tg.initData // Убедитесь, что tg.initData доступен
+};
 
     AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
