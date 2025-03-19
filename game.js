@@ -14,7 +14,9 @@ const AppState = {
     userData: null,
     isPremium: false,
     userId: null,
-    isInitialized: false
+    isInitialized: false,
+    token: null,           // Токен для защиты сервера
+    analyticsToken: null   // Токен для аналитики
 };
 
 async function loadConfig(token, tg) {
@@ -132,7 +134,10 @@ const Utils = {
 };
 
 const API = {
-    defaultHeaders: {},
+    defaultHeaders: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+    },
     async fetch(endpoint, options = {}) {
         const url = `${AppConfig.API_BASE_URL}${endpoint}`;
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -147,6 +152,7 @@ const API = {
                     ...options,
                     headers: {
                         ...API.defaultHeaders,
+                        "Authorization": `Bearer ${AppState.token}`,
                         ...options.headers
                     }
                 });
@@ -167,6 +173,33 @@ const API = {
                 }
                 await Utils.wait(1000 * attempts);
             }
+        }
+    },
+    async trackEvent(eventName, eventData = {}) {
+        const userId = AppState.userId;
+        if (!userId || !AppState.analyticsToken) {
+            console.warn("Cannot track event: userId or analyticsToken is missing");
+            return;
+        }
+        try {
+            const payload = {
+                user_id: userId,
+                event_name: eventName,
+                event_data: eventData,
+                timestamp: new Date().toISOString()
+            };
+            await fetch(`${AppConfig.API_BASE_URL}/track_event`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || "",
+                    "Authorization": `Bearer ${AppState.analyticsToken}`
+                },
+                body: JSON.stringify(payload)
+            });
+            console.log(`Event tracked: ${eventName}`, eventData);
+        } catch (error) {
+            console.error(`Failed to track event ${eventName}:`, error);
         }
     }
 };
@@ -321,94 +354,104 @@ const Game = {
         }
         this.rollCube();
     },
-    async rollCube() {
-        if (this.state.isAnimating) return;
+async rollCube() {
+    if (this.state.isAnimating) return;
 
-        this.state.isAnimating = true;
+    this.state.isAnimating = true;
 
-        try {
-            const userId = tg?.initDataUnsafe?.user?.id?.toString();
-            if (!userId) throw new Error("User ID отсутствует в данных Telegram");
+    try {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) throw new Error("User ID отсутствует в данных Telegram");
 
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                headers: {
-                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-                },
-                body: JSON.stringify({ user_id: userId })
-            });
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            headers: {
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            },
+            body: JSON.stringify({ user_id: userId })
+        });
 
-            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-                throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
-            }
-
-            this.elements.cube.src = response.outcome_src;
-            this.startProgress(AppConfig.ANIMATION_DURATION);
-
-            AppState.userData = {
-                ...AppState.userData,
-                coins: response.coins,
-                rolls: response.total_rolls,
-                min_luck: Math.min(AppState.userData.min_luck || 1001, response.luck),
-                equipped_skin: response.equipped_skin
-            };
-
-            if (AppState.userData.ban !== "yes") {
-                document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
-
-                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                }, coinUpdateDelay);
-
-                await Utils.wait(AppConfig.ANIMATION_DURATION);
-
-                if (response.luck < this.state.bestLuck) {
-                    this.state.bestLuck = response.luck;
-                }
-                this.state.rolls = response.total_rolls;
-                this.state.equippedSkin = response.equipped_skin;
-
-                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-                this.updateAchievementProgress(response.total_rolls);
-
-                if (response.is_rainbow) {
-                    document.body.classList.remove("pink-gradient");
-                    document.body.classList.add("gray-gradient");
-                }
-            } else {
-                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-                }, coinUpdateDelay);
-                await Utils.wait(AppConfig.ANIMATION_DURATION);
-            }
-
-            this.setInitialCube();
-        } catch (error) {
-            console.error("Roll cube error:", error);
-
-            if (error.message.includes("422")) {
-                this.elements.coinsDisplay.textContent = "Invalid request data";
-            } else if (error.message.includes("401")) {
-                this.elements.coinsDisplay.textContent = "Unauthorized access";
-            } else if (error.message.includes("403")) {
-                this.elements.coinsDisplay.textContent = "You are banned";
-            } else if (error.message.includes("429")) {
-                this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
-            } else {
-                this.elements.coinsDisplay.textContent = "Server error, try again later";
-            }
-
-            this.setInitialCube();
-            await Utils.wait(2000);
-        } finally {
-            this.state.isAnimating = false;
+        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+            throw new Error("Некорректный ответ от сервера: отсутствуют обязательные поля");
         }
-    },
+
+        await API.trackEvent("cube_rolled", {
+            outcome_src: response.outcome_src,
+            coins_earned: response.coins - this.state.coins,
+            luck: response.luck,
+            is_rainbow: response.is_rainbow,
+            total_rolls: response.total_rolls
+        });
+
+        this.elements.cube.src = response.outcome_src;
+        this.startProgress(AppConfig.ANIMATION_DURATION);
+
+        AppState.userData = {
+            ...AppState.userData,
+            coins: response.coins,
+            rolls: response.total_rolls,
+            min_luck: Math.min(AppState.userData.min_luck || 1001, response.luck),
+            equipped_skin: response.equipped_skin
+        };
+
+        if (AppState.userData.ban !== "yes") {
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+
+            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            }, coinUpdateDelay);
+
+            await Utils.wait(AppConfig.ANIMATION_DURATION);
+
+            if (response.luck < this.state.bestLuck) {
+                this.state.bestLuck = response.luck;
+            }
+            this.state.rolls = response.total_rolls;
+            this.state.equippedSkin = response.equipped_skin;
+
+            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            this.updateAchievementProgress(response.total_rolls);
+
+            if (response.is_rainbow) {
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
+            }
+        } else {
+            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = response.coins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+            }, coinUpdateDelay);
+            await Utils.wait(AppConfig.ANIMATION_DURATION);
+        }
+
+        this.setInitialCube();
+    } catch (error) {
+        console.error("Roll cube error:", error);
+
+        await API.trackEvent("cube_roll_error", { error_message: error.message });
+
+        if (error.message.includes("422")) {
+            this.elements.coinsDisplay.textContent = "Invalid request data";
+        } else if (error.message.includes("401")) {
+            this.elements.coinsDisplay.textContent = "Unauthorized access";
+        } else if (error.message.includes("403")) {
+            this.elements.coinsDisplay.textContent = "You are banned";
+        } else if (error.message.includes("429")) {
+            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
+        } else {
+            this.elements.coinsDisplay.textContent = "Server error, try again later";
+        }
+
+        this.setInitialCube();
+        await Utils.wait(2000);
+    } finally {
+        this.state.isAnimating = false;
+    }
+},
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
@@ -566,68 +609,77 @@ const Skins = {
         this.state.equippedSkin = data.equipped_skin || AppConfig.DEFAULT_SKIN;
         this.updateUI();
     },
-    async handleSkin(type) {
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
-            return;
-        }
+async handleSkin(type) {
+    const userId = tg.initDataUnsafe?.user?.id?.toString();
+    if (!userId) {
+        Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
+        return;
+    }
 
-        if (AppState.userData.ban === "yes") {
-            Telegram.WebApp.showAlert("You are banned and cannot purchase skins.");
-            return;
-        }
+    if (AppState.userData.ban === "yes") {
+        Telegram.WebApp.showAlert("You are banned and cannot purchase skins.");
+        return;
+    }
 
-        const skinPrices = {
-            "negative": 5000,
-            "Emerald": 10000,
-            "Pixel": 150000,
-            "classic": 0
-        };
+    const skinPrices = {
+        "negative": 5000,
+        "Emerald": 10000,
+        "Pixel": 150000,
+        "classic": 0
+    };
 
-        const price = skinPrices[type];
-        if (price && AppState.userData.coins < price) {
-            Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU.`);
-            return;
-        }
+    const price = skinPrices[type];
+    if (price && AppState.userData.coins < price) {
+        Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU.`);
+        return;
+    }
 
-        try {
-            const response = await API.fetch("/handle_skin", {
-                method: "POST",
-                headers: {
-                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-                },
-                body: JSON.stringify({ user_id: userId, skin_type: type })
+    try {
+        const response = await API.fetch("/handle_skin", {
+            method: "POST",
+            headers: {
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            },
+            body: JSON.stringify({ user_id: userId, skin_type: type })
+        });
+
+        if (response.success) {
+            await API.trackEvent("skin_handled", {
+                skin_type: type,
+                action: response.owned_skins.includes(type) ? "equipped" : "purchased",
+                coins_spent: price,
+                new_coins: response.new_coins
             });
 
-            if (response.success) {
-                this.state.ownedSkins = response.owned_skins;
-                this.state.equippedSkin = response.equipped_skin;
-                this.updateUI();
-                Game.state.coins = response.new_coins;
-                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-                Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`;
-                AppState.userData = {
-                    ...AppState.userData,
-                    coins: response.new_coins,
-                    owned_skins: response.owned_skins,
-                    equipped_skin: response.equipped_skin
-                };
-                Telegram.WebApp.showAlert(`Skin ${type} successfully ${response.owned_skins.includes(type) ? "equipped" : "purchased and equipped"}!`);
-            } else {
-                Telegram.WebApp.showAlert(response.message || "Failed to handle skin purchase.");
-            }
-        } catch (error) {
-            console.error("Skin purchase error:", error);
-            if (error.status === 403) {
-                Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
-            } else if (error.status === 400) {
-                Telegram.WebApp.showAlert("Invalid request. Please try again.");
-            } else {
-                Telegram.WebApp.showAlert("Error purchasing skin: " + error.message);
-            }
+            this.state.ownedSkins = response.owned_skins;
+            this.state.equippedSkin = response.equipped_skin;
+            this.updateUI();
+            Game.state.coins = response.new_coins;
+            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+            Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`;
+            AppState.userData = {
+                ...AppState.userData,
+                coins: response.new_coins,
+                owned_skins: response.owned_skins,
+                equipped_skin: response.equipped_skin
+            };
+            Telegram.WebApp.showAlert(`Skin ${type} successfully ${response.owned_skins.includes(type) ? "equipped" : "purchased and equipped"}!`);
+        } else {
+            Telegram.WebApp.showAlert(response.message || "Failed to handle skin purchase.");
         }
-    },
+    } catch (error) {
+        console.error("Skin purchase error:", error);
+        await API.trackEvent("skin_handle_error", { skin_type: type, error_message: error.message });
+
+        if (error.status === 403) {
+            Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
+        } else if (error.status === 400) {
+            Telegram.WebApp.showAlert("Invalid request. Please try again.");
+        } else {
+            Telegram.WebApp.showAlert("Error purchasing skin: " + error.message);
+        }
+    }
+},
     updateUI() {
         const owned = this.state.ownedSkins;
         const equipped = this.state.equippedSkin;
@@ -897,27 +949,27 @@ async handleDiceStatus(userId) {
         }, 6000);
     },
     async completeQuest(userId, questName) {
-        try {
-            const response = await API.fetch("/update_quest_new", {
-                method: "POST",
-                body: JSON.stringify({
-                    user_id: String(userId),
-                    quest: questName,
-                    status: "yes"
-                })
-            });
-            if (response.message !== "Quest updated successfully") {
-                throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
-            }
-            AppState.userData.coins = response.new_coins;
-            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-            Quests.refreshUserData();
-            return response;
-        } catch (error) {
-            console.error(`Error completing quest ${questName}:`, error);
-            throw error;
+    try {
+        const response = await API.fetch("/update_quest_new", {
+            method: "POST",
+            body: JSON.stringify({
+                user_id: String(userId),
+                quest: questName,
+                status: "yes"
+            })
+        });
+        if (response.message !== "Quest updated successfully") {
+            throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
         }
-    },
+        AppState.userData.coins = response.new_coins;
+        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+        Quests.refreshUserData();
+        return response;
+    } catch (error) {
+        console.error(`Error completing quest ${questName}:`, error);
+        throw error;
+    }
+},
     async checkPendingQuests(userId) {
         await this.refreshUserData();
         const userData = AppState.userData;
@@ -1327,7 +1379,6 @@ async function minimalInit(tg) {
 
     try {
         updateProgress(20);
-        let token = null;
 
         const initResponse = await fetch(`${AppConfig.API_BASE_URL}/init`, {
             method: "POST",
@@ -1342,12 +1393,19 @@ async function minimalInit(tg) {
         }
 
         const initData = await initResponse.json();
-        token = initData.token;
-        API.defaultHeaders["Authorization"] = `Bearer ${token}`;
+        AppState.token = initData.token;
+        AppState.analyticsToken = initData.analytics_token; // Предполагаем, что сервер возвращает analytics_token
+        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
+
+        await API.trackEvent("app_initialized", {
+            is_premium: AppState.isPremium,
+            user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
+        });
+
         AppState.isPremium = initData.is_premium || AppState.isPremium;
 
         updateProgress(25);
-        await loadConfig(token, tg);
+        await loadConfig(AppState.token, tg);
 
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
             signal: AbortSignal.timeout(5000)
@@ -1363,6 +1421,7 @@ async function minimalInit(tg) {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
+        await API.trackEvent("app_init_error", { error_message: error.message });
         console.log("Failed to connect to server. Please try again later.");
         return false;
     }
