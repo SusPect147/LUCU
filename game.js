@@ -15,8 +15,7 @@ const AppState = {
     isPremium: false,
     userId: null,
     isInitialized: false,
-    token: null,           // Токен для защиты сервера
-    analyticsToken: null   // Токен для аналитики
+    token: null // Токен для авторизации API (если используется)
 };
 
 async function loadConfig(token, tg) {
@@ -93,10 +92,38 @@ async function initializeTonConnect() {
     }
 }
 
+async function initializeAnalytics() {
+    try {
+        const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to initialize analytics: ${response.status}`);
+        }
+        const data = await response.json();
+        if (window.telegramAnalytics && data.success) {
+            window.telegramAnalytics.init({
+                token: data.token,
+                appName: data.appName
+            });
+            console.log("Telegram Analytics initialized successfully");
+        } else {
+            console.warn("Telegram Analytics SDK not loaded or initialization failed");
+        }
+    } catch (error) {
+        console.error("Error initializing analytics:", error);
+    }
+}
+
+// Вызываем при загрузке страницы
 document.addEventListener("DOMContentLoaded", () => {
     initializeTonConnect();
+    initializeAnalytics(); // Инициализация аналитики
 });
-
 const Utils = {
     formatCoins(amount) {
         if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
@@ -177,8 +204,8 @@ const API = {
     },
     async trackEvent(eventName, eventData = {}) {
         const userId = AppState.userId;
-        if (!userId || !AppState.analyticsToken) {
-            console.warn("Cannot track event: userId or analyticsToken is missing");
+        if (!userId) {
+            console.warn("Cannot track event: userId is missing");
             return;
         }
         try {
@@ -188,16 +215,20 @@ const API = {
                 event_data: eventData,
                 timestamp: new Date().toISOString()
             };
-            await fetch(`${AppConfig.API_BASE_URL}/track_event`, {
+            const response = await API.fetch("/track_event", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || "",
-                    "Authorization": `Bearer ${AppState.analyticsToken}`
-                },
                 body: JSON.stringify(payload)
             });
-            console.log(`Event tracked: ${eventName}`, eventData);
+            if (response.success) {
+                console.log(`Event tracked on server: ${eventName}`, eventData);
+            } else {
+                console.warn(`Failed to track event on server ${eventName}: ${response.message}`);
+            }
+            // Отправка события в Telegram Analytics, если SDK инициализирован
+            if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
+                window.telegramAnalytics.trackEvent(eventName, eventData);
+                console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
+            }
         } catch (error) {
             console.error(`Failed to track event ${eventName}:`, error);
         }
