@@ -92,14 +92,21 @@ async function initializeTonConnect() {
     }
 }
 
-// game.js
-async function initializeAnalytics() {
+async function initializeAnalytics(tg) {
     try {
+        if (!tg || !tg.initData) {
+            throw new Error("Telegram WebApp not initialized");
+        }
         const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
             method: "GET",
-            headers: API.defaultHeaders, // Убедитесь, что здесь есть X-Telegram-Init-Data
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": tg.initData
+            }
         });
-        if (!response.ok) throw new Error(`Failed to initialize analytics: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`Failed to initialize analytics: ${response.status}`);
+        }
         const data = await response.json();
         AppState.analyticsToken = data.token;
         console.log("Analytics initialized with token:", data.token);
@@ -1389,10 +1396,10 @@ async function minimalInit(tg) {
     tg.ready();
     tg.expand();
 
-API.defaultHeaders = {
-    "Content-Type": "application/json",
-    "X-Telegram-Init-Data": tg.initData // Убедитесь, что tg.initData доступен
-};
+    API.defaultHeaders = {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": tg.initData
+    };
 
     AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
     AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
@@ -1414,15 +1421,20 @@ API.defaultHeaders = {
 
         const initData = await initResponse.json();
         AppState.token = initData.token;
-        AppState.analyticsToken = initData.analytics_token; // Предполагаем, что сервер возвращает analytics_token
+        // Обновляем заголовки после получения токена
         API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
 
-        await API.trackEvent("app_initialized", {
-            is_premium: AppState.isPremium,
-            user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
-        });
-
         AppState.isPremium = initData.is_premium || AppState.isPremium;
+
+        // Теперь безопасно вызываем trackEvent
+        try {
+            await API.trackEvent("app_initialized", {
+                is_premium: AppState.isPremium,
+                user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
+            });
+        } catch (trackError) {
+            console.warn("Failed to track app_initialized event:", trackError);
+        }
 
         updateProgress(25);
         await loadConfig(AppState.token, tg);
@@ -1441,8 +1453,11 @@ API.defaultHeaders = {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
-        await API.trackEvent("app_init_error", { error_message: error.message });
-        console.log("Failed to connect to server. Please try again later.");
+        try {
+            await API.trackEvent("app_init_error", { error_message: error.message });
+        } catch (trackError) {
+            console.warn("Failed to track initialization error:", trackError);
+        }
         return false;
     }
 }
@@ -1524,7 +1539,7 @@ async function initializeApp() {
     if (!minimalSuccess) return;
 
     updateProgress(50);
-
+    await initializeAnalytics(tg); // Переносим сюда
     document.body.classList.add("gray-gradient");
     await fullInit(tg);
 
