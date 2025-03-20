@@ -93,26 +93,46 @@ async function initializeTonConnect() {
 }
 
 async function initializeAnalytics(tg) {
-    try {
-        if (!tg || !tg.initData) {
-            throw new Error("Telegram WebApp not initialized");
+    return new Promise((resolve, reject) => {
+        if (!window.Telegram || !window.Telegram.WebApp) {
+            console.error("Telegram WebApp API is not available");
+            reject(new Error("Telegram WebApp not available"));
+            return;
         }
-        const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Telegram-Init-Data": tg.initData
+
+        const telegram = window.Telegram.WebApp;
+        if (!telegram.isReady) {
+            telegram.ready(); // Убедимся, что Telegram WebApp готов
+        }
+
+        // Ждем полной инициализации
+        const checkReady = setInterval(async () => {
+            if (telegram.initData) {
+                clearInterval(checkReady);
+                try {
+                    const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Telegram-Init-Data": telegram.initData
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to initialize analytics: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log("Analytics initialized with token:", data.token);
+                    AppState.analyticsToken = data.token; // Сохраняем токен для дальнейшего использования
+                    resolve(data);
+                } catch (error) {
+                    console.error("Error initializing analytics:", error);
+                    reject(error);
+                }
             }
-        });
-        if (!response.ok) {
-            throw new Error(`Failed to initialize analytics: ${response.status}`);
-        }
-        const data = await response.json();
-        AppState.analyticsToken = data.token;
-        console.log("Analytics initialized with token:", data.token);
-    } catch (error) {
-        console.error("Error initializing analytics:", error);
-    }
+        }, 100); // Проверяем каждые 100 мс
+    });
 }
 
 // Вызываем при загрузке страницы
@@ -1361,6 +1381,49 @@ function updateProgress(percentage) {
     }
 }
 
+async function trackEvent(eventName, params = {}) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Ждем, пока токен станет доступен
+            const waitForToken = setInterval(async () => {
+                if (AppState.token) {
+                    clearInterval(waitForToken);
+
+                    const headers = {
+                        "Content-Type": "application/json",
+                        "X-Telegram-Init-Data": window.Telegram.WebApp.initData,
+                        "Authorization": `Bearer ${AppState.token}`
+                    };
+
+                    const response = await fetch(`${AppConfig.API_BASE_URL}/track_event`, {
+                        method: "POST",
+                        headers: headers,
+                        body: JSON.stringify({
+                            event_name: eventName,
+                            params: {
+                                user_id: AppState.userId, // Добавляем user_id
+                                ...params
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log(`Event ${eventName} tracked successfully`);
+                    resolve(data);
+                }
+            }, 100); // Проверяем каждые 100 мс
+        } catch (error) {
+            console.error(`Failed to track event ${eventName}:`, error);
+            reject(error);
+        }
+    });
+}
+
 async function preloadImagesWithProgress(imageUrls, onProgress) {
     let loadedCount = 0;
     const total = imageUrls.length;
@@ -1420,21 +1483,16 @@ async function minimalInit(tg) {
         }
 
         const initData = await initResponse.json();
-        AppState.token = initData.token;
-        // Обновляем заголовки после получения токена
-        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
+        AppState.token = initData.token; // Сохраняем токен
+        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`; // Обновляем заголовки
 
         AppState.isPremium = initData.is_premium || AppState.isPremium;
 
-        // Теперь безопасно вызываем trackEvent
-        try {
-            await API.trackEvent("app_initialized", {
-                is_premium: AppState.isPremium,
-                user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
-            });
-        } catch (trackError) {
-            console.warn("Failed to track app_initialized event:", trackError);
-        }
+        // Отслеживание события после получения токена
+        await trackEvent("app_initialized", {
+            is_premium: AppState.isPremium,
+            user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
+        });
 
         updateProgress(25);
         await loadConfig(AppState.token, tg);
@@ -1453,15 +1511,10 @@ async function minimalInit(tg) {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
-        try {
-            await API.trackEvent("app_init_error", { error_message: error.message });
-        } catch (trackError) {
-            console.warn("Failed to track initialization error:", trackError);
-        }
+        await trackEvent("app_init_error", { error_message: error.message });
         return false;
     }
 }
-
 async function fullInit(tg) {
     updateProgress(30);
 
@@ -1539,8 +1592,10 @@ async function initializeApp() {
     if (!minimalSuccess) return;
 
     updateProgress(50);
-    await initializeAnalytics(tg); // Переносим сюда
     document.body.classList.add("gray-gradient");
+
+    // Инициализация аналитики после minimalInit
+    await initializeAnalytics(tg);
     await fullInit(tg);
 
     if (loadingScreen) {
