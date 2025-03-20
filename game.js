@@ -93,46 +93,52 @@ async function initializeTonConnect() {
 }
 
 async function initializeAnalytics(tg) {
-    return new Promise((resolve, reject) => {
+    try {
         if (!window.Telegram || !window.Telegram.WebApp) {
             console.error("Telegram WebApp API is not available");
-            reject(new Error("Telegram WebApp not available"));
-            return;
+            throw new Error("Telegram WebApp not available");
         }
 
         const telegram = window.Telegram.WebApp;
         if (!telegram.isReady) {
-            telegram.ready(); // Убедимся, что Telegram WebApp готов
+            telegram.ready();
+            console.log("Telegram WebApp initialized");
         }
 
-        // Ждем полной инициализации
-        const checkReady = setInterval(async () => {
-            if (telegram.initData) {
-                clearInterval(checkReady);
-                try {
-                    const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Telegram-Init-Data": telegram.initData
-                        }
-                    });
+        // Ждем initData с тайм-аутом
+        let attempts = 0;
+        const maxAttempts = 50; // 5 секунд ожидания
+        while (!telegram.initData && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
 
-                    if (!response.ok) {
-                        throw new Error(`Failed to initialize analytics: ${response.status}`);
-                    }
+        if (!telegram.initData) {
+            throw new Error("Telegram initData not available after timeout");
+        }
 
-                    const data = await response.json();
-                    console.log("Analytics initialized with token:", data.token);
-                    AppState.analyticsToken = data.token; // Сохраняем токен для дальнейшего использования
-                    resolve(data);
-                } catch (error) {
-                    console.error("Error initializing analytics:", error);
-                    reject(error);
-                }
+        console.log("Sending request to /init_analytics");
+        const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": telegram.initData
             }
-        }, 100); // Проверяем каждые 100 мс
-    });
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to initialize analytics: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Analytics initialized with token:", data.token);
+        AppState.analyticsToken = data.token;
+        return data;
+    } catch (error) {
+        console.error("Error initializing analytics:", error);
+        throw error; // Передаем ошибку дальше для обработки в initializeApp
+    }
 }
 
 // Вызываем при загрузке страницы
@@ -1589,13 +1595,21 @@ async function initializeApp() {
     updateProgress(10);
 
     const minimalSuccess = await minimalInit(tg);
-    if (!minimalSuccess) return;
+    if (!minimalSuccess) {
+        console.error("Minimal initialization failed");
+        return;
+    }
 
     updateProgress(50);
     document.body.classList.add("gray-gradient");
 
-    // Инициализация аналитики после minimalInit
-    await initializeAnalytics(tg);
+    try {
+        await initializeAnalytics(tg);
+    } catch (error) {
+        console.warn("Analytics initialization failed, continuing without it:", error);
+        // Продолжаем выполнение даже если аналитика не инициализируется
+    }
+
     await fullInit(tg);
 
     if (loadingScreen) {
