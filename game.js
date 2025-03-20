@@ -1388,48 +1388,50 @@ function updateProgress(percentage) {
 }
 
 async function trackEvent(eventName, params = {}) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            // Ждем, пока токен станет доступен
-            const waitForToken = setInterval(async () => {
-                if (AppState.token) {
-                    clearInterval(waitForToken);
-
-                    const headers = {
-                        "Content-Type": "application/json",
-                        "X-Telegram-Init-Data": window.Telegram.WebApp.initData,
-                        "Authorization": `Bearer ${AppState.token}`
-                    };
-
-                    const response = await fetch(`${AppConfig.API_BASE_URL}/track_event`, {
-                        method: "POST",
-                        headers: headers,
-                        body: JSON.stringify({
-                            event_name: eventName,
-                            params: {
-                                user_id: AppState.userId, // Добавляем user_id
-                                ...params
-                            }
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-                    }
-
-                    const data = await response.json();
-                    console.log(`Event ${eventName} tracked successfully`);
-                    resolve(data);
-                }
-            }, 100); // Проверяем каждые 100 мс
-        } catch (error) {
-            console.error(`Failed to track event ${eventName}:`, error);
-            reject(error);
+    try {
+        if (!AppState.token) {
+            console.warn(`No token available for tracking event ${eventName}`);
+            return;
         }
-    });
-}
+        if (!AppState.userId) {
+            console.warn(`No userId available for tracking event ${eventName}`);
+            return;
+        }
 
+        const headers = {
+            "Content-Type": "application/json",
+            "X-Telegram-Init-Data": window.Telegram.WebApp.initData,
+            "Authorization": `Bearer ${AppState.token}`
+        };
+
+        const requestBody = {
+            event_name: eventName,
+            params: {
+                user_id: AppState.userId,
+                ...params
+            }
+        };
+        console.log(`Tracking event: ${eventName}, body:`, requestBody);
+
+        const response = await fetch(`${AppConfig.API_BASE_URL}/track_event`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Track event failed: ${response.status} - ${errorText}`);
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log(`Event ${eventName} tracked successfully`);
+        return data;
+    } catch (error) {
+        console.error(`Failed to track event ${eventName}:`, error);
+    }
+}
 async function preloadImagesWithProgress(imageUrls, onProgress) {
     let loadedCount = 0;
     const total = imageUrls.length;
