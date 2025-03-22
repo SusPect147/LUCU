@@ -225,35 +225,34 @@ const API = {
         }
     },
     async trackEvent(eventName, eventData = {}) {
-        const userId = AppState.userId;
-        if (!userId) {
-            console.warn("Cannot track event: userId is missing");
-            return;
+    let userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
+    if (!userId) {
+        console.error(`Cannot track event '${eventName}': userId is missing in both AppState and Telegram initData`);
+        return;
+    }
+    try {
+        const payload = {
+            user_id: userId,
+            event_name: eventName,
+            event_data: eventData,
+            timestamp: new Date().toISOString()
+        };
+        const response = await API.fetch("/track_event", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+        if (response.success) {
+            console.log(`Event tracked on server: ${eventName}`, eventData);
+        } else {
+            console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
         }
-        try {
-            const payload = {
-                user_id: userId,
-                event_name: eventName,
-                event_data: eventData,
-                timestamp: new Date().toISOString()
-            };
-            const response = await API.fetch("/track_event", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-            if (response.success) {
-                console.log(`Event tracked on server: ${eventName}`, eventData);
-            } else {
-                console.warn(`Failed to track event on server ${eventName}: ${response.message}`);
-            }
-            // Отправка события в Telegram Analytics, если SDK инициализирован
-            if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
-                window.telegramAnalytics.trackEvent(eventName, eventData);
-                console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
-            }
-        } catch (error) {
-            console.error(`Failed to track event ${eventName}:`, error);
+        if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
+            window.telegramAnalytics.trackEvent(eventName, eventData);
+            console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
         }
+    } catch (error) {
+        console.error(`Failed to track event '${eventName}':`, error);
+        throw error; // Позволяет вызывающему коду обработать ошибку
     }
 };
 
@@ -429,6 +428,7 @@ async rollCube() {
         }
 
         await API.trackEvent("cube_rolled", {
+            user_id: userId,
             outcome_src: response.outcome_src,
             coins_earned: response.coins - this.state.coins,
             luck: response.luck,
@@ -485,7 +485,10 @@ async rollCube() {
     } catch (error) {
         console.error("Roll cube error:", error);
 
-        await API.trackEvent("cube_roll_error", { error_message: error.message });
+        await API.trackEvent("cube_roll_error", { 
+            user_id: userId,
+            error_message: error.message 
+        });
 
         if (error.message.includes("422")) {
             this.elements.coinsDisplay.textContent = "Invalid request data";
@@ -698,6 +701,7 @@ async handleSkin(type) {
 
         if (response.success) {
             await API.trackEvent("skin_handled", {
+                user_id: userId,
                 skin_type: type,
                 action: response.owned_skins.includes(type) ? "equipped" : "purchased",
                 coins_spent: price,
@@ -722,7 +726,11 @@ async handleSkin(type) {
         }
     } catch (error) {
         console.error("Skin purchase error:", error);
-        await API.trackEvent("skin_handle_error", { skin_type: type, error_message: error.message });
+        await API.trackEvent("skin_handle_error", { 
+            user_id: userId,
+            skin_type: type, 
+            error_message: error.message 
+        });
 
         if (error.status === 403) {
             Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
