@@ -223,38 +223,40 @@ const API = {
                 await Utils.wait(1000 * attempts);
             }
         }
-    },
+    }, // Добавлена запятая
     async trackEvent(eventName, eventData = {}) {
-    let userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
-    if (!userId) {
-        console.error(`Cannot track event '${eventName}': userId is missing in both AppState and Telegram initData`);
-        return;
-    }
-    try {
-        const payload = {
-            user_id: userId,
-            event_name: eventName,
-            event_data: eventData,
-            timestamp: new Date().toISOString()
-        };
-        const response = await API.fetch("/track_event", {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
-        if (response.success) {
-            console.log(`Event tracked on server: ${eventName}`, eventData);
-        } else {
-            console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
+        let userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            console.error(`Cannot track event '${eventName}': userId is missing in both AppState and Telegram initData`);
+            return;
         }
-        if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
-            window.telegramAnalytics.trackEvent(eventName, eventData);
-            console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
+        try {
+            const payload = {
+                user_id: userId,
+                event_name: eventName,
+                event_data: eventData,
+                timestamp: new Date().toISOString()
+            };
+            const response = await API.fetch("/track_event", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            if (response.success) {
+                console.log(`Event tracked on server: ${eventName}`, eventData);
+            } else {
+                console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
+            }
+            if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
+                window.telegramAnalytics.trackEvent(eventName, eventData);
+                console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
+            }
+        } catch (error) {
+            console.error(`Failed to track event '${eventName}':`, error);
+            throw error; // Позволяет вызывающему коду обработать ошибку
         }
-    } catch (error) {
-        console.error(`Failed to track event '${eventName}':`, error);
-        throw error; // Позволяет вызывающему коду обработать ошибку
-    }
-};
+    } // Строка 256
+}; // Строка 257
+
 
 class Particle {
     constructor(id, parent) {
