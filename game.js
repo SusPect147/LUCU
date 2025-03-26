@@ -223,52 +223,52 @@ const API = {
                 await Utils.wait(1000 * attempts);
             }
         }
-    }, // Добавлена запятая
+    }, // Запятая здесь корректна
     async trackEvent(eventName, eventData = {}) {
-    let userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
-    if (!userId) {
-        console.error(`Cannot track event '${eventName}': userId is missing`);
-        throw new Error("User ID is missing");
-    }
+        let userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            console.error(`Cannot track event '${eventName}': userId is missing`);
+            throw new Error("User ID is missing");
+        }
 
-    // Убедимся, что токен доступен
-    if (!AppState.token) {
-        console.warn("No authorization token available, attempting to proceed without it");
-    }
+        if (!AppState.token) {
+            console.warn("No authorization token available, attempting to proceed without it");
+        }
 
-    try {
-        const payload = {
-            user_id: userId,
-            event_name: eventName,
-            event_data: eventData,
-            timestamp: new Date().toISOString()
-        };
+        try {
+            const payload = {
+                user_id: userId,
+                event_name: eventName,
+                event_data: eventData,
+                timestamp: new Date().toISOString()
+            };
 
-        const response = await API.fetch("/track_event", {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: {
-                "Authorization": AppState.token ? `Bearer ${AppState.token}` : undefined
+            const response = await API.fetch("/track_event", {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: {
+                    "Authorization": AppState.token ? `Bearer ${AppState.token}` : undefined
+                }
+            });
+
+            if (response.success) {
+                console.log(`Event tracked on server: ${eventName}`, eventData);
+            } else {
+                console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
             }
-        });
 
-        if (response.success) {
-            console.log(`Event tracked on server: ${eventName}`, eventData);
-        } else {
-            console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
+            if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
+                window.telegramAnalytics.trackEvent(eventName, eventData);
+                console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
+            }
+        } catch (error) {
+            console.error(`Failed to track event '${eventName}':`, error);
+            throw error;
         }
-
-        if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
-            window.telegramAnalytics.trackEvent(eventName, eventData);
-            console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
-        }
-    } catch (error) {
-        console.error(`Failed to track event '${eventName}':`, error);
-        throw error;
-    }
+    }, // Заменили }; на }, так как это объект
 };
 
-
+// Следующий код (class Particle) уже не часть объекта API
 class Particle {
     constructor(id, parent) {
         this.id = id;
