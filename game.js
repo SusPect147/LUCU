@@ -209,6 +209,12 @@ const API = {
                     const errorText = await response.text();
                     const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
                     error.status = response.status;
+                    if (error.status === 401 && attempts < maxAttempts - 1) {
+                        console.warn("Token invalid, attempting to refresh...");
+                        await refreshToken(); // Новая функция для обновления токена
+                        attempts++;
+                        continue;
+                    }
                     throw error;
                 }
                 return await response.json();
@@ -223,16 +229,17 @@ const API = {
                 await Utils.wait(1000 * attempts);
             }
         }
-    }, // Запятая здесь корректна
+    },
     async trackEvent(eventName, eventData = {}) {
-        let userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
+        const userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) {
             console.error(`Cannot track event '${eventName}': userId is missing`);
-            throw new Error("User ID is missing");
+            return;
         }
 
         if (!AppState.token) {
-            console.warn("No authorization token available, attempting to proceed without it");
+            console.warn("No authorization token available, skipping event tracking");
+            return;
         }
 
         try {
@@ -247,7 +254,7 @@ const API = {
                 method: "POST",
                 body: JSON.stringify(payload),
                 headers: {
-                    "Authorization": AppState.token ? `Bearer ${AppState.token}` : undefined
+                    "Authorization": `Bearer ${AppState.token}`
                 }
             });
 
@@ -256,17 +263,34 @@ const API = {
             } else {
                 console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
             }
-
-            if (window.telegramAnalytics && window.telegramAnalytics.trackEvent) {
-                window.telegramAnalytics.trackEvent(eventName, eventData);
-                console.log(`Event tracked in Telegram Analytics: ${eventName}`, eventData);
-            }
         } catch (error) {
             console.error(`Failed to track event '${eventName}':`, error);
-            throw error;
         }
-    }, // Заменили }; на }, так как это объект
+    },
 };
+
+// Новая функция для обновления токена
+async function refreshToken() {
+    try {
+        const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            }
+        });
+        if (!response.ok) {
+            throw new Error("Failed to refresh token");
+        }
+        const data = await response.json();
+        AppState.token = data.token;
+        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
+        console.log("Token refreshed successfully:", AppState.token);
+    } catch (error) {
+        console.error("Failed to refresh token:", error);
+        Telegram.WebApp.showAlert("Authentication failed. Please restart the app.");
+    }
+}
 
 // Следующий код (class Particle) уже не часть объекта API
 class Particle {
@@ -1499,13 +1523,19 @@ async function minimalInit(tg) {
     tg.ready();
     tg.expand();
 
+    // Устанавливаем userId сразу
+    const userId = tg.initDataUnsafe?.user?.id?.toString();
+    if (!userId) {
+        console.error("User ID is missing in Telegram initData");
+        Telegram.WebApp.showAlert("Unable to initialize: User ID not found. Please restart the app.");
+        return false;
+    }
+    AppState.userId = userId;
+
     API.defaultHeaders = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": tg.initData
     };
-
-    AppState.userId = tg.initDataUnsafe?.user?.id?.toString();
-    AppState.isPremium = tg.initDataUnsafe?.user?.is_premium === true;
 
     try {
         updateProgress(20);
@@ -1526,10 +1556,11 @@ async function minimalInit(tg) {
         AppState.token = initData.token; // Сохраняем токен
         API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`; // Обновляем заголовки
 
-        AppState.isPremium = initData.is_premium || AppState.isPremium;
+        AppState.isPremium = initData.is_premium || tg.initDataUnsafe?.user?.is_premium === true;
 
         // Отслеживание события после получения токена
         await trackEvent("app_initialized", {
+            user_id: AppState.userId,
             is_premium: AppState.isPremium,
             user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
         });
@@ -1551,7 +1582,7 @@ async function minimalInit(tg) {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
-        await trackEvent("app_init_error", { error_message: error.message });
+        await trackEvent("app_init_error", { error_message: error.message, user_id: AppState.userId });
         return false;
     }
 }
@@ -1631,6 +1662,7 @@ async function initializeApp() {
     const minimalSuccess = await minimalInit(tg);
     if (!minimalSuccess) {
         console.error("Minimal initialization failed");
+        Telegram.WebApp.showAlert("Failed to initialize the app. Please try again.");
         return;
     }
 
@@ -1638,10 +1670,9 @@ async function initializeApp() {
     document.body.classList.add("gray-gradient");
 
     try {
-        await initializeAnalytics(tg);
+        await initializeAnalytics(tg); // Аналитика не критична, оставляем как есть
     } catch (error) {
         console.warn("Analytics initialization failed, continuing without it:", error);
-        // Продолжаем выполнение даже если аналитика не инициализируется
     }
 
     await fullInit(tg);
