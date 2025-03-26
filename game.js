@@ -9,7 +9,7 @@ if (typeof AppConfig === 'undefined') {
         FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif"
     };
 }
- 
+
 const AppState = {
     userData: null,
     isPremium: false,
@@ -146,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeTonConnect();
     initializeAnalytics(); // Инициализация аналитики
 });
+
 const Utils = {
     formatCoins(amount) {
         if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
@@ -229,44 +230,7 @@ const API = {
                 await Utils.wait(1000 * attempts);
             }
         }
-    },
-    async trackEvent(eventName, eventData = {}) {
-        const userId = AppState.userId || tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            console.error(`Cannot track event '${eventName}': userId is missing`);
-            return;
-        }
-
-        if (!AppState.token) {
-            console.warn("No authorization token available, skipping event tracking");
-            return;
-        }
-
-        try {
-            const payload = {
-                user_id: userId,
-                event_name: eventName,
-                event_data: eventData,
-                timestamp: new Date().toISOString()
-            };
-
-            const response = await API.fetch("/track_event", {
-                method: "POST",
-                body: JSON.stringify(payload),
-                headers: {
-                    "Authorization": `Bearer ${AppState.token}`
-                }
-            });
-
-            if (response.success) {
-                console.log(`Event tracked on server: ${eventName}`, eventData);
-            } else {
-                console.warn(`Failed to track event on server '${eventName}': ${response.message || 'Unknown error'}`);
-            }
-        } catch (error) {
-            console.error(`Failed to track event '${eventName}':`, error);
-        }
-    },
+    }
 };
 
 // Новая функция для обновления токена
@@ -443,113 +407,99 @@ const Game = {
         }
         this.rollCube();
     },
-async rollCube() {
-    if (this.state.isAnimating) return;
+    async rollCube() {
+        if (this.state.isAnimating) return;
 
-    this.state.isAnimating = true;
+        this.state.isAnimating = true;
 
-    const userId = tg?.initDataUnsafe?.user?.id?.toString();
-    if (!userId) {
-        console.error("User ID is missing in Telegram initData");
-        this.state.isAnimating = false;
-        this.elements.coinsDisplay.textContent = "User ID not found";
-        return;
-    }
-
-    try {
-        const response = await API.fetch("/roll_cube", {
-            method: "POST",
-            headers: {
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-            },
-            body: JSON.stringify({ user_id: userId })
-        });
-
-        if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
-            throw new Error("Invalid server response: missing required fields");
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            console.error("User ID is missing in Telegram initData");
+            this.state.isAnimating = false;
+            this.elements.coinsDisplay.textContent = "User ID not found";
+            return;
         }
 
-        await API.trackEvent("cube_rolled", {
-            user_id: userId,
-            outcome_src: response.outcome_src,
-            coins_earned: response.coins - this.state.coins,
-            luck: response.luck,
-            is_rainbow: response.is_rainbow,
-            total_rolls: response.total_rolls
-        });
+        try {
+            const response = await API.fetch("/roll_cube", {
+                method: "POST",
+                headers: {
+                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
 
-        this.elements.cube.src = response.outcome_src;
-        this.startProgress(AppConfig.ANIMATION_DURATION);
-
-        AppState.userData = {
-            ...AppState.userData,
-            coins: response.coins,
-            rolls: response.total_rolls,
-            min_luck: Math.min(AppState.userData.min_luck || 1001, response.luck),
-            equipped_skin: response.equipped_skin
-        };
-
-        if (AppState.userData.ban !== "yes") {
-            document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
-
-            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-            }, coinUpdateDelay);
-
-            await Utils.wait(AppConfig.ANIMATION_DURATION);
-
-            if (response.luck < this.state.bestLuck) {
-                this.state.bestLuck = response.luck;
+            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+                throw new Error("Invalid server response: missing required fields");
             }
-            this.state.rolls = response.total_rolls;
-            this.state.equippedSkin = response.equipped_skin;
 
-            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            this.updateAchievementProgress(response.total_rolls);
+            this.elements.cube.src = response.outcome_src;
+            this.startProgress(AppConfig.ANIMATION_DURATION);
 
-            if (response.is_rainbow) {
-                document.body.classList.remove("pink-gradient");
-                document.body.classList.add("gray-gradient");
+            AppState.userData = {
+                ...AppState.userData,
+                coins: response.coins,
+                rolls: response.total_rolls,
+                min_luck: Math.min(AppState.userData.min_luck || 1001, response.luck),
+                equipped_skin: response.equipped_skin
+            };
+
+            if (AppState.userData.ban !== "yes") {
+                document.body.classList.remove("pink-gradient", "gray-gradient");
+                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+
+                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = response.coins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                }, coinUpdateDelay);
+
+                await Utils.wait(AppConfig.ANIMATION_DURATION);
+
+                if (response.luck < this.state.bestLuck) {
+                    this.state.bestLuck = response.luck;
+                }
+                this.state.rolls = response.total_rolls;
+                this.state.equippedSkin = response.equipped_skin;
+
+                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+                this.updateAchievementProgress(response.total_rolls);
+
+                if (response.is_rainbow) {
+                    document.body.classList.remove("pink-gradient");
+                    document.body.classList.add("gray-gradient");
+                }
+            } else {
+                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = response.coins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                }, coinUpdateDelay);
+                await Utils.wait(AppConfig.ANIMATION_DURATION);
             }
-        } else {
-            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = response.coins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
-            }, coinUpdateDelay);
-            await Utils.wait(AppConfig.ANIMATION_DURATION);
+
+            this.setInitialCube();
+        } catch (error) {
+            console.error("Roll cube error:", error);
+
+            if (error.message.includes("422")) {
+                this.elements.coinsDisplay.textContent = "Invalid request data";
+            } else if (error.message.includes("401")) {
+                this.elements.coinsDisplay.textContent = "Unauthorized access";
+            } else if (error.message.includes("403")) {
+                this.elements.coinsDisplay.textContent = "You are banned";
+            } else if (error.message.includes("429")) {
+                this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
+            } else {
+                this.elements.coinsDisplay.textContent = "Server error, try again later";
+            }
+
+            this.setInitialCube();
+            await Utils.wait(2000);
+        } finally {
+            this.state.isAnimating = false;
         }
-
-        this.setInitialCube();
-    } catch (error) {
-        console.error("Roll cube error:", error);
-
-        await API.trackEvent("cube_roll_error", {
-            user_id: userId,
-            error_message: error.message
-        });
-
-        if (error.message.includes("422")) {
-            this.elements.coinsDisplay.textContent = "Invalid request data";
-        } else if (error.message.includes("401")) {
-            this.elements.coinsDisplay.textContent = "Unauthorized access";
-        } else if (error.message.includes("403")) {
-            this.elements.coinsDisplay.textContent = "You are banned";
-        } else if (error.message.includes("429")) {
-            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
-        } else {
-            this.elements.coinsDisplay.textContent = "Server error, try again later";
-        }
-
-        this.setInitialCube();
-        await Utils.wait(2000);
-    } finally {
-        this.state.isAnimating = false;
-    }
-},
+    },
     startProgress(duration) {
         this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
         this.elements.progressBar.style.width = "100%";
@@ -707,88 +657,74 @@ const Skins = {
         this.state.equippedSkin = data.equipped_skin || AppConfig.DEFAULT_SKIN;
         this.updateUI();
     },
-async handleSkin(type) {
-    const userId = tg.initDataUnsafe?.user?.id?.toString();
-    if (!userId) {
-        Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
-        return;
-    }
+    async handleSkin(type) {
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
+            return;
+        }
 
-    if (AppState.userData.ban === "yes") {
-        Telegram.WebApp.showAlert("You are banned and cannot purchase skins.");
-        return;
-    }
+        if (AppState.userData.ban === "yes") {
+            Telegram.WebApp.showAlert("You are banned and cannot purchase skins.");
+            return;
+        }
 
-    const skinPrices = {
-        "negative": 5000,
-        "Emerald": 10000,
-        "Pixel": 150000,
-        "classic": 0
-    };
+        const skinPrices = {
+            "negative": 5000,
+            "Emerald": 10000,
+            "Pixel": 150000,
+            "classic": 0
+        };
 
-    const price = skinPrices[type];
-    if (price && AppState.userData.coins < price) {
-        Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU.`);
-        return;
-    }
+        const price = skinPrices[type];
+        if (price && AppState.userData.coins < price) {
+            Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU.`);
+            return;
+        }
 
-    try {
-        const response = await API.fetch("/handle_skin", {
-            method: "POST",
-            headers: {
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-            },
-            body: JSON.stringify({ user_id: userId, skin_type: type })
-        });
-
-        if (response.success) {
-            await API.trackEvent("skin_handled", {
-                user_id: userId,
-                skin_type: type,
-                action: response.owned_skins.includes(type) ? "equipped" : "purchased",
-                coins_spent: price,
-                new_coins: response.new_coins
+        try {
+            const response = await API.fetch("/handle_skin", {
+                method: "POST",
+                headers: {
+                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+                },
+                body: JSON.stringify({ user_id: userId, skin_type: type })
             });
 
-            this.state.ownedSkins = response.owned_skins;
-            this.state.equippedSkin = response.equipped_skin;
-            this.updateUI();
+            if (response.success) {
+                this.state.ownedSkins = response.owned_skins;
+                this.state.equippedSkin = response.equipped_skin;
+                this.updateUI();
 
-            // Обновляем состояние игры и UI
-            AppState.userData = {
-                ...AppState.userData,
-                coins: response.new_coins,
-                owned_skins: response.owned_skins,
-                equipped_skin: response.equipped_skin
-            };
-            Game.state.coins = response.new_coins;
-            Game.state.equippedSkin = response.equipped_skin;
-            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-            Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`; // Предотвращаем кэширование
-            Game.updateFromAppState(); // Явно обновляем UI игры
+                // Обновляем состояние игры и UI
+                AppState.userData = {
+                    ...AppState.userData,
+                    coins: response.new_coins,
+                    owned_skins: response.owned_skins,
+                    equipped_skin: response.equipped_skin
+                };
+                Game.state.coins = response.new_coins;
+                Game.state.equippedSkin = response.equipped_skin;
+                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+                Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`; // Предотвращаем кэширование
+                Game.updateFromAppState(); // Явно обновляем UI игры
 
-            Telegram.WebApp.showAlert(`Skin ${type} successfully ${response.owned_skins.includes(type) ? "equipped" : "purchased and equipped"}!`);
-        } else {
-            Telegram.WebApp.showAlert(response.message || "Failed to handle skin purchase.");
+                Telegram.WebApp.showAlert(`Skin ${type} successfully ${response.owned_skins.includes(type) ? "equipped" : "purchased and equipped"}!`);
+            } else {
+                Telegram.WebApp.showAlert(response.message || "Failed to handle skin purchase.");
+            }
+        } catch (error) {
+            console.error("Skin purchase error:", error);
+
+            if (error.status === 403) {
+                Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
+            } else if (error.status === 400) {
+                Telegram.WebApp.showAlert("Invalid request. Please try again.");
+            } else {
+                Telegram.WebApp.showAlert("Error purchasing skin: " + error.message);
+            }
         }
-    } catch (error) {
-        console.error("Skin purchase error:", error);
-
-        await API.trackEvent("skin_handle_error", {
-            user_id: userId,
-            skin_type: type,
-            error_message: error.message
-        });
-
-        if (error.status === 403) {
-            Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
-        } else if (error.status === 400) {
-            Telegram.WebApp.showAlert("Invalid request. Please try again.");
-        } else {
-            Telegram.WebApp.showAlert("Error purchasing skin: " + error.message);
-        }
-    }
-},
+    },
     updateUI() {
         const owned = this.state.ownedSkins;
         const equipped = this.state.equippedSkin;
@@ -983,48 +919,48 @@ const Quests = {
             }
         }, 6000);
     },
-async handleDiceStatus(userId) {
-    try {
-        if (!AppState.isPremium) {
-            Telegram.WebApp.showAlert("This quest requires Telegram Premium. Please upgrade your account.");
-            console.log("User is not Premium. Cannot set emoji status.");
-            return;
-        }
-
-        // Используем custom_emoji_id первого эмодзи из DiceCubeEmoji (1️⃣)
-        const customEmojiId = "5384541907051357217";
-        console.log(`Attempting to set emoji status with custom_emoji_id: ${customEmojiId}`);
-        await Telegram.WebApp.setEmojiStatus(customEmojiId);
-
-        setTimeout(async () => {
-            try {
-                const response = await API.fetch("/check_dice_status", {
-                    method: "POST",
-                    body: JSON.stringify({ user_id: userId })
-                });
-
-                if (response.success) {
-                    await this.completeQuest(userId, "dice_status");
-                    Telegram.WebApp.showAlert("Dice status set successfully! Quest completed.");
-                } else {
-                    Telegram.WebApp.showAlert("Failed to verify status. Please try again.");
-                    console.warn("Server verification failed:", response);
-                }
-            } catch (serverError) {
-                console.error("Server error during status check:", serverError);
-                Telegram.WebApp.showAlert("Server error. Please try again later.");
+    async handleDiceStatus(userId) {
+        try {
+            if (!AppState.isPremium) {
+                Telegram.WebApp.showAlert("This quest requires Telegram Premium. Please upgrade your account.");
+                console.log("User is not Premium. Cannot set emoji status.");
+                return;
             }
-        }, 6000);
-    } catch (error) {
-        console.error("Error setting emoji status:", error);
-        if (error.message && error.message.includes("SUGGESTED_EMOJI_INVALID")) {
-            Telegram.WebApp.showAlert("This emoji (1️⃣) is not supported for status. Contact support.");
-            console.warn(`Emoji ID ${customEmojiId} is invalid for status.`);
-        } else {
-            Telegram.WebApp.showAlert("Unexpected error: " + error.message);
+
+            // Используем custom_emoji_id первого эмодзи из DiceCubeEmoji (1️⃣)
+            const customEmojiId = "5384541907051357217";
+            console.log(`Attempting to set emoji status with custom_emoji_id: ${customEmojiId}`);
+            await Telegram.WebApp.setEmojiStatus(customEmojiId);
+
+            setTimeout(async () => {
+                try {
+                    const response = await API.fetch("/check_dice_status", {
+                        method: "POST",
+                        body: JSON.stringify({ user_id: userId })
+                    });
+
+                    if (response.success) {
+                        await this.completeQuest(userId, "dice_status");
+                        Telegram.WebApp.showAlert("Dice status set successfully! Quest completed.");
+                    } else {
+                        Telegram.WebApp.showAlert("Failed to verify status. Please try again.");
+                        console.warn("Server verification failed:", response);
+                    }
+                } catch (serverError) {
+                    console.error("Server error during status check:", serverError);
+                    Telegram.WebApp.showAlert("Server error. Please try again later.");
+                }
+            }, 6000);
+        } catch (error) {
+            console.error("Error setting emoji status:", error);
+            if (error.message && error.message.includes("SUGGESTED_EMOJI_INVALID")) {
+                Telegram.WebApp.showAlert("This emoji (1️⃣) is not supported for status. Contact support.");
+                console.warn(`Emoji ID ${customEmojiId} is invalid for status.`);
+            } else {
+                Telegram.WebApp.showAlert("Unexpected error: " + error.message);
+            }
         }
-    }
-},
+    },
     async handleDiceNickname(userId) {
         try {
             const response = await API.fetch("/check_dice_nickname", {
@@ -1058,27 +994,27 @@ async handleDiceStatus(userId) {
         }, 6000);
     },
     async completeQuest(userId, questName) {
-    try {
-        const response = await API.fetch("/update_quest_new", {
-            method: "POST",
-            body: JSON.stringify({
-                user_id: String(userId),
-                quest: questName,
-                status: "yes"
-            })
-        });
-        if (response.message !== "Quest updated successfully") {
-            throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
+        try {
+            const response = await API.fetch("/update_quest_new", {
+                method: "POST",
+                body: JSON.stringify({
+                    user_id: String(userId),
+                    quest: questName,
+                    status: "yes"
+                })
+            });
+            if (response.message !== "Quest updated successfully") {
+                throw new Error(`Failed to complete quest ${questName}: ${response.message}`);
+            }
+            AppState.userData.coins = response.new_coins;
+            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+            Quests.refreshUserData();
+            return response;
+        } catch (error) {
+            console.error(`Error completing quest ${questName}:`, error);
+            throw error;
         }
-        AppState.userData.coins = response.new_coins;
-        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-        Quests.refreshUserData();
-        return response;
-    } catch (error) {
-        console.error(`Error completing quest ${questName}:`, error);
-        throw error;
-    }
-},
+    },
     async checkPendingQuests(userId) {
         await this.refreshUserData();
         const userData = AppState.userData;
@@ -1443,51 +1379,6 @@ function updateProgress(percentage) {
     }
 }
 
-async function trackEvent(eventName, params = {}) {
-    try {
-        if (!AppState.token) {
-            console.warn(`No token available for tracking event ${eventName}`);
-            return;
-        }
-        if (!AppState.userId) {
-            console.warn(`No userId available for tracking event ${eventName}`);
-            return;
-        }
-
-        const headers = {
-            "Content-Type": "application/json",
-            "X-Telegram-Init-Data": window.Telegram.WebApp.initData,
-            "Authorization": `Bearer ${AppState.token}`
-        };
-
-        const requestBody = {
-            event_name: eventName,
-            params: {
-                user_id: AppState.userId,
-                ...params
-            }
-        };
-        console.log(`Tracking event: ${eventName}, body:`, requestBody);
-
-        const response = await fetch(`${AppConfig.API_BASE_URL}/track_event`, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Track event failed: ${response.status} - ${errorText}`);
-            throw new Error(`Server error: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log(`Event ${eventName} tracked successfully`);
-        return data;
-    } catch (error) {
-        console.error(`Failed to track event ${eventName}:`, error);
-    }
-}
 async function preloadImagesWithProgress(imageUrls, onProgress) {
     let loadedCount = 0;
     const total = imageUrls.length;
@@ -1558,13 +1449,6 @@ async function minimalInit(tg) {
 
         AppState.isPremium = initData.is_premium || tg.initDataUnsafe?.user?.is_premium === true;
 
-        // Отслеживание события после получения токена
-        await trackEvent("app_initialized", {
-            user_id: AppState.userId,
-            is_premium: AppState.isPremium,
-            user_language: tg.initDataUnsafe?.user?.language_code || "unknown"
-        });
-
         updateProgress(25);
         await loadConfig(AppState.token, tg);
 
@@ -1582,10 +1466,10 @@ async function minimalInit(tg) {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
-        await trackEvent("app_init_error", { error_message: error.message, user_id: AppState.userId });
         return false;
     }
 }
+
 async function fullInit(tg) {
     updateProgress(30);
 
