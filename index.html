@@ -8,22 +8,32 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.4/lottie.min.js"></script>
 		<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 		<!-- Добавление Telegram Mini Apps Analytics SDK -->
-<script 
-    async 
-    src="https://tganalytics.xyz/index.js" 
-    type="text/javascript"
-></script>
+		<script 
+		    async 
+		    src="https://tganalytics.xyz/index.js" 
+		    onload="initAnalytics()" 
+		    type="text/javascript"
+		></script>
+		<!-- Инициализация Telegram Mini Apps Analytics -->
+		<script>
+		    function initAnalytics() {
+		      window.telegramAnalytics.init({
+		        token: 'eyJhcHBfbmFtZSI6Ikx1Y2t5Q3ViZXNCb3QiLCJhcHBfdXJsIjoiaHR0cHM6Ly90Lm1lL0x1Y2t5Q3ViZXNib3QiLCJhcHBfZG9tYWluIjoiaHR0cHM6Ly9zdXNwZWN0MTQ3LmdpdGh1Yi5pby9MVUNVLyJ9!U/NoCsSwuDXZ3uFtVo6bOSPMegXjxuqRvRFgDGWwDbk=',
+		        appName: 'LuckyCubesBot',
+		      });
+		    }
+		</script>
 		<link rel="icon" href="cubeee.png" type="image/x-icon">
 		<title>LUCU game</title>
 		<!-- Link to the style.js file -->
 		<link rel="stylesheet" href="style.css">
 		<style></style>
 	</head>
-    <body class="gray-gradient">
-<div id="loading-screen">
-    <img src="pictures/cubics/классика/начальный-кубик.gif" alt="Loading Cube" id="loading-cube">
-    <p id="loading-text">Loading 0%</p>
-</div>
+	<body class="gray-gradient">
+		<div id="loading-screen">
+		    <img src="pictures/cubics/классика/начальный-кубик.gif" alt="Loading Cube" id="loading-cube">
+		    <p id="loading-text">Loading 0%</p>
+		</div>
 		<canvas id="particleCanvas"></canvas>
 		<!-- Контейнер для фоновых звезд -->
 		<div class="stars"></div>
@@ -123,155 +133,145 @@
 				</div>
 			</div>
 		</div>
-  <!-- Модальное окно лидеров -->
-  <div id="leaderboard-menu" class="hidden">
-    <div id="leaderboard-menu-content">
-
-      <!-- Верхняя секция (кубок, заголовок, кнопки) -->
-      <div class="top-section">
-        <div class="trophy-container">
-          <img src="https://em-content.zobj.net/source/telegram/386/trophy_1f3c6.webp" alt="Trophy" class="trophy" />
-          <div class="glow"></div>
-        </div>
-
-        <div class="header-container">
-          <span class="header-left">Leaderboard</span>
-          <span class="header-right" id="player-place-badge">Your place #--</span>
-        </div>
-
-        <div class="button-group-container">
-          <div class="button-group">
-            <button id="most-lucu" class="active">Most $LUCU</button>
-            <button id="best-luck">Best LUCK</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Список лидеров -->
-      <ul id="leaderboard-list" class="leaderboard-list">
-        <li class="coming-soon">Coming Soon</li>
-      </ul>
-    </div>
-  </div> 
-		  
-
-  <div id="friend-menu" class="hidden">
-    <div id="friend-menu-content">
-        <div class="avatar-icon">
-            <img src="https://em-content.zobj.net/source/telegram/386/money-with-wings_1f4b8.webp" alt="Avatar">
-        </div>
-        <h2>Invite a friend and get 100 $LUCU.</h2>
-        <p>If they have Telegram Premium, you each get 1,000 $LUCU.</p>
-        <p class="friends-count">Your friends: 0</p>
-        <div class="referral-container">
-            <input type="text" id="referral-link" readonly>
-            <button id="copy-referral">Copy</button>
-        </div>
-        <button id="share-link">Share link</button>
-        <p id="copy-message" class="hidden">Link copied!</p>
-    </div>
-</div>
-<div id="quests-menu" class="hidden">
-    <div id="quests-menu-content">
-        <div class="top-section">
-					<div class="trophy-container">
-					  <img src="https://em-content.zobj.net/source/telegram/386/cool-button_1f192.webp" alt="Trophy" class="trophy" />
-					  <div class="glow"></div>
-					</div>
-            <div class="header-container">
-                <span class="header-left">Tasks</span>
-            </div>
-            <div class="button-group-container">
-                <div class="button-group">
-                    <button id="quests-tab" class="active">Quests</button>
-                    <button id="achievements-tab">Achievements</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Список квестов -->
-        <ul id="quests-list" class="quests-list">
-            <li class="quest-item">
-                <img src="pictures/other png/телега.jpg" alt="Subscribe" class="quest-icon">
-                <div class="quest-info">
-                    <span class="quest-title">Subscribe to LUCU channel</span>
-                    <span class="quest-reward">Reward: 250 $LUCU</span>
-                </div>
-                <button class="quest-btn" data-quest="subscription_quest">Go</button>
-            </li>
-            <li class="quest-item">
-                <img src="pictures/other png/$LUCU.png" alt="Watch Ad" class="quest-icon">
-                <div class="quest-info">
-                    <span class="quest-title">Watch an ad</span>
-                    <span class="quest-reward">Reward: 50 $LUCU</span>
-                </div>
-                <button class="quest-btn" >Go</button>
-            </li>
-		<!-- Внутри <ul id="quests-list" class="quests-list"> после существующих квестов -->
-<li class="quest-item">
-    <img src="pictures/other png/телега.jpg" alt="Forward Message" class="quest-icon">
-    <div class="quest-info">
-        <span class="quest-title">Forward game message to a chat</span>
-        <span class="quest-reward">Reward: 500 $LUCU</span>
-    </div>
-    <button class="quest-btn" data-quest="forward_message">Go</button>
-</li>
-<li class="quest-item">
-    <img src="pictures/other png/$LUCU.png" alt="Dice Status" class="quest-icon">
-    <div class="quest-info">
-        <span class="quest-title">Add dice emoji to your status</span>
-        <span class="quest-reward">Reward: 500 $LUCU</span>
-    </div>
-    <button class="quest-btn" data-quest="dice_status">Go</button>
-</li>
-<li class="quest-item">
-    <img src="pictures/other png/Logo.png" alt="Dice Nickname" class="quest-icon">
-    <div class="quest-info">
-        <span class="quest-title">Add dice emoji to your nickname</span>
-        <span class="quest-reward">Reward: 100 $LUCU</span>
-    </div>
-    <button class="quest-btn" data-quest="dice_nickname">Go</button>
-</li>
-		<!-- Внутри <ul id="quests-list" class="quests-list"> после существующих квестов -->
-<li class="quest-item">
-    <img src="pictures/other png/телега.jpg" alt="Boost Channel" class="quest-icon">
-    <div class="quest-info">
-        <span class="quest-title">Boost LUCU channel</span>
-        <span class="quest-reward">Reward: 500 $LUCU</span>
-    </div>
-    <button class="quest-btn" data-quest="boost_channel">Go</button>
-</li>
-        </ul>
-
-        <!-- В файле index.html, внутри #achievements-list -->
-<ul id="achievements-list" class="achievements-list hidden">
-    <li class="achievement-item">
-        <img src="pictures/other png/телега.jpg" alt="Beta Tester" class="achievement-icon">
-        <div class="achievement-info">
-            <span class="achievement-title">Beta Tester</span>
-            <span class="achievement-reward">You were a beta tester of the game.</span>
-        </div>
-        <div class="progress-circle" data-progress="0"></div>
-    </li>
-    <li class="achievement-item">
-        <img src="pictures/cubics/классика/начальный-кубик.gif" alt="Dice Rolls" class="achievement-icon">
-        <div class="achievement-info">
-            <span class="achievement-title">Rolls</span>
-            <span class="achievement-reward">Make 123456 dice rolls.</span>
-        </div>
-        <div class="progress-circle" data-progress="0"></div>
-    </li>
-    <li class="achievement-item">
-        <img src="pictures/other png/Logo.png" alt="100K+ LUCU" class="achievement-icon">
-        <div class="achievement-info">
-            <span class="achievement-title">Rich $LUCU</span>
-            <span class="achievement-reward">Bro, did you really get 100K+ $LUCU?</span>
-        </div>
-        <div class="progress-circle" data-progress="0"></div>
-    </li>
-</ul>
-    </div>
-</div>
+		<!-- Модальное окно лидеров -->
+		<div id="leaderboard-menu" class="hidden">
+		    <div id="leaderboard-menu-content">
+			<!-- Верхняя секция (кубок, заголовок, кнопки) -->
+			<div class="top-section">
+			  <div class="trophy-container">
+			    <img src="https://em-content.zobj.net/source/telegram/386/trophy_1f3c6.webp" alt="Trophy" class="trophy" />
+			    <div class="glow"></div>
+			  </div>
+			  <div class="header-container">
+			    <span class="header-left">Leaderboard</span>
+			    <span class="header-right" id="player-place-badge">Your place #--</span>
+			  </div>
+			  <div class="button-group-container">
+			    <div class="button-group">
+			      <button id="most-lucu" class="active">Most $LUCU</button>
+			      <button id="best-luck">Best LUCK</button>
+			    </div>
+			  </div>
+			</div>
+			<!-- Список лидеров -->
+			<ul id="leaderboard-list" class="leaderboard-list">
+			  <li class="coming-soon">Coming Soon</li>
+			</ul>
+		    </div>
+		</div> 
+		<div id="friend-menu" class="hidden">
+		    <div id="friend-menu-content">
+			<div class="avatar-icon">
+			    <img src="https://em-content.zobj.net/source/telegram/386/money-with-wings_1f4b8.webp" alt="Avatar">
+			</div>
+			<h2>Invite a friend and get 100 $LUCU.</h2>
+			<p>If they have Telegram Premium, you each get 1,000 $LUCU.</p>
+			<p class="friends-count">Your friends: 0</p>
+			<div class="referral-container">
+			    <input type="text" id="referral-link" readonly>
+			    <button id="copy-referral">Copy</button>
+			</div>
+			<button id="share-link">Share link</button>
+			<p id="copy-message" class="hidden">Link copied!</p>
+		    </div>
+		</div>
+		<div id="quests-menu" class="hidden">
+		    <div id="quests-menu-content">
+			<div class="top-section">
+				<div class="trophy-container">
+				  <img src="https://em-content.zobj.net/source/telegram/386/cool-button_1f192.webp" alt="Trophy" class="trophy" />
+				  <div class="glow"></div>
+				</div>
+				<div class="header-container">
+				    <span class="header-left">Tasks</span>
+				</div>
+				<div class="button-group-container">
+				    <div class="button-group">
+					<button id="quests-tab" class="active">Quests</button>
+					<button id="achievements-tab">Achievements</button>
+				    </div>
+				</div>
+			</div>
+			<!-- Список квестов -->
+			<ul id="quests-list" class="quests-list">
+			    <li class="quest-item">
+				<img src="pictures/other png/телега.jpg" alt="Subscribe" class="quest-icon">
+				<div class="quest-info">
+				    <span class="quest-title">Subscribe to LUCU channel</span>
+				    <span class="quest-reward">Reward: 250 $LUCU</span>
+				</div>
+				<button class="quest-btn" data-quest="subscription_quest">Go</button>
+			    </li>
+			    <li class="quest-item">
+				<img src="pictures/other png/$LUCU.png" alt="Watch Ad" class="quest-icon">
+				<div class="quest-info">
+				    <span class="quest-title">Watch an ad</span>
+				    <span class="quest-reward">Reward: 50 $LUCU</span>
+				</div>
+				<button class="quest-btn">Go</button>
+			    </li>
+			    <li class="quest-item">
+				<img src="pictures/other png/телега.jpg" alt="Forward Message" class="quest-icon">
+				<div class="quest-info">
+				    <span class="quest-title">Forward game message to a chat</span>
+				    <span class="quest-reward">Reward: 500 $LUCU</span>
+				</div>
+				<button class="quest-btn" data-quest="forward_message">Go</button>
+			    </li>
+			    <li class="quest-item">
+				<img src="pictures/other png/$LUCU.png" alt="Dice Status" class="quest-icon">
+				<div class="quest-info">
+				    <span class="quest-title">Add dice emoji to your status</span>
+				    <span class="quest-reward">Reward: 500 $LUCU</span>
+				</div>
+				<button class="quest-btn" data-quest="dice_status">Go</button>
+			    </li>
+			    <li class="quest-item">
+				<img src="pictures/other png/Logo.png" alt="Dice Nickname" class="quest-icon">
+				<div class="quest-info">
+				    <span class="quest-title">Add dice emoji to your nickname</span>
+				    <span class="quest-reward">Reward: 100 $LUCU</span>
+				</div>
+				<button class="quest-btn" data-quest="dice_nickname">Go</button>
+			    </li>
+			    <li class="quest-item">
+				<img src="pictures/other png/телега.jpg" alt="Boost Channel" class="quest-icon">
+				<div class="quest-info">
+				    <span class="quest-title">Boost LUCU channel</span>
+				    <span class="quest-reward">Reward: 500 $LUCU</span>
+				</div>
+				<button class="quest-btn" data-quest="boost_channel">Go</button>
+			    </li>
+			</ul>
+			<!-- Список достижений -->
+			<ul id="achievements-list" class="achievements-list hidden">
+			    <li class="achievement-item">
+				<img src="pictures/other png/телега.jpg" alt="Beta Tester" class="achievement-icon">
+				<div class="achievement-info">
+				    <span class="achievement-title">Beta Tester</span>
+				    <span class="achievement-reward">You were a beta tester of the game.</span>
+				</div>
+				<div class="progress-circle" data-progress="0"></div>
+			    </li>
+			    <li class="achievement-item">
+				<img src="pictures/cubics/классика/начальный-кубик.gif" alt="Dice Rolls" class="achievement-icon">
+				<div class="achievement-info">
+				    <span class="achievement-title">Rolls</span>
+				    <span class="achievement-reward">Make 123456 dice rolls.</span>
+				</div>
+				<div class="progress-circle" data-progress="0"></div>
+			    </li>
+			    <li class="achievement-item">
+				<img src="pictures/other png/Logo.png" alt="100K+ LUCU" class="achievement-icon">
+				<div class="achievement-info">
+				    <span class="achievement-title">Rich $LUCU</span>
+				    <span class="achievement-reward">Bro, did you really get 100K+ $LUCU?</span>
+				</div>
+				<div class="progress-circle" data-progress="0"></div>
+			    </li>
+			</ul>
+		    </div>
+		</div>
 		<!-- Link to the game.js file -->
 		<script src="game.js"></script>
 	</body>
