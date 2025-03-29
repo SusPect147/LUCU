@@ -15,7 +15,8 @@ const AppState = {
     isPremium: false,
     userId: null,
     isInitialized: false,
-    token: null // Токен для авторизации API (если используется)
+    token: null,
+    analyticsInitialized: false // Новый флаг
 };
 
 async function loadConfig(token, tg) {
@@ -94,20 +95,28 @@ async function initializeTonConnect() {
 
 async function initializeAnalytics(tg) {
     try {
+        if (AppState.analyticsInitialized) {
+            console.log("Analytics already initialized, skipping...");
+            return;
+        }
+        AppState.analyticsInitialized = true;
+
         if (!window.Telegram || !window.Telegram.WebApp) {
             throw new Error("Telegram WebApp not available");
         }
 
         const telegram = window.Telegram.WebApp;
+
+        // Проверка, готов ли Telegram WebApp
         if (!telegram.isReady) {
-            telegram.ready();
+            telegram.ready(); // Возможно, это синхронная операция, но лучше явно проверить документацию
             console.log("Telegram WebApp initialized");
         }
 
         let attempts = 0;
         const maxAttempts = 50;
         while (!telegram.initData && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Ожидаем 100 мс между попытками
             attempts++;
         }
 
@@ -116,6 +125,7 @@ async function initializeAnalytics(tg) {
         }
 
         console.log("Sending request to /init_analytics");
+
         const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
             method: "POST",
             headers: {
@@ -131,9 +141,11 @@ async function initializeAnalytics(tg) {
 
         const data = await response.json();
         console.log("Analytics initialized with token:", data.token);
+
         AppState.analyticsToken = data.token;
         AppState.token = data.token; // Устанавливаем токен для авторизации
-        AppState.userId = tg?.initDataUnsafe?.user?.id?.toString(); // Устанавливаем userId
+        AppState.userId = tg?.initDataUnsafe?.user?.id?.toString() || "unknown"; // Устанавливаем userId (с fallback)
+
         return data;
     } catch (error) {
         console.error("Error initializing analytics:", error);
@@ -144,7 +156,6 @@ async function initializeAnalytics(tg) {
 // Вызываем при загрузке страницы
 document.addEventListener("DOMContentLoaded", () => {
     initializeTonConnect();
-    initializeAnalytics(); // Инициализация аналитики
 });
 
 const Utils = {
@@ -233,7 +244,6 @@ const API = {
     }
 };
 
-// Новая функция для обновления токена
 async function refreshToken() {
     try {
         const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
@@ -244,15 +254,18 @@ async function refreshToken() {
             }
         });
         if (!response.ok) {
-            throw new Error("Failed to refresh token");
+            const errorText = await response.text();
+            throw new Error(`Failed to refresh token: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
         AppState.token = data.token;
         API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
         console.log("Token refreshed successfully:", AppState.token);
+        return data.token;
     } catch (error) {
         console.error("Failed to refresh token:", error);
         Telegram.WebApp.showAlert("Authentication failed. Please restart the app.");
+        throw error;
     }
 }
 
@@ -367,18 +380,26 @@ const Game = {
         equippedSkin: AppConfig.DEFAULT_SKIN,
         rolls: 0
     },
-    init() {
-        this.elements.cube = document.getElementById("cube");
-        this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
-        this.elements.bestLuckDisplay = document.getElementById("bestLuck");
-        this.elements.progressBar = document.querySelector("#progressBar div");
-        if (!this.elements.cube || !this.elements.coinsDisplay || !this.elements.bestLuckDisplay || !this.elements.progressBar) {
-            return;
-        }
-        document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
-        this.elements.cube.addEventListener("click", this.handleClick.bind(this));
-        this.updateFromAppState();
-    },
+init() {
+    this.elements.cube = document.getElementById("cube");
+    this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
+    this.elements.bestLuckDisplay = document.getElementById("bestLuck");
+    this.elements.progressBar = document.querySelector("#progressBar div");
+
+    if (!this.elements.cube || !this.elements.coinsDisplay || !this.elements.bestLuckDisplay || !this.elements.progressBar) {
+        console.error("One or more required DOM elements are missing:", {
+            cube: this.elements.cube,
+            coinsDisplay: this.elements.coinsDisplay,
+            bestLuckDisplay: this.elements.bestLuckDisplay,
+            progressBar: this.elements.progressBar
+        });
+        return;
+    }
+
+    document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
+    this.elements.cube.addEventListener("click", this.handleClick.bind(this));
+    this.updateFromAppState();
+},
     updateFromAppState() {
         const data = AppState.userData;
         if (!data) {
@@ -1472,6 +1493,7 @@ async function minimalInit(tg) {
 
 async function fullInit(tg) {
     updateProgress(30);
+    await Utils.wait(100); // Небольшая задержка для полной загрузки DOM
 
     Game.init();
     Skins.init();
