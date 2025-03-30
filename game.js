@@ -206,7 +206,6 @@ async fetch(endpoint, options = {}) {
     let attempts = 0;
     const maxAttempts = 3;
 
-    // Гарантируем наличие токена перед первым запросом
     if (!AppState.token) {
         console.warn("No token available, initializing...");
         await refreshToken();
@@ -215,11 +214,15 @@ async fetch(endpoint, options = {}) {
         }
     }
 
+    // Сохраняем оригинальный fetch, если он перехвачен
+    const originalFetch = window.fetch.bind(window);
+
     while (attempts < maxAttempts) {
         try {
-            console.log("Fetching with token:", AppState.token); // Логируем токен для отладки
-            const response = await fetch(url, {
+            console.log("Fetching with token:", AppState.token);
+            const response = await originalFetch(url, {
                 ...options,
+                signal: AbortSignal.timeout(5000), // Установим тайм-аут явно
                 headers: {
                     ...API.defaultHeaders,
                     "Authorization": `Bearer ${AppState.token}`,
@@ -244,16 +247,16 @@ async fetch(endpoint, options = {}) {
             return await response.json();
         } catch (error) {
             attempts++;
+            console.error(`Attempt ${attempts} failed:`, error);
             if (attempts === maxAttempts) {
-                if (error.status === 500) {
-                    throw new Error("Server is experiencing issues, please try again later.");
+                if (error.name === "AbortError") {
+                    throw new Error("Request timed out or was aborted. Check your network connection.");
                 } else if (error.status === 401) {
                     throw new Error("Authentication failed after multiple attempts. Please reload the app.");
                 }
                 throw error;
             }
-            console.error(`Attempt ${attempts} failed:`, error);
-            await Utils.wait(1000 * attempts);
+            await Utils.wait(1000 * attempts); // Экспоненциальная задержка
         }
     }
 }
@@ -1475,59 +1478,42 @@ async function minimalInit(tg) {
 
     const userId = tg.initDataUnsafe?.user?.id?.toString();
     if (!userId) {
-        console.error("User ID is missing in Telegram initData");
-        Telegram.WebApp.showAlert("Unable to initialize: User ID not found. Please restart the app.");
+        console.error("User ID not found in Telegram initData");
         return false;
     }
+
     AppState.userId = userId;
 
-    API.defaultHeaders = {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": tg.initData
-    };
+    try {
+        await initializeAnalytics(tg);
+    } catch (error) {
+        console.error("Analytics initialization failed:", error);
+    }
 
     try {
-        updateProgress(20);
-
-        const initResponse = await fetch(`${AppConfig.API_BASE_URL}/init`, {
+        const tokenResponse = await API.fetch("/init", {
             method: "POST",
-            headers: API.defaultHeaders,
-            signal: AbortSignal.timeout(5000)
+            headers: {
+                "X-Telegram-Init-Data": tg.initData
+            }
         });
+        AppState.token = tokenResponse.token;
+        console.log("Initial token set:", AppState.token);
+    } catch (error) {
+        console.error("Failed to fetch initial token:", error);
+        return false;
+    }
 
-        if (!initResponse.ok) {
-            const errorText = await initResponse.text();
-            throw new Error(`API initialization failed: ${initResponse.status} - ${errorText}`);
+    try {
+        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`);
+        if (!userDataResponse || userDataResponse.error) {
+            throw new Error("Failed to load user data");
         }
-
-        const initData = await initResponse.json();
-        if (!initData.token) {
-            throw new Error("Server did not return a token");
-        }
-        AppState.token = initData.token;
-        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
-        console.log("Initial token set:", AppState.token); // Логируем токен
-
-        AppState.isPremium = initData.is_premium || tg.initDataUnsafe?.user?.is_premium === true;
-
-        updateProgress(25);
-        await loadConfig(AppState.token, tg);
-
-        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(5000)
-        });
-
-        if (!userDataResponse) {
-            throw new Error("Failed to fetch user data");
-        }
-
         AppState.userData = userDataResponse;
-
-        updateProgress(30);
+        updateProgress(20);
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
-        Telegram.WebApp.showAlert("Failed to initialize app. Please reload.");
         return false;
     }
 }
