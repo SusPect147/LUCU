@@ -199,58 +199,72 @@ const API = {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
     },
-    async fetch(endpoint, options = {}) {
-        const url = `${AppConfig.API_BASE_URL}${endpoint}`;
-        const telegramInitData = window.Telegram.WebApp.initData || "";
-        if (!telegramInitData) {
-            throw new Error("Telegram initData is required for API requests");
-        }
-        let attempts = 0;
-        const maxAttempts = 3;
-        while (attempts < maxAttempts) {
-            try {
-                const response = await fetch(url, {
-                    ...options,
-                    headers: {
-                        ...API.defaultHeaders,
-                        "Authorization": `Bearer ${AppState.token}`,
-                        ...options.headers
-                    }
-                });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-                    error.status = response.status;
-                    if (error.status === 401 && attempts < maxAttempts - 1) {
-                        console.warn("Token invalid, attempting to refresh...");
-                        await refreshToken(); // Новая функция для обновления токена
-                        attempts++;
-                        continue;
-                    }
-                    throw error;
+async fetch(endpoint, options = {}) {
+    const url = `${AppConfig.API_BASE_URL}${endpoint}`;
+    const telegramInitData = window.Telegram.WebApp.initData || "";
+    if (!telegramInitData) {
+        throw new Error("Telegram initData is required for API requests");
+    }
+
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    // Проверяем наличие токена перед первым запросом
+    if (!AppState.token) {
+        console.warn("No token available, attempting to initialize...");
+        await refreshToken();
+    }
+
+    while (attempts < maxAttempts) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...API.defaultHeaders,
+                    "Authorization": `Bearer ${AppState.token}`,
+                    ...options.headers
                 }
-                return await response.json();
-            } catch (error) {
-                attempts++;
-                if (attempts === maxAttempts) {
-                    if (error.status === 500) {
-                        throw new Error("Server is experiencing issues, please try again later.");
-                    }
-                    throw error;
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                error.status = response.status;
+                if (error.status === 401 && attempts < maxAttempts - 1) {
+                    console.warn("Token invalid, attempting to refresh...");
+                    await refreshToken();
+                    attempts++;
+                    continue;
                 }
-                await Utils.wait(1000 * attempts);
+                throw error;
             }
+            return await response.json();
+        } catch (error) {
+            attempts++;
+            if (attempts === maxAttempts) {
+                if (error.status === 500) {
+                    throw new Error("Server is experiencing issues, please try again later.");
+                } else if (error.status === 401) {
+                    throw new Error("Authentication failed after multiple attempts. Please restart the app.");
+                }
+                throw error;
+            }
+            await Utils.wait(1000 * attempts);
         }
     }
+}
 };
 
 async function refreshToken() {
     try {
+        const telegramInitData = window.Telegram.WebApp.initData || "";
+        if (!telegramInitData) {
+            throw new Error("Telegram initData is unavailable for token refresh");
+        }
         const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+                "X-Telegram-Init-Data": telegramInitData
             }
         });
         if (!response.ok) {
@@ -258,6 +272,9 @@ async function refreshToken() {
             throw new Error(`Failed to refresh token: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
+        if (!data.token) {
+            throw new Error("Server response did not include a token");
+        }
         AppState.token = data.token;
         API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
         console.log("Token refreshed successfully:", AppState.token);
@@ -386,16 +403,19 @@ init() {
     this.elements.bestLuckDisplay = document.getElementById("bestLuck");
     this.elements.progressBar = document.querySelector("#progressBar div");
 
-    if (!this.elements.cube || !this.elements.coinsDisplay || !this.elements.bestLuckDisplay || !this.elements.progressBar) {
-        console.error("One or more required DOM elements are missing:", {
-            cube: this.elements.cube,
-            coinsDisplay: this.elements.coinsDisplay,
-            bestLuckDisplay: this.elements.bestLuckDisplay,
-            progressBar: this.elements.progressBar
-        });
-        return;
+    // Проверяем все элементы и логируем ошибку, если хотя бы один отсутствует
+    const missingElements = [];
+    if (!this.elements.cube) missingElements.push("cube");
+    if (!this.elements.coinsDisplay) missingElements.push("coinsDisplay");
+    if (!this.elements.bestLuckDisplay) missingElements.push("bestLuckDisplay");
+    if (!this.elements.progressBar) missingElements.push("progressBar");
+
+    if (missingElements.length > 0) {
+        console.error("Required DOM elements are missing:", missingElements);
+        return; // Выход, если элементы отсутствуют
     }
 
+    // Устанавливаем стили и обработчики только если все элементы присутствуют
     document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
     this.elements.cube.addEventListener("click", this.handleClick.bind(this));
     this.updateFromAppState();
