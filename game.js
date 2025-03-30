@@ -107,16 +107,15 @@ async function initializeAnalytics(tg) {
 
         const telegram = window.Telegram.WebApp;
 
-        // Проверка, готов ли Telegram WebApp
         if (!telegram.isReady) {
-            telegram.ready(); // Возможно, это синхронная операция, но лучше явно проверить документацию
+            telegram.ready();
             console.log("Telegram WebApp initialized");
         }
 
         let attempts = 0;
         const maxAttempts = 50;
         while (!telegram.initData && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100)); // Ожидаем 100 мс между попытками
+            await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
 
@@ -142,9 +141,8 @@ async function initializeAnalytics(tg) {
         const data = await response.json();
         console.log("Analytics initialized with token:", data.token);
 
-        AppState.analyticsToken = data.token;
-        AppState.token = data.token; // Устанавливаем токен для авторизации
-        AppState.userId = tg?.initDataUnsafe?.user?.id?.toString() || "unknown"; // Устанавливаем userId (с fallback)
+        AppState.analyticsToken = data.token; // Отдельный токен для аналитики
+        AppState.userId = tg?.initDataUnsafe?.user?.id?.toString() || "unknown";
 
         return data;
     } catch (error) {
@@ -152,7 +150,6 @@ async function initializeAnalytics(tg) {
         throw error;
     }
 }
-
 // Вызываем при загрузке страницы
 document.addEventListener("DOMContentLoaded", () => {
     initializeTonConnect();
@@ -693,18 +690,23 @@ const Skins = {
         ownedSkins: [],
         equippedSkin: AppConfig.DEFAULT_SKIN
     },
-    init() {
-        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
-        this.elements.menu.addEventListener("click", e => {
-            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
-        });
-        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-        this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
-        this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
-        this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
-        this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
-        this.updateFromAppState();
-    },
+init() {
+    if (!this.elements.button) {
+        console.error("Skins button not found in DOM. Expected element: .menu-item img[alt='Skins']. Skins menu functionality will be disabled.");
+        return;
+    }
+
+    this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
+    this.elements.menu.addEventListener("click", e => {
+        if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+    });
+    UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+    this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
+    this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
+    this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
+    this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
+    this.updateFromAppState();
+},
     updateFromAppState() {
         const data = AppState.userData;
         if (!data) {
@@ -1545,7 +1547,6 @@ async function fullInit(tg) {
     Skins.init();
     Quests.init();
     Leaderboard.init();
-    Profile.init();
     Friends.init();
     Particles.init();
 
