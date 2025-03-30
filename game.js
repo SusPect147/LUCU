@@ -720,73 +720,76 @@ init() {
         this.updateUI();
     },
     async handleSkin(type) {
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
-            return;
+    const userId = tg.initDataUnsafe?.user?.id?.toString();
+    if (!userId) {
+        Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
+        return;
+    }
+
+    if (AppState.userData.ban === "yes") {
+        Telegram.WebApp.showAlert("You are banned and cannot purchase or equip skins.");
+        return;
+    }
+
+    const skinPrices = {
+        "negative": 5000,
+        "Emerald": 10000,
+        "Pixel": 150000,
+        "classic": 0
+    };
+
+    const price = skinPrices[type];
+    const isOwned = this.state.ownedSkins.includes(type);
+
+    // Если скин еще не куплен и требуется проверка монет
+    if (!isOwned && price && AppState.userData.coins < price) {
+        Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU to buy this skin.`);
+        return;
+    }
+
+    try {
+        const response = await API.fetch("/handle_skin", {
+            method: "POST",
+            headers: {
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            },
+            body: JSON.stringify({ user_id: userId, skin_type: type })
+        });
+
+        if (response.success) {
+            this.state.ownedSkins = response.owned_skins;
+            this.state.equippedSkin = response.equipped_skin;
+            this.updateUI();
+
+            // Обновляем состояние игры и UI
+            AppState.userData = {
+                ...AppState.userData,
+                coins: response.new_coins,
+                owned_skins: response.owned_skins,
+                equipped_skin: response.equipped_skin
+            };
+            Game.state.coins = response.new_coins;
+            Game.state.equippedSkin = response.equipped_skin;
+            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
+            Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`; // Предотвращаем кэширование
+            Game.updateFromAppState(); // Явно обновляем UI игры
+
+            Telegram.WebApp.showAlert(`Skin ${type} successfully ${isOwned ? "equipped" : "purchased and equipped"}!`);
+        } else {
+            Telegram.WebApp.showAlert(response.message || "Failed to handle skin action.");
         }
+    } catch (error) {
+        console.error("Skin action error:", error);
 
-        if (AppState.userData.ban === "yes") {
-            Telegram.WebApp.showAlert("You are banned and cannot purchase skins.");
-            return;
+        if (error.status === 403) {
+            Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
+        } else if (error.status === 400) {
+            Telegram.WebApp.showAlert("Invalid request. Please try again.");
+        } else {
+            Telegram.WebApp.showAlert("Error handling skin: " + error.message);
         }
-
-        const skinPrices = {
-            "negative": 5000,
-            "Emerald": 10000,
-            "Pixel": 150000,
-            "classic": 0
-        };
-
-        const price = skinPrices[type];
-        if (price && AppState.userData.coins < price) {
-            Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU.`);
-            return;
-        }
-
-        try {
-            const response = await API.fetch("/handle_skin", {
-                method: "POST",
-                headers: {
-                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-                },
-                body: JSON.stringify({ user_id: userId, skin_type: type })
-            });
-
-            if (response.success) {
-                this.state.ownedSkins = response.owned_skins;
-                this.state.equippedSkin = response.equipped_skin;
-                this.updateUI();
-
-                // Обновляем состояние игры и UI
-                AppState.userData = {
-                    ...AppState.userData,
-                    coins: response.new_coins,
-                    owned_skins: response.owned_skins,
-                    equipped_skin: response.equipped_skin
-                };
-                Game.state.coins = response.new_coins;
-                Game.state.equippedSkin = response.equipped_skin;
-                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-                Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`; // Предотвращаем кэширование
-                Game.updateFromAppState(); // Явно обновляем UI игры
-
-                Telegram.WebApp.showAlert(`Skin ${type} successfully ${response.owned_skins.includes(type) ? "equipped" : "purchased and equipped"}!`);
-            } else {
-                Telegram.WebApp.showAlert(response.message || "Failed to handle skin purchase.");
-            }
-        } catch (error) {
-            console.error("Skin purchase error:", error);
-
-            if (error.status === 403) {
-                Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
-            } else if (error.status === 400) {
-                Telegram.WebApp.showAlert("Invalid request. Please try again.");
-            } else {
-                Telegram.WebApp.showAlert("Error purchasing skin: " + error.message);
-            }
-        }
-    },
+    }
+},
     updateUI() {
         const owned = this.state.ownedSkins;
         const equipped = this.state.equippedSkin;
