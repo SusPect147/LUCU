@@ -209,14 +209,18 @@ async fetch(endpoint, options = {}) {
     let attempts = 0;
     const maxAttempts = 3;
 
-    // Проверяем наличие токена перед первым запросом
+    // Гарантируем наличие токена перед первым запросом
     if (!AppState.token) {
-        console.warn("No token available, attempting to initialize...");
+        console.warn("No token available, initializing...");
         await refreshToken();
+        if (!AppState.token) {
+            throw new Error("Failed to initialize token. Please reload the app.");
+        }
     }
 
     while (attempts < maxAttempts) {
         try {
+            console.log("Fetching with token:", AppState.token); // Логируем токен для отладки
             const response = await fetch(url, {
                 ...options,
                 headers: {
@@ -232,6 +236,9 @@ async fetch(endpoint, options = {}) {
                 if (error.status === 401 && attempts < maxAttempts - 1) {
                     console.warn("Token invalid, attempting to refresh...");
                     await refreshToken();
+                    if (!AppState.token) {
+                        throw new Error("Token refresh failed. Please reload the app.");
+                    }
                     attempts++;
                     continue;
                 }
@@ -244,10 +251,11 @@ async fetch(endpoint, options = {}) {
                 if (error.status === 500) {
                     throw new Error("Server is experiencing issues, please try again later.");
                 } else if (error.status === 401) {
-                    throw new Error("Authentication failed after multiple attempts. Please restart the app.");
+                    throw new Error("Authentication failed after multiple attempts. Please reload the app.");
                 }
                 throw error;
             }
+            console.error(`Attempt ${attempts} failed:`, error);
             await Utils.wait(1000 * attempts);
         }
     }
@@ -403,7 +411,6 @@ init() {
     this.elements.bestLuckDisplay = document.getElementById("bestLuck");
     this.elements.progressBar = document.querySelector("#progressBar div");
 
-    // Проверяем все элементы и логируем ошибку, если хотя бы один отсутствует
     const missingElements = [];
     if (!this.elements.cube) missingElements.push("cube");
     if (!this.elements.coinsDisplay) missingElements.push("coinsDisplay");
@@ -411,14 +418,23 @@ init() {
     if (!this.elements.progressBar) missingElements.push("progressBar");
 
     if (missingElements.length > 0) {
-        console.error("Required DOM elements are missing:", missingElements);
-        return; // Выход, если элементы отсутствуют
+        console.error("Game.init failed: Required DOM elements are missing:", missingElements);
+        Telegram.WebApp.showAlert("Failed to initialize game. Please reload the app.");
+        return false; // Возвращаем false для индикации ошибки
     }
 
-    // Устанавливаем стили и обработчики только если все элементы присутствуют
     document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
-    this.elements.cube.addEventListener("click", this.handleClick.bind(this));
+    try {
+        console.log("Adding click listener to cube:", this.elements.cube);
+        this.elements.cube.addEventListener("click", this.handleClick.bind(this));
+    } catch (error) {
+        console.error("Error adding event listener to cube:", error);
+        Telegram.WebApp.showAlert("Failed to set up cube interaction. Please reload the app.");
+        return false;
+    }
     this.updateFromAppState();
+    console.log("Game initialized successfully");
+    return true;
 },
     updateFromAppState() {
         const data = AppState.userData;
@@ -1455,7 +1471,6 @@ async function minimalInit(tg) {
     tg.ready();
     tg.expand();
 
-    // Устанавливаем userId сразу
     const userId = tg.initDataUnsafe?.user?.id?.toString();
     if (!userId) {
         console.error("User ID is missing in Telegram initData");
@@ -1480,13 +1495,16 @@ async function minimalInit(tg) {
 
         if (!initResponse.ok) {
             const errorText = await initResponse.text();
-            console.warn(`API initialization failed: ${initResponse.status} - ${errorText}`);
-            throw new Error("Failed to initialize API");
+            throw new Error(`API initialization failed: ${initResponse.status} - ${errorText}`);
         }
 
         const initData = await initResponse.json();
-        AppState.token = initData.token; // Сохраняем токен
-        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`; // Обновляем заголовки
+        if (!initData.token) {
+            throw new Error("Server did not return a token");
+        }
+        AppState.token = initData.token;
+        API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
+        console.log("Initial token set:", AppState.token); // Логируем токен
 
         AppState.isPremium = initData.is_premium || tg.initDataUnsafe?.user?.is_premium === true;
 
@@ -1507,6 +1525,7 @@ async function minimalInit(tg) {
         return true;
     } catch (error) {
         console.error("Minimal initialization error:", error);
+        Telegram.WebApp.showAlert("Failed to initialize app. Please reload.");
         return false;
     }
 }
@@ -1514,8 +1533,15 @@ async function minimalInit(tg) {
 async function fullInit(tg) {
     updateProgress(30);
     await Utils.wait(100); // Небольшая задержка для полной загрузки DOM
+    console.log("DOM state before Game.init:", document.getElementById("cube")); // Логируем элемент
 
-    Game.init();
+    const gameInitialized = Game.init();
+    if (!gameInitialized) {
+        console.error("Game initialization failed");
+        Telegram.WebApp.showAlert("Game failed to initialize. Please reload the app.");
+        return;
+    }
+
     Skins.init();
     Quests.init();
     Leaderboard.init();
@@ -1541,7 +1567,7 @@ async function fullInit(tg) {
         Friends.updateFriendsCount();
     } catch (error) {
         console.error("User data fetch error:", error);
-        console.log("Failed to load user data. Please try again.");
+        Telegram.WebApp.showAlert("Failed to load user data. Please try again.");
         return;
     }
 
@@ -1565,11 +1591,11 @@ async function initializeApp() {
     const loadingScreen = document.getElementById("loading-screen");
     const loadingText = document.getElementById("loading-text");
 
-    const updateProgress = (percent) => {
+    const updateProgressLocal = (percent) => {
         if (loadingText) loadingText.textContent = `Loading ${percent}%`;
     };
 
-    updateProgress(0);
+    updateProgressLocal(0);
 
     if (!window.Telegram || !window.Telegram.WebApp) {
         console.error("This app must be opened in Telegram.");
@@ -1583,20 +1609,20 @@ async function initializeApp() {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
-    updateProgress(10);
+    updateProgressLocal(10);
 
     const minimalSuccess = await minimalInit(tg);
     if (!minimalSuccess) {
         console.error("Minimal initialization failed");
-        Telegram.WebApp.showAlert("Failed to initialize the app. Please try again.");
+        Telegram.WebApp.showAlert("Failed to initialize the app. Please reload.");
         return;
     }
 
-    updateProgress(50);
+    updateProgressLocal(50);
     document.body.classList.add("gray-gradient");
 
     try {
-        await initializeAnalytics(tg); // Аналитика не критична, оставляем как есть
+        await initializeAnalytics(tg);
     } catch (error) {
         console.warn("Analytics initialization failed, continuing without it:", error);
     }
@@ -1610,6 +1636,9 @@ async function initializeApp() {
     }
 
     AppState.isInitialized = true;
+    console.log("App fully initialized");
 }
+
+document.addEventListener("DOMContentLoaded", initializeApp);
 
 document.addEventListener("DOMContentLoaded", initializeApp);
