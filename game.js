@@ -271,7 +271,6 @@ const API = {
     }
 };
 
-// Функция обновления токена
 async function refreshToken() {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -291,19 +290,23 @@ async function refreshToken() {
         }
         const data = await response.json();
         console.log("Response from /init:", data); // Логируем ответ для отладки
-        if (!data.token) {
+        if (!data.t) { // Изменяем проверку с "token" на "t"
             throw new Error("Server response did not include a token");
         }
-        AppState.token = data.token;
+        AppState.token = data.t; // Используем "t" вместо "token"
         API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
         console.log("Token refreshed successfully:", AppState.token);
-        return data.token;
+        return data.t; // Возвращаем токен
     } catch (error) {
         console.error("Failed to refresh token:", error);
         console.log("Authentication failed. Please restart the app.");
         throw error;
     }
 }
+
+
+
+
 
 class Particle {
     constructor(id, parent) {
