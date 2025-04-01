@@ -190,6 +190,7 @@ const Utils = {
 
 // 1.3 и 2.2: Уменьшенный тайм-аут (500 мс) и дедупликация запросов
 const API = {
+    API_BASE_URL: "backend12-production-1210.up.railway.app",
     defaultHeaders: {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
