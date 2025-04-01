@@ -897,7 +897,7 @@ async refreshUserData() {
     } catch (error) {
         console.error("Failed to refresh user data:", error);
     }
-}
+},
     updateQuestStatus() {
         const data = AppState.userData;
         if (!data || !data.quests) return;
