@@ -15,12 +15,10 @@ const AppState = {
     isPremium: false,
     userId: null,
     isInitialized: false,
-    token: null,
-    analyticsInitialized: false // Новый флаг
+    token: null
 };
 
-// 1.1: Уменьшение размера полезной нагрузки (сокращенные ключи)
-// Исправленная функция loadConfig (убираем зависимость от токена на этом этапе)
+// Исправленная функция loadConfig
 async function loadConfig(tg) {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -32,7 +30,7 @@ async function loadConfig(tg) {
             headers: {
                 "Content-Type": "application/json",
                 "X-Telegram-Init-Data": telegramInitData,
-                "Authorization": `Bearer ${AppState.token}` // Добавляем токен
+                "Authorization": `Bearer ${AppState.token}`
             }
         });
         if (!response.ok) {
@@ -95,58 +93,6 @@ async function initializeTonConnect() {
     }
 }
 
-// 4.1: Удаление избыточных проверок (убран цикл ожидания initData)
-async function initializeAnalytics(tg) {
-    try {
-        if (AppState.analyticsInitialized) {
-            console.log("Analytics already initialized, skipping...");
-            return;
-        }
-        AppState.analyticsInitialized = true;
-
-        if (!window.Telegram || !window.Telegram.WebApp) {
-            throw new Error("Telegram WebApp not available");
-        }
-
-        const telegram = window.Telegram.WebApp;
-
-        if (!telegram.isReady) {
-            telegram.ready();
-            console.log("Telegram WebApp initialized");
-        }
-
-        if (!telegram.initData) {
-            throw new Error("Telegram initData not available");
-        }
-
-        console.log("Sending request to /init_analytics");
-
-        const response = await fetch(`${AppConfig.API_BASE_URL}/init_analytics`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Telegram-Init-Data": telegram.initData
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to initialize analytics: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log("Analytics initialized with token:", data.token);
-
-        AppState.analyticsToken = data.token; // Отдельный токен для аналитики
-        AppState.userId = tg?.initDataUnsafe?.user?.id?.toString() || "unknown";
-
-        return data;
-    } catch (error) {
-        console.error("Error initializing analytics:", error);
-        throw error;
-    }
-}
-
 // Вызываем при загрузке страницы
 document.addEventListener("DOMContentLoaded", () => {
     initializeTonConnect();
@@ -189,7 +135,7 @@ const Utils = {
 };
 
 const API = {
-    baseUrl: "https://backend12-production-1210.up.railway.app", // Правильный URL бэкенда
+    baseUrl: "https://backend12-production-1210.up.railway.app",
     defaultHeaders: {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
@@ -199,7 +145,6 @@ const API = {
         const key = `${endpoint}:${JSON.stringify(options.body)}`;
         if (this.pendingRequests.has(key)) return this.pendingRequests.get(key);
 
-        // Используем this.baseUrl вместо AppConfig.API_BASE_URL
         const url = `${this.baseUrl}${endpoint}`;
         const telegramInitData = window.Telegram.WebApp.initData || "";
         if (!telegramInitData) {
@@ -223,10 +168,10 @@ const API = {
             while (attempts < maxAttempts) {
                 try {
                     console.log("Fetching with token:", AppState.token);
-                    console.log("Request URL:", url); // Добавляем отладку URL
+                    console.log("Request URL:", url);
                     const response = await originalFetch(url, {
                         ...options,
-                        signal: AbortSignal.timeout(1000), // Увеличиваем тайм-аут до 1 секунды
+                        signal: AbortSignal.timeout(1000),
                         headers: {
                             ...this.defaultHeaders,
                             "Authorization": `Bearer ${AppState.token}`,
@@ -251,7 +196,7 @@ const API = {
                     }
 
                     const data = await response.json();
-                    this.pendingRequests.delete(key); // Удаляем только при успехе
+                    this.pendingRequests.delete(key);
                     return data;
                 } catch (error) {
                     attempts++;
@@ -264,7 +209,7 @@ const API = {
                         }
                         throw error;
                     }
-                    await Utils.wait(1000 * attempts); // Экспоненциальная задержка
+                    await Utils.wait(1000 * attempts);
                 }
             }
         })();
@@ -273,6 +218,7 @@ const API = {
         return promise;
     }
 };
+
 async function refreshToken() {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -291,24 +237,20 @@ async function refreshToken() {
             throw new Error(`Failed to refresh token: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
-        console.log("Response from /init:", data); // Логируем ответ для отладки
-        if (!data.t) { // Изменяем проверку с "token" на "t"
+        console.log("Response from /init:", data);
+        if (!data.t) {
             throw new Error("Server response did not include a token");
         }
-        AppState.token = data.t; // Используем "t" вместо "token"
+        AppState.token = data.t;
         API.defaultHeaders["Authorization"] = `Bearer ${AppState.token}`;
         console.log("Token refreshed successfully:", AppState.token);
-        return data.t; // Возвращаем токен
+        return data.t;
     } catch (error) {
         console.error("Failed to refresh token:", error);
         console.log("Authentication failed. Please restart the app.");
         throw error;
     }
 }
-
-
-
-
 
 class Particle {
     constructor(id, parent) {
@@ -435,7 +377,7 @@ const Game = {
         if (missingElements.length > 0) {
             console.error("Game.init failed: Required DOM elements are missing:", missingElements);
             console.log("Failed to initialize game. Please reload the app.");
-            return false; // Возвращаем false для индикации ошибки
+            return false;
         }
 
         document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
@@ -479,7 +421,6 @@ const Game = {
         }
         this.rollCube();
     },
-    // 1.1: Минимизация данных в ответе сервера (сокращенные ключи)
     async rollCube() {
         if (this.state.isAnimating) return;
 
@@ -506,20 +447,20 @@ const Game = {
                 throw new Error("Invalid server response: missing required fields");
             }
 
-            this.elements.cube.src = response.src; // Используем сокращенный ключ "src"
+            this.elements.cube.src = response.src;
             this.startProgress(AppConfig.ANIMATION_DURATION);
 
             AppState.userData = {
                 ...AppState.userData,
-                coins: response.c,  // "c" вместо "coins"
-                rolls: response.r,  // "r" вместо "total_rolls"
-                min_luck: Math.min(AppState.userData.min_luck || 1001, response.l),  // "l" вместо "luck"
-                equipped_skin: response.es  // "es" вместо "equipped_skin"
+                coins: response.c,
+                rolls: response.r,
+                min_luck: Math.min(AppState.userData.min_luck || 1001, response.l),
+                equipped_skin: response.es
             };
 
             if (AppState.userData.ban !== "yes") {
                 document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(response.rb ? "pink-gradient" : "gray-gradient"); // "rb" вместо "is_rainbow"
+                document.body.classList.add(response.rb ? "pink-gradient" : "gray-gradient");
 
                 const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
                 setTimeout(() => {
@@ -735,7 +676,6 @@ const Skins = {
         this.state.equippedSkin = data.equipped_skin || AppConfig.DEFAULT_SKIN;
         this.updateUI();
     },
-    // 1.1: Сокращенные ключи в ответе сервера
     async handleSkin(type) {
         const userId = tg.initDataUnsafe?.user?.id?.toString();
         if (!userId) {
@@ -773,13 +713,13 @@ const Skins = {
             });
 
             if (response.success) {
-                this.state.ownedSkins = response.os; // "os" вместо "owned_skins"
-                this.state.equippedSkin = response.es; // "es" вместо "equipped_skin"
+                this.state.ownedSkins = response.os;
+                this.state.equippedSkin = response.es;
                 this.updateUI();
 
                 AppState.userData = {
                     ...AppState.userData,
-                    coins: response.nc, // "nc" вместо "new_coins"
+                    coins: response.nc,
                     owned_skins: response.os,
                     equipped_skin: response.es
                 };
@@ -821,7 +761,6 @@ const Skins = {
     }
 };
 
-// 2.1 и 3.1: Агрегация запросов и упрощение логики квестов
 const Quests = {
     elements: {
         menu: document.getElementById("quests-menu"),
@@ -880,24 +819,24 @@ const Quests = {
             await this.handleDiceStatus(tg.initDataUnsafe.user?.id?.toString());
         });
     },
-async refreshUserData() {
-    const userId = tg?.initDataUnsafe?.user?.id?.toString();
-    if (!userId) return;
-    try {
-        const response = await API.fetch(`/get_user_data_new/${userId}`, {
-            method: "GET",
-            headers: {
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+    async refreshUserData() {
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) return;
+        try {
+            const response = await API.fetch(`/get_user_data_new/${userId}`, {
+                method: "GET",
+                headers: {
+                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+                }
+            });
+            if (JSON.stringify(AppState.userData) !== JSON.stringify(response)) {
+                AppState.userData = { ...AppState.userData, ...response };
+                this.updateQuestStatus();
             }
-        });
-        if (JSON.stringify(AppState.userData) !== JSON.stringify(response)) {
-            AppState.userData = { ...AppState.userData, ...response };
-            this.updateQuestStatus();
+        } catch (error) {
+            console.error("Failed to refresh user data:", error);
         }
-    } catch (error) {
-        console.error("Failed to refresh user data:", error);
-    }
-},
+    },
     updateQuestStatus() {
         const data = AppState.userData;
         if (!data || !data.quests) return;
@@ -933,7 +872,6 @@ async refreshUserData() {
             }
         });
     },
-    // 3.1: Упрощение логики квестов
     async handleQuest(questName) {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) return;
@@ -970,7 +908,7 @@ async refreshUserData() {
                     default:
                         console.error(`Unknown quest: ${questName}`);
                 }
-                setTimeout(() => this.refreshUserData(), 6000); // Проверка после действия
+                setTimeout(() => this.refreshUserData(), 6000);
             }
         } catch (error) {
             console.error(`Error handling quest ${questName}:`, error);
@@ -1178,7 +1116,6 @@ async refreshUserData() {
     }
 };
 
-// 4.2: Оптимизация обработки лидерборда на фронтенде
 const Leaderboard = {
     elements: {
         menu: document.getElementById("leaderboard-menu"),
@@ -1217,7 +1154,7 @@ const Leaderboard = {
             const data = await API.fetch(`/leaderboard_${type}`);
             this.elements.list.innerHTML = "";
             const userId = tg.initDataUnsafe?.user?.id?.toString();
-            const userIndex = data.findIndex(p => p.u === userId); // "u" вместо "user_id"
+            const userIndex = data.findIndex(p => p.u === userId);
             this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
             if (!data?.length) {
                 this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
@@ -1229,7 +1166,7 @@ const Leaderboard = {
                 const li = document.createElement("li");
                 li.classList.add("leaderboard-item");
                 if (isCurrentUser) li.classList.add("highlight");
-                const value = type === "coins" ? Utils.formatCoins(player.c) + " $LUCU" : Utils.formatNumber(player.ml) || "N/A"; // "c" вместо "coins", "ml" вместо "min_luck"
+                const value = type === "coins" ? Utils.formatCoins(player.c) + " $LUCU" : Utils.formatNumber(player.ml) || "N/A";
                 li.innerHTML = `
                     <div class="leaderboard-item-content">
                         <div class="player-left">
@@ -1237,9 +1174,9 @@ const Leaderboard = {
                         </div>
                         <div class="player-right">
                             <img src="${player.pu || AppConfig.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
-                                 onerror="this.src='${AppConfig.FALLBACK_AVATAR}'"> <!-- "pu" вместо "photo_url" -->
+                                 onerror="this.src='${AppConfig.FALLBACK_AVATAR}'">
                             <div class="player-info">
-                                <span class="player-name">${player.un}</span> <!-- "un" вместо "username" -->
+                                <span class="player-name">${player.un}</span>
                                 <span class="player-rank">#${i + 1}</span>
                             </div>
                         </div>
@@ -1252,7 +1189,6 @@ const Leaderboard = {
         }
     }
 };
-
 
 const Friends = {
     elements: {
@@ -1477,7 +1413,7 @@ async function preloadImagesWithProgress(imageUrls, onProgress) {
     onProgress(100);
 }
 
-// Исправленная функция minimalInit
+// Переписанная функция minimalInit без аналитики
 async function minimalInit(tg) {
     updateProgress(10);
 
@@ -1498,13 +1434,10 @@ async function minimalInit(tg) {
     AppState.userId = userId;
 
     try {
-        // Сначала получаем токен
         await refreshToken();
         if (!AppState.token) {
             throw new Error("Token was not set after refresh");
         }
-
-        await initializeAnalytics(tg);
 
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`);
         if (!userDataResponse || userDataResponse.error) {
@@ -1518,9 +1451,10 @@ async function minimalInit(tg) {
         return false;
     }
 }
+
 async function fullInit(tg) {
     updateProgress(30);
-    await Utils.wait(100); // Небольшая задержка для полной загрузки DOM
+    await Utils.wait(100);
     console.log("DOM state before Game.init:", document.getElementById("cube"));
 
     const gameInitialized = Game.init();
@@ -1540,7 +1474,7 @@ async function fullInit(tg) {
 
     try {
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(1000) // Увеличиваем тайм-аут
+            signal: AbortSignal.timeout(1000)
         });
 
         if (!userDataResponse || userDataResponse.error) {
@@ -1560,7 +1494,7 @@ async function fullInit(tg) {
 
     updateProgress(60);
 
-    const imageBaseUrl = "https://suspect147.github.io/LUCU/"; // Переименовали для ясности
+    const imageBaseUrl = "https://suspect147.github.io/LUCU/";
     const imageAssetsArrayWithBase = imageAssetsArray.map(img => imageBaseUrl + img);
 
     await preloadImagesWithProgress(imageAssetsArrayWithBase, (progress) => {
@@ -1575,7 +1509,6 @@ async function fullInit(tg) {
     console.log("Full initialization completed successfully");
 }
 
-// Исправленная функция initApp
 async function initApp() {
     const tg = window.Telegram?.WebApp;
     if (!tg) {
@@ -1590,7 +1523,7 @@ async function initApp() {
             return;
         }
 
-        await loadConfig(tg); // Загружаем конфиг с токеном после minimalInit
+        await loadConfig(tg);
 
         AppState.isPremium = tg.initDataUnsafe?.user?.is_premium || false;
 
@@ -1629,7 +1562,6 @@ window.addEventListener("load", () => {
     }
 });
 
-// Обработка ошибок на уровне приложения
 window.addEventListener("unhandledrejection", (event) => {
     console.error("Unhandled promise rejection:", event.reason);
     console.log("An unexpected error occurred. Please reload the app.");
