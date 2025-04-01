@@ -19,6 +19,7 @@ const AppState = {
     analyticsInitialized: false // Новый флаг
 };
 
+// 1.1: Уменьшение размера полезной нагрузки (сокращенные ключи)
 async function loadConfig(token, tg) {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -39,8 +40,8 @@ async function loadConfig(token, tg) {
         }
         const data = await response.json();
         Object.assign(AppConfig, {
-            API_BASE_URL: data.API_BASE_URL,
-            CHANNEL_USERNAME: data.CHANNEL_USERNAME
+            API_BASE_URL: data.u,  // "u" вместо "API_BASE_URL"
+            CHANNEL_USERNAME: data.c  // "c" вместо "CHANNEL_USERNAME"
         });
     } catch (error) {
         console.error("Failed to load config:", error);
@@ -69,7 +70,7 @@ async function initializeTonConnect() {
             setTimeout(initializeTonConnect, 5000);
         } else {
             console.error("TON Connect SDK failed to load after maximum attempts.");
-            Telegram.WebApp.showAlert("TON wallet integration unavailable. Please reload the page or continue without it.");
+            console.log("TON wallet integration unavailable. Please reload the page or continue without it.");
         }
         return;
     }
@@ -84,15 +85,16 @@ async function initializeTonConnect() {
                 console.log("Wallet connected:", walletInfo);
             } else {
                 console.warn("Wallet disconnected");
-                Telegram.WebApp.showAlert("Please connect your TON wallet to continue.");
+                console.log("Please connect your TON wallet to continue.");
             }
         });
     } catch (error) {
         console.error("Failed to initialize TON Connect UI:", error);
-        Telegram.WebApp.showAlert("TON wallet unavailable. You can continue without it.");
+        console.log("TON wallet unavailable. You can continue without it.");
     }
 }
 
+// 4.1: Удаление избыточных проверок (убран цикл ожидания initData)
 async function initializeAnalytics(tg) {
     try {
         if (AppState.analyticsInitialized) {
@@ -112,15 +114,8 @@ async function initializeAnalytics(tg) {
             console.log("Telegram WebApp initialized");
         }
 
-        let attempts = 0;
-        const maxAttempts = 50;
-        while (!telegram.initData && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-
         if (!telegram.initData) {
-            throw new Error("Telegram initData not available after timeout");
+            throw new Error("Telegram initData not available");
         }
 
         console.log("Sending request to /init_analytics");
@@ -150,6 +145,7 @@ async function initializeAnalytics(tg) {
         throw error;
     }
 }
+
 // Вызываем при загрузке страницы
 document.addEventListener("DOMContentLoaded", () => {
     initializeTonConnect();
@@ -191,75 +187,86 @@ const Utils = {
     }
 };
 
+// 1.3 и 2.2: Уменьшенный тайм-аут (500 мс) и дедупликация запросов
 const API = {
     defaultHeaders: {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
     },
-async fetch(endpoint, options = {}) {
-    const url = `${AppConfig.API_BASE_URL}${endpoint}`;
-    const telegramInitData = window.Telegram.WebApp.initData || "";
-    if (!telegramInitData) {
-        throw new Error("Telegram initData is required for API requests");
-    }
+    pendingRequests: new Map(),
+    async fetch(endpoint, options = {}) {
+        const key = `${endpoint}:${JSON.stringify(options.body)}`;
+        if (this.pendingRequests.has(key)) return this.pendingRequests.get(key);
 
-    let attempts = 0;
-    const maxAttempts = 3;
+        const url = `${AppConfig.API_BASE_URL}${endpoint}`;
+        const telegramInitData = window.Telegram.WebApp.initData || "";
+        if (!telegramInitData) {
+            throw new Error("Telegram initData is required for API requests");
+        }
 
-    if (!AppState.token) {
-        console.warn("No token available, initializing...");
-        await refreshToken();
+        let attempts = 0;
+        const maxAttempts = 3;
+
         if (!AppState.token) {
-            throw new Error("Failed to initialize token. Please reload the app.");
+            console.warn("No token available, initializing...");
+            await refreshToken();
+            if (!AppState.token) {
+                throw new Error("Failed to initialize token. Please reload the app.");
+            }
         }
-    }
 
-    // Сохраняем оригинальный fetch, если он перехвачен
-    const originalFetch = window.fetch.bind(window);
+        const originalFetch = window.fetch.bind(window);
 
-    while (attempts < maxAttempts) {
-        try {
-            console.log("Fetching with token:", AppState.token);
-            const response = await originalFetch(url, {
-                ...options,
-                signal: AbortSignal.timeout(5000), // Установим тайм-аут явно
-                headers: {
-                    ...API.defaultHeaders,
-                    "Authorization": `Bearer ${AppState.token}`,
-                    ...options.headers
-                }
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-                error.status = response.status;
-                if (error.status === 401 && attempts < maxAttempts - 1) {
-                    console.warn("Token invalid, attempting to refresh...");
-                    await refreshToken();
-                    if (!AppState.token) {
-                        throw new Error("Token refresh failed. Please reload the app.");
+        const promise = (async () => {
+            while (attempts < maxAttempts) {
+                try {
+                    console.log("Fetching with token:", AppState.token);
+                    const response = await originalFetch(url, {
+                        ...options,
+                        signal: AbortSignal.timeout(500), // 1.3: Уменьшенный тайм-аут
+                        headers: {
+                            ...API.defaultHeaders,
+                            "Authorization": `Bearer ${AppState.token}`,
+                            ...options.headers
+                        }
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                        error.status = response.status;
+                        if (error.status === 401 && attempts < maxAttempts - 1) {
+                            console.warn("Token invalid, attempting to refresh...");
+                            await refreshToken();
+                            if (!AppState.token) {
+                                throw new Error("Token refresh failed. Please reload the app.");
+                            }
+                            attempts++;
+                            continue;
+                        }
+                        throw error;
                     }
+                    return await response.json();
+                } catch (error) {
                     attempts++;
-                    continue;
+                    console.error(`Attempt ${attempts} failed:`, error);
+                    if (attempts === maxAttempts) {
+                        if (error.name === "AbortError") {
+                            throw new Error("Request timed out or was aborted. Check your network connection.");
+                        } else if (error.status === 401) {
+                            throw new Error("Authentication failed after multiple attempts. Please reload the app.");
+                        }
+                        throw error;
+                    }
+                    await Utils.wait(1000 * attempts); // Экспоненциальная задержка
+                } finally {
+                    this.pendingRequests.delete(key); // Удаляем запрос из Map после завершения
                 }
-                throw error;
             }
-            return await response.json();
-        } catch (error) {
-            attempts++;
-            console.error(`Attempt ${attempts} failed:`, error);
-            if (attempts === maxAttempts) {
-                if (error.name === "AbortError") {
-                    throw new Error("Request timed out or was aborted. Check your network connection.");
-                } else if (error.status === 401) {
-                    throw new Error("Authentication failed after multiple attempts. Please reload the app.");
-                }
-                throw error;
-            }
-            await Utils.wait(1000 * attempts); // Экспоненциальная задержка
-        }
+        })();
+
+        this.pendingRequests.set(key, promise); // 2.2: Дедупликация
+        return promise;
     }
-}
 };
 
 async function refreshToken() {
@@ -289,12 +296,11 @@ async function refreshToken() {
         return data.token;
     } catch (error) {
         console.error("Failed to refresh token:", error);
-        Telegram.WebApp.showAlert("Authentication failed. Please restart the app.");
+        console.log("Authentication failed. Please restart the app.");
         throw error;
     }
 }
 
-// Следующий код (class Particle) уже не часть объекта API
 class Particle {
     constructor(id, parent) {
         this.id = id;
@@ -405,37 +411,37 @@ const Game = {
         equippedSkin: AppConfig.DEFAULT_SKIN,
         rolls: 0
     },
-init() {
-    this.elements.cube = document.getElementById("cube");
-    this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
-    this.elements.bestLuckDisplay = document.getElementById("bestLuck");
-    this.elements.progressBar = document.querySelector("#progressBar div");
+    init() {
+        this.elements.cube = document.getElementById("cube");
+        this.elements.coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
+        this.elements.bestLuckDisplay = document.getElementById("bestLuck");
+        this.elements.progressBar = document.querySelector("#progressBar div");
 
-    const missingElements = [];
-    if (!this.elements.cube) missingElements.push("cube");
-    if (!this.elements.coinsDisplay) missingElements.push("coinsDisplay");
-    if (!this.elements.bestLuckDisplay) missingElements.push("bestLuckDisplay");
-    if (!this.elements.progressBar) missingElements.push("progressBar");
+        const missingElements = [];
+        if (!this.elements.cube) missingElements.push("cube");
+        if (!this.elements.coinsDisplay) missingElements.push("coinsDisplay");
+        if (!this.elements.bestLuckDisplay) missingElements.push("bestLuckDisplay");
+        if (!this.elements.progressBar) missingElements.push("progressBar");
 
-    if (missingElements.length > 0) {
-        console.error("Game.init failed: Required DOM elements are missing:", missingElements);
-        Telegram.WebApp.showAlert("Failed to initialize game. Please reload the app.");
-        return false; // Возвращаем false для индикации ошибки
-    }
+        if (missingElements.length > 0) {
+            console.error("Game.init failed: Required DOM elements are missing:", missingElements);
+            console.log("Failed to initialize game. Please reload the app.");
+            return false; // Возвращаем false для индикации ошибки
+        }
 
-    document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
-    try {
-        console.log("Adding click listener to cube:", this.elements.cube);
-        this.elements.cube.addEventListener("click", this.handleClick.bind(this));
-    } catch (error) {
-        console.error("Error adding event listener to cube:", error);
-        Telegram.WebApp.showAlert("Failed to set up cube interaction. Please reload the app.");
-        return false;
-    }
-    this.updateFromAppState();
-    console.log("Game initialized successfully");
-    return true;
-},
+        document.body.style.transition = "background 0.5s ease-in-out, background-image 0.5s ease-in-out";
+        try {
+            console.log("Adding click listener to cube:", this.elements.cube);
+            this.elements.cube.addEventListener("click", this.handleClick.bind(this));
+        } catch (error) {
+            console.error("Error adding event listener to cube:", error);
+            console.log("Failed to set up cube interaction. Please reload the app.");
+            return false;
+        }
+        this.updateFromAppState();
+        console.log("Game initialized successfully");
+        return true;
+    },
     updateFromAppState() {
         const data = AppState.userData;
         if (!data) {
@@ -464,6 +470,7 @@ init() {
         }
         this.rollCube();
     },
+    // 1.1: Минимизация данных в ответе сервера (сокращенные ключи)
     async rollCube() {
         if (this.state.isAnimating) return;
 
@@ -486,51 +493,51 @@ init() {
                 body: JSON.stringify({ user_id: userId })
             });
 
-            if (!response.outcome_src || response.coins === undefined || response.luck === undefined) {
+            if (!response.src || response.c === undefined || response.l === undefined) {
                 throw new Error("Invalid server response: missing required fields");
             }
 
-            this.elements.cube.src = response.outcome_src;
+            this.elements.cube.src = response.src; // Используем сокращенный ключ "src"
             this.startProgress(AppConfig.ANIMATION_DURATION);
 
             AppState.userData = {
                 ...AppState.userData,
-                coins: response.coins,
-                rolls: response.total_rolls,
-                min_luck: Math.min(AppState.userData.min_luck || 1001, response.luck),
-                equipped_skin: response.equipped_skin
+                coins: response.c,  // "c" вместо "coins"
+                rolls: response.r,  // "r" вместо "total_rolls"
+                min_luck: Math.min(AppState.userData.min_luck || 1001, response.l),  // "l" вместо "luck"
+                equipped_skin: response.es  // "es" вместо "equipped_skin"
             };
 
             if (AppState.userData.ban !== "yes") {
                 document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(response.is_rainbow ? "pink-gradient" : "gray-gradient");
+                document.body.classList.add(response.rb ? "pink-gradient" : "gray-gradient"); // "rb" вместо "is_rainbow"
 
                 const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
                 setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                    this.state.coins = response.c;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.c)} $LUCU`;
                 }, coinUpdateDelay);
 
                 await Utils.wait(AppConfig.ANIMATION_DURATION);
 
-                if (response.luck < this.state.bestLuck) {
-                    this.state.bestLuck = response.luck;
+                if (response.l < this.state.bestLuck) {
+                    this.state.bestLuck = response.l;
                 }
-                this.state.rolls = response.total_rolls;
-                this.state.equippedSkin = response.equipped_skin;
+                this.state.rolls = response.r;
+                this.state.equippedSkin = response.es;
 
                 this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-                this.updateAchievementProgress(response.total_rolls);
+                this.updateAchievementProgress(response.r);
 
-                if (response.is_rainbow) {
+                if (response.rb) {
                     document.body.classList.remove("pink-gradient");
                     document.body.classList.add("gray-gradient");
                 }
             } else {
                 const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
                 setTimeout(() => {
-                    this.state.coins = response.coins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.coins)} $LUCU`;
+                    this.state.coins = response.c;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.c)} $LUCU`;
                 }, coinUpdateDelay);
                 await Utils.wait(AppConfig.ANIMATION_DURATION);
             }
@@ -693,23 +700,23 @@ const Skins = {
         ownedSkins: [],
         equippedSkin: AppConfig.DEFAULT_SKIN
     },
-init() {
-    if (!this.elements.button) {
-        console.error("Skins button not found in DOM. Expected element: .menu-item img[alt='Skins']. Skins menu functionality will be disabled.");
-        return;
-    }
+    init() {
+        if (!this.elements.button) {
+            console.error("Skins button not found in DOM. Expected element: .menu-item img[alt='Skins']. Skins menu functionality will be disabled.");
+            return;
+        }
 
-    this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
-    this.elements.menu.addEventListener("click", e => {
-        if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
-    });
-    UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-    this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
-    this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
-    this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
-    this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
-    this.updateFromAppState();
-},
+        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
+        this.elements.menu.addEventListener("click", e => {
+            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
+        });
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+        this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
+        this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
+        this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
+        this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
+        this.updateFromAppState();
+    },
     updateFromAppState() {
         const data = AppState.userData;
         if (!data) {
@@ -719,77 +726,76 @@ init() {
         this.state.equippedSkin = data.equipped_skin || AppConfig.DEFAULT_SKIN;
         this.updateUI();
     },
+    // 1.1: Сокращенные ключи в ответе сервера
     async handleSkin(type) {
-    const userId = tg.initDataUnsafe?.user?.id?.toString();
-    if (!userId) {
-        Telegram.WebApp.showAlert("User ID not found. Please restart the app.");
-        return;
-    }
-
-    if (AppState.userData.ban === "yes") {
-        Telegram.WebApp.showAlert("You are banned and cannot purchase or equip skins.");
-        return;
-    }
-
-    const skinPrices = {
-        "negative": 5000,
-        "Emerald": 10000,
-        "Pixel": 150000,
-        "classic": 0
-    };
-
-    const price = skinPrices[type];
-    const isOwned = this.state.ownedSkins.includes(type);
-
-    // Если скин еще не куплен и требуется проверка монет
-    if (!isOwned && price && AppState.userData.coins < price) {
-        Telegram.WebApp.showAlert(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU to buy this skin.`);
-        return;
-    }
-
-    try {
-        const response = await API.fetch("/handle_skin", {
-            method: "POST",
-            headers: {
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-            },
-            body: JSON.stringify({ user_id: userId, skin_type: type })
-        });
-
-        if (response.success) {
-            this.state.ownedSkins = response.owned_skins;
-            this.state.equippedSkin = response.equipped_skin;
-            this.updateUI();
-
-            // Обновляем состояние игры и UI
-            AppState.userData = {
-                ...AppState.userData,
-                coins: response.new_coins,
-                owned_skins: response.owned_skins,
-                equipped_skin: response.equipped_skin
-            };
-            Game.state.coins = response.new_coins;
-            Game.state.equippedSkin = response.equipped_skin;
-            Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.new_coins)} $LUCU`;
-            Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`; // Предотвращаем кэширование
-            Game.updateFromAppState(); // Явно обновляем UI игры
-
-            Telegram.WebApp.showAlert(`Skin ${type} successfully ${isOwned ? "equipped" : "purchased and equipped"}!`);
-        } else {
-            Telegram.WebApp.showAlert(response.message || "Failed to handle skin action.");
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            console.log("User ID not found. Please restart the app.");
+            return;
         }
-    } catch (error) {
-        console.error("Skin action error:", error);
 
-        if (error.status === 403) {
-            Telegram.WebApp.showAlert("Access denied: You may be banned or lack permissions.");
-        } else if (error.status === 400) {
-            Telegram.WebApp.showAlert("Invalid request. Please try again.");
-        } else {
-            Telegram.WebApp.showAlert("Error handling skin: " + error.message);
+        if (AppState.userData.ban === "yes") {
+            console.log("You are banned and cannot purchase or equip skins.");
+            return;
         }
-    }
-},
+
+        const skinPrices = {
+            "negative": 5000,
+            "Emerald": 10000,
+            "Pixel": 150000,
+            "classic": 0
+        };
+
+        const price = skinPrices[type];
+        const isOwned = this.state.ownedSkins.includes(type);
+
+        if (!isOwned && price && AppState.userData.coins < price) {
+            console.log(`Not enough $LUCU! You need ${Utils.formatCoins(price)} $LUCU to buy this skin.`);
+            return;
+        }
+
+        try {
+            const response = await API.fetch("/handle_skin", {
+                method: "POST",
+                headers: {
+                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+                },
+                body: JSON.stringify({ user_id: userId, skin_type: type })
+            });
+
+            if (response.success) {
+                this.state.ownedSkins = response.os; // "os" вместо "owned_skins"
+                this.state.equippedSkin = response.es; // "es" вместо "equipped_skin"
+                this.updateUI();
+
+                AppState.userData = {
+                    ...AppState.userData,
+                    coins: response.nc, // "nc" вместо "new_coins"
+                    owned_skins: response.os,
+                    equipped_skin: response.es
+                };
+                Game.state.coins = response.nc;
+                Game.state.equippedSkin = response.es;
+                Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.nc)} $LUCU`;
+                Game.elements.cube.src = `${Game.getSkinConfig()[type].initial}?t=${Date.now()}`;
+                Game.updateFromAppState();
+
+                console.log(`Skin ${type} successfully ${isOwned ? "equipped" : "purchased and equipped"}!`);
+            } else {
+                console.log(response.message || "Failed to handle skin action.");
+            }
+        } catch (error) {
+            console.error("Skin action error:", error);
+
+            if (error.status === 403) {
+                console.log("Access denied: You may be banned or lack permissions.");
+            } else if (error.status === 400) {
+                console.log("Invalid request. Please try again.");
+            } else {
+                console.log("Error handling skin: " + error.message);
+            }
+        }
+    },
     updateUI() {
         const owned = this.state.ownedSkins;
         const equipped = this.state.equippedSkin;
@@ -806,6 +812,7 @@ init() {
     }
 };
 
+// 2.1 и 3.1: Агрегация запросов и упрощение логики квестов
 const Quests = {
     elements: {
         menu: document.getElementById("quests-menu"),
@@ -864,13 +871,17 @@ const Quests = {
             await this.handleDiceStatus(tg.initDataUnsafe.user?.id?.toString());
         });
     },
+    // 2.1: Агрегация через единый запрос /get_user_state
     async refreshUserData() {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) return;
         try {
-            const userData = await API.fetch(`/get_user_data_new/${userId}`);
-            if (JSON.stringify(AppState.userData) !== JSON.stringify(userData)) {
-                AppState.userData = { ...AppState.userData, ...userData };
+            const response = await API.fetch("/get_user_state", { // Новый эндпоинт для агрегации данных
+                method: "POST",
+                body: JSON.stringify({ user_id: userId })
+            });
+            if (JSON.stringify(AppState.userData) !== JSON.stringify(response.user_data)) {
+                AppState.userData = { ...AppState.userData, ...response.user_data };
                 this.updateQuestStatus();
             }
         } catch (error) {
@@ -912,6 +923,7 @@ const Quests = {
             }
         });
     },
+    // 3.1: Упрощение логики квестов
     async handleQuest(questName) {
         const userId = tg?.initDataUnsafe?.user?.id?.toString();
         if (!userId) return;
@@ -925,23 +937,30 @@ const Quests = {
             } else {
                 switch (questName) {
                     case "subscription_quest":
-                        await this.handleSubscription(userId);
+                        tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}`);
                         break;
                     case "forward_message":
-                        await this.handleForwardMessage(userId);
+                        const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
+                        tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
                         break;
                     case "dice_status":
-                        await this.handleDiceStatus(userId);
+                        if (!AppState.isPremium) {
+                            console.log("This quest requires Telegram Premium. Please upgrade your account.");
+                            return;
+                        }
+                        const customEmojiId = "5384541907051357217";
+                        await Telegram.WebApp.setEmojiStatus(customEmojiId);
                         break;
                     case "dice_nickname":
-                        await this.handleDiceNickname(userId);
+                        console.log("Please add the 🎲 emoji to your Telegram nickname and try again.");
                         break;
                     case "boost_channel":
-                        await this.handleBoostChannel(userId);
+                        tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}?boost`);
                         break;
                     default:
                         console.error(`Unknown quest: ${questName}`);
                 }
+                setTimeout(() => this.refreshUserData(), 6000); // Проверка после действия
             }
         } catch (error) {
             console.error(`Error handling quest ${questName}:`, error);
@@ -975,7 +994,7 @@ const Quests = {
         const message = `Hey, bro! Let's play this game together! 🎲\n\nOpen game: https://t.me/LuckyCubesbot`;
         tg.openLink(`https://t.me/share/url?url=${encodeURIComponent(message)}`);
         setTimeout(async () => {
-            const response = await API.fetch("/check_forward_message", { // Предполагаемая конечная точка API
+            const response = await API.fetch("/check_forward_message", {
                 method: "POST",
                 body: JSON.stringify({ user_id: userId })
             });
@@ -987,12 +1006,11 @@ const Quests = {
     async handleDiceStatus(userId) {
         try {
             if (!AppState.isPremium) {
-                Telegram.WebApp.showAlert("This quest requires Telegram Premium. Please upgrade your account.");
+                console.log("This quest requires Telegram Premium. Please upgrade your account.");
                 console.log("User is not Premium. Cannot set emoji status.");
                 return;
             }
 
-            // Используем custom_emoji_id первого эмодзи из DiceCubeEmoji (1️⃣)
             const customEmojiId = "5384541907051357217";
             console.log(`Attempting to set emoji status with custom_emoji_id: ${customEmojiId}`);
             await Telegram.WebApp.setEmojiStatus(customEmojiId);
@@ -1006,23 +1024,23 @@ const Quests = {
 
                     if (response.success) {
                         await this.completeQuest(userId, "dice_status");
-                        Telegram.WebApp.showAlert("Dice status set successfully! Quest completed.");
+                        console.log("Dice status set successfully! Quest completed.");
                     } else {
-                        Telegram.WebApp.showAlert("Failed to verify status. Please try again.");
+                        console.warn("Failed to verify status. Please try again.");
                         console.warn("Server verification failed:", response);
                     }
                 } catch (serverError) {
                     console.error("Server error during status check:", serverError);
-                    Telegram.WebApp.showAlert("Server error. Please try again later.");
+                    console.log("Server error. Please try again later.");
                 }
             }, 6000);
         } catch (error) {
             console.error("Error setting emoji status:", error);
             if (error.message && error.message.includes("SUGGESTED_EMOJI_INVALID")) {
-                Telegram.WebApp.showAlert("This emoji (1️⃣) is not supported for status. Contact support.");
+                console.log("This emoji (1️⃣) is not supported for status. Contact support.");
                 console.warn(`Emoji ID ${customEmojiId} is invalid for status.`);
             } else {
-                Telegram.WebApp.showAlert("Unexpected error: " + error.message);
+                console.log("Unexpected error: " + error.message);
             }
         }
     },
@@ -1150,6 +1168,7 @@ const Quests = {
     }
 };
 
+// 4.2: Оптимизация обработки лидерборда на фронтенде
 const Leaderboard = {
     elements: {
         menu: document.getElementById("leaderboard-menu"),
@@ -1188,7 +1207,7 @@ const Leaderboard = {
             const data = await API.fetch(`/leaderboard_${type}`);
             this.elements.list.innerHTML = "";
             const userId = tg.initDataUnsafe?.user?.id?.toString();
-            const userIndex = data.findIndex(p => p.user_id === userId);
+            const userIndex = data.findIndex(p => p.u === userId); // "u" вместо "user_id"
             this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
             if (!data?.length) {
                 this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
@@ -1196,21 +1215,21 @@ const Leaderboard = {
             }
             for (let i = 0; i < data.length; i++) {
                 const player = data[i];
-                const isCurrentUser = userId && player.user_id === userId;
+                const isCurrentUser = userId && player.u === userId;
                 const li = document.createElement("li");
                 li.classList.add("leaderboard-item");
                 if (isCurrentUser) li.classList.add("highlight");
-                const value = type === "coins" ? Utils.formatCoins(player.coins) + " $LUCU" : Utils.formatNumber(player.min_luck) || "N/A";
+                const value = type === "coins" ? Utils.formatCoins(player.c) + " $LUCU" : Utils.formatNumber(player.ml) || "N/A"; // "c" вместо "coins", "ml" вместо "min_luck"
                 li.innerHTML = `
                     <div class="leaderboard-item-content">
                         <div class="player-left">
                             <span class="player-${type}">${value}</span>
                         </div>
                         <div class="player-right">
-                            <img src="${player.photo_url || AppConfig.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
-                                 onerror="this.src='${AppConfig.FALLBACK_AVATAR}'">
+                            <img src="${player.pu || AppConfig.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
+                                 onerror="this.src='${AppConfig.FALLBACK_AVATAR}'"> <!-- "pu" вместо "photo_url" -->
                             <div class="player-info">
-                                <span class="player-name">${player.username}</span>
+                                <span class="player-name">${player.un}</span> <!-- "un" вместо "username" -->
                                 <span class="player-rank">#${i + 1}</span>
                             </div>
                         </div>
@@ -1529,7 +1548,7 @@ async function fullInit(tg) {
     const gameInitialized = Game.init();
     if (!gameInitialized) {
         console.error("Game initialization failed");
-        Telegram.WebApp.showAlert("Game failed to initialize. Please reload the app.");
+        console.log("Game failed to initialize. Please reload the app.");
         return;
     }
 
@@ -1543,7 +1562,7 @@ async function fullInit(tg) {
 
     try {
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(500) // 1.3: Уменьшенный тайм-аут
         });
 
         if (!userDataResponse || userDataResponse.error) {
@@ -1557,7 +1576,7 @@ async function fullInit(tg) {
         Friends.updateFriendsCount();
     } catch (error) {
         console.error("User data fetch error:", error);
-        Telegram.WebApp.showAlert("Failed to load user data. Please try again.");
+        console.log("Failed to load user data. Please try again.");
         return;
     }
 
@@ -1574,59 +1593,66 @@ async function fullInit(tg) {
     await Quests.refreshUserData();
     await Quests.checkPendingQuests(AppState.userId);
 
+    Profile.init(); // Инициализация профиля после загрузки всех данных
+
     AppState.isInitialized = true;
+    console.log("Full initialization completed successfully");
 }
 
-async function initializeApp() {
-    const loadingScreen = document.getElementById("loading-screen");
-    const loadingText = document.getElementById("loading-text");
-
-    const updateProgressLocal = (percent) => {
-        if (loadingText) loadingText.textContent = `Loading ${percent}%`;
-    };
-
-    updateProgressLocal(0);
-
-    if (!window.Telegram || !window.Telegram.WebApp) {
-        console.error("This app must be opened in Telegram.");
-        const errorMessage = document.createElement("div");
-        errorMessage.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; background: #333; padding: 20px; border-radius: 10px;";
-        errorMessage.textContent = "Please open this app in Telegram to play.";
-        document.body.appendChild(errorMessage);
+async function initApp() {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) {
+        console.error("Telegram WebApp is not available");
         return;
     }
-
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-    updateProgressLocal(10);
-
-    const minimalSuccess = await minimalInit(tg);
-    if (!minimalSuccess) {
-        console.error("Minimal initialization failed");
-        Telegram.WebApp.showAlert("Failed to initialize the app. Please reload.");
-        return;
-    }
-
-    updateProgressLocal(50);
-    document.body.classList.add("gray-gradient");
 
     try {
-        await initializeAnalytics(tg);
+        await loadConfig(AppState.token, tg);
+        const minimalSuccess = await minimalInit(tg);
+        if (!minimalSuccess) {
+            console.log("Minimal initialization failed. Please reload the app.");
+            return;
+        }
+
+        AppState.isPremium = tg.initDataUnsafe?.user?.is_premium || false;
+
+        await fullInit(tg);
+
+        if (AppState.userData.ban === "yes") {
+            document.body.style.background = "linear-gradient(135deg, #000000, #ff0000)";
+            document.getElementById("cube").src = "ban.gif";
+            console.log("You are banned. Contact support for more information.");
+        }
     } catch (error) {
-        console.warn("Analytics initialization failed, continuing without it:", error);
+        console.error("App initialization error:", error);
+        console.log("Failed to initialize the app. Please reload the app.");
     }
-
-    await fullInit(tg);
-
-    if (loadingScreen) {
-        loadingScreen.style.transition = "opacity 0.5s";
-        loadingScreen.style.opacity = "0";
-        setTimeout(() => loadingScreen.style.display = "none", 500);
-    }
-
-    AppState.isInitialized = true;
-    console.log("App fully initialized");
 }
 
-document.addEventListener("DOMContentLoaded", initializeApp);
+document.addEventListener("DOMContentLoaded", async () => {
+    await initApp();
+
+    const coinsDisplay = document.getElementById("coins") || document.getElementById("coins-display");
+    if (coinsDisplay) {
+        Utils.adjustFontSize(coinsDisplay);
+        window.addEventListener("resize", () => Utils.adjustFontSize(coinsDisplay));
+    }
+
+    const tonConnectButton = document.getElementById("ton-connect");
+    if (tonConnectButton) {
+        tonConnectButton.style.display = "block";
+    }
+});
+
+window.addEventListener("load", () => {
+    const loadingScreen = document.getElementById("loading-screen");
+    if (loadingScreen && AppState.isInitialized) {
+        loadingScreen.style.display = "none";
+    }
+});
+
+// Обработка ошибок на уровне приложения
+window.addEventListener("unhandledrejection", (event) => {
+    console.error("Unhandled promise rejection:", event.reason);
+    console.log("An unexpected error occurred. Please reload the app.");
+});
