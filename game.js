@@ -20,7 +20,8 @@ const AppState = {
 };
 
 // 1.1: Уменьшение размера полезной нагрузки (сокращенные ключи)
-async function loadConfig(token, tg) {
+// Исправленная функция loadConfig (убираем зависимость от токена на этом этапе)
+async function loadConfig(tg) {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
         if (!telegramInitData) {
@@ -30,8 +31,8 @@ async function loadConfig(token, tg) {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-Telegram-Init-Data": telegramInitData,
-                "Authorization": `Bearer ${token}`
+                "X-Telegram-Init-Data": telegramInitData
+                // Убираем "Authorization" здесь, если токен еще не нужен
             }
         });
         if (!response.ok) {
@@ -40,14 +41,15 @@ async function loadConfig(token, tg) {
         }
         const data = await response.json();
         Object.assign(AppConfig, {
-            API_BASE_URL: data.u,  // "u" вместо "API_BASE_URL"
-            CHANNEL_USERNAME: data.c  // "c" вместо "CHANNEL_USERNAME"
+            API_BASE_URL: data.u,
+            CHANNEL_USERNAME: data.c
         });
     } catch (error) {
         console.error("Failed to load config:", error);
-        if (tg && error.message.includes("401")) {
+        if (error.message.includes("401")) {
             console.log("Authorization failed. Please restart the app.");
         }
+        // Устанавливаем значения по умолчанию
         Object.assign(AppConfig, {
             API_BASE_URL: "https://backend12-production-1210.up.railway.app",
             CHANNEL_USERNAME: "LuckyCubesChannel"
@@ -269,6 +271,7 @@ const API = {
     }
 };
 
+// Функция обновления токена
 async function refreshToken() {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -287,6 +290,7 @@ async function refreshToken() {
             throw new Error(`Failed to refresh token: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
+        console.log("Response from /init:", data); // Логируем ответ для отладки
         if (!data.token) {
             throw new Error("Server response did not include a token");
         }
@@ -1487,6 +1491,7 @@ async function preloadImagesWithProgress(imageUrls, onProgress) {
     onProgress(100);
 }
 
+// Исправленная функция minimalInit
 async function minimalInit(tg) {
     updateProgress(10);
 
@@ -1507,26 +1512,14 @@ async function minimalInit(tg) {
     AppState.userId = userId;
 
     try {
+        // Сначала получаем токен
+        await refreshToken();
+        if (!AppState.token) {
+            throw new Error("Token was not set after refresh");
+        }
+
         await initializeAnalytics(tg);
-    } catch (error) {
-        console.error("Analytics initialization failed:", error);
-    }
 
-    try {
-        const tokenResponse = await API.fetch("/init", {
-            method: "POST",
-            headers: {
-                "X-Telegram-Init-Data": tg.initData
-            }
-        });
-        AppState.token = tokenResponse.token;
-        console.log("Initial token set:", AppState.token);
-    } catch (error) {
-        console.error("Failed to fetch initial token:", error);
-        return false;
-    }
-
-    try {
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`);
         if (!userDataResponse || userDataResponse.error) {
             throw new Error("Failed to load user data");
@@ -1539,7 +1532,6 @@ async function minimalInit(tg) {
         return false;
     }
 }
-
 async function fullInit(tg) {
     updateProgress(30);
     await Utils.wait(100); // Небольшая задержка для полной загрузки DOM
@@ -1599,6 +1591,7 @@ async function fullInit(tg) {
     console.log("Full initialization completed successfully");
 }
 
+// Исправленная функция initApp
 async function initApp() {
     const tg = window.Telegram?.WebApp;
     if (!tg) {
@@ -1607,12 +1600,15 @@ async function initApp() {
     }
 
     try {
-        await loadConfig(AppState.token, tg);
+        // Сначала выполняем минимальную инициализацию с токеном
         const minimalSuccess = await minimalInit(tg);
         if (!minimalSuccess) {
             console.log("Minimal initialization failed. Please reload the app.");
             return;
         }
+
+        // После успешной минимальной инициализации загружаем конфиг
+        await loadConfig(tg);
 
         AppState.isPremium = tg.initDataUnsafe?.user?.is_premium || false;
 
