@@ -31,8 +31,8 @@ async function loadConfig(tg) {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-Telegram-Init-Data": telegramInitData
-                // Убираем "Authorization" здесь, если токен еще не нужен
+                "X-Telegram-Init-Data": telegramInitData,
+                "Authorization": `Bearer ${AppState.token}` // Добавляем токен
             }
         });
         if (!response.ok) {
@@ -41,15 +41,14 @@ async function loadConfig(tg) {
         }
         const data = await response.json();
         Object.assign(AppConfig, {
-            API_BASE_URL: data.u,
-            CHANNEL_USERNAME: data.c
+            API_BASE_URL: data.u,  // "u" вместо "API_BASE_URL"
+            CHANNEL_USERNAME: data.c  // "c" вместо "CHANNEL_USERNAME"
         });
     } catch (error) {
         console.error("Failed to load config:", error);
         if (error.message.includes("401")) {
             console.log("Authorization failed. Please restart the app.");
         }
-        // Устанавливаем значения по умолчанию
         Object.assign(AppConfig, {
             API_BASE_URL: "https://backend12-production-1210.up.railway.app",
             CHANNEL_USERNAME: "LuckyCubesChannel"
@@ -878,23 +877,24 @@ const Quests = {
             await this.handleDiceStatus(tg.initDataUnsafe.user?.id?.toString());
         });
     },
-    // 2.1: Агрегация через единый запрос /get_user_state
-    async refreshUserData() {
-        const userId = tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) return;
-        try {
-            const response = await API.fetch("/get_user_state", { // Новый эндпоинт для агрегации данных
-                method: "POST",
-                body: JSON.stringify({ user_id: userId })
-            });
-            if (JSON.stringify(AppState.userData) !== JSON.stringify(response.user_data)) {
-                AppState.userData = { ...AppState.userData, ...response.user_data };
-                this.updateQuestStatus();
+async refreshUserData() {
+    const userId = tg?.initDataUnsafe?.user?.id?.toString();
+    if (!userId) return;
+    try {
+        const response = await API.fetch(`/get_user_data_new/${userId}`, { // Заменяем на существующий эндпоинт
+            method: "GET", // Меняем на GET, так как это получение данных
+            headers: {
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
             }
-        } catch (error) {
-            console.error("Failed to refresh user data:", error);
+        });
+        if (JSON.stringify(AppState.userData) !== JSON.stringify(response)) {
+            AppState.userData = { ...AppState.userData, ...response };
+            this.updateQuestStatus();
         }
-    },
+    } catch (error) {
+        console.error("Failed to refresh user data:", error);
+    }
+},
     updateQuestStatus() {
         const data = AppState.userData;
         if (!data || !data.quests) return;
@@ -1250,26 +1250,6 @@ const Leaderboard = {
     }
 };
 
-const Profile = {
-    elements: {
-        menu: document.getElementById("profile-menu"),
-        button: document.getElementById("profile-button"),
-        name: document.getElementById("profile-name")
-    },
-    init() {
-        const user = tg.initDataUnsafe?.user;
-        if (!user) {
-            this.elements.name.textContent = "Hello, Guest";
-        } else {
-            this.elements.name.textContent = `Hello, ${user.username || user.first_name || "NoName"}`;
-        }
-        this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
-        this.elements.menu.addEventListener("click", e => {
-            if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
-        });
-        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
-    }
-};
 
 const Friends = {
     elements: {
@@ -1538,7 +1518,7 @@ async function minimalInit(tg) {
 async function fullInit(tg) {
     updateProgress(30);
     await Utils.wait(100); // Небольшая задержка для полной загрузки DOM
-    console.log("DOM state before Game.init:", document.getElementById("cube")); // Логируем элемент
+    console.log("DOM state before Game.init:", document.getElementById("cube"));
 
     const gameInitialized = Game.init();
     if (!gameInitialized) {
@@ -1557,7 +1537,7 @@ async function fullInit(tg) {
 
     try {
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(500) // 1.3: Уменьшенный тайм-аут
+            signal: AbortSignal.timeout(500)
         });
 
         if (!userDataResponse || userDataResponse.error) {
@@ -1588,8 +1568,6 @@ async function fullInit(tg) {
     await Quests.refreshUserData();
     await Quests.checkPendingQuests(AppState.userId);
 
-    Profile.init(); // Инициализация профиля после загрузки всех данных
-
     AppState.isInitialized = true;
     console.log("Full initialization completed successfully");
 }
@@ -1603,15 +1581,13 @@ async function initApp() {
     }
 
     try {
-        // Сначала выполняем минимальную инициализацию с токеном
         const minimalSuccess = await minimalInit(tg);
         if (!minimalSuccess) {
             console.log("Minimal initialization failed. Please reload the app.");
             return;
         }
 
-        // После успешной минимальной инициализации загружаем конфиг
-        await loadConfig(tg);
+        await loadConfig(tg); // Загружаем конфиг с токеном после minimalInit
 
         AppState.isPremium = tg.initDataUnsafe?.user?.is_premium || false;
 
