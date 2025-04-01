@@ -188,9 +188,8 @@ const Utils = {
     }
 };
 
-// 1.3 и 2.2: Уменьшенный тайм-аут (500 мс) и дедупликация запросов
 const API = {
-    API_BASE_URL: "backend12-production-1210.up.railway.app",
+    baseUrl: "https://backend12-production-1210.up.railway.app", // Правильный URL бэкенда
     defaultHeaders: {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
@@ -200,7 +199,8 @@ const API = {
         const key = `${endpoint}:${JSON.stringify(options.body)}`;
         if (this.pendingRequests.has(key)) return this.pendingRequests.get(key);
 
-        const url = `${AppConfig.API_BASE_URL}${endpoint}`;
+        // Используем this.baseUrl вместо AppConfig.API_BASE_URL
+        const url = `${this.baseUrl}${endpoint}`;
         const telegramInitData = window.Telegram.WebApp.initData || "";
         if (!telegramInitData) {
             throw new Error("Telegram initData is required for API requests");
@@ -223,15 +223,17 @@ const API = {
             while (attempts < maxAttempts) {
                 try {
                     console.log("Fetching with token:", AppState.token);
+                    console.log("Request URL:", url); // Добавляем отладку URL
                     const response = await originalFetch(url, {
                         ...options,
-                        signal: AbortSignal.timeout(500), // 1.3: Уменьшенный тайм-аут
+                        signal: AbortSignal.timeout(1000), // Увеличиваем тайм-аут до 1 секунды
                         headers: {
-                            ...API.defaultHeaders,
+                            ...this.defaultHeaders,
                             "Authorization": `Bearer ${AppState.token}`,
                             ...options.headers
                         }
                     });
+
                     if (!response.ok) {
                         const errorText = await response.text();
                         const error = new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
@@ -247,30 +249,30 @@ const API = {
                         }
                         throw error;
                     }
-                    return await response.json();
+
+                    const data = await response.json();
+                    this.pendingRequests.delete(key); // Удаляем только при успехе
+                    return data;
                 } catch (error) {
                     attempts++;
                     console.error(`Attempt ${attempts} failed:`, error);
                     if (attempts === maxAttempts) {
                         if (error.name === "AbortError") {
-                            throw new Error("Request timed out or was aborted. Check your network connection.");
+                            throw new Error(`Request to ${url} timed out after 1 second. Check your network or server status.`);
                         } else if (error.status === 401) {
                             throw new Error("Authentication failed after multiple attempts. Please reload the app.");
                         }
                         throw error;
                     }
                     await Utils.wait(1000 * attempts); // Экспоненциальная задержка
-                } finally {
-                    this.pendingRequests.delete(key); // Удаляем запрос из Map после завершения
                 }
             }
         })();
 
-        this.pendingRequests.set(key, promise); // 2.2: Дедупликация
+        this.pendingRequests.set(key, promise);
         return promise;
     }
 };
-
 async function refreshToken() {
     try {
         const telegramInitData = window.Telegram.WebApp.initData || "";
@@ -882,8 +884,8 @@ async refreshUserData() {
     const userId = tg?.initDataUnsafe?.user?.id?.toString();
     if (!userId) return;
     try {
-        const response = await API.fetch(`/get_user_data_new/${userId}`, { // Заменяем на существующий эндпоинт
-            method: "GET", // Меняем на GET, так как это получение данных
+        const response = await API.fetch(`/get_user_data_new/${userId}`, {
+            method: "GET",
             headers: {
                 "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
             }
@@ -895,7 +897,7 @@ async refreshUserData() {
     } catch (error) {
         console.error("Failed to refresh user data:", error);
     }
-},
+}
     updateQuestStatus() {
         const data = AppState.userData;
         if (!data || !data.quests) return;
@@ -1538,7 +1540,7 @@ async function fullInit(tg) {
 
     try {
         const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(500)
+            signal: AbortSignal.timeout(1000) // Увеличиваем тайм-аут
         });
 
         if (!userDataResponse || userDataResponse.error) {
@@ -1558,8 +1560,8 @@ async function fullInit(tg) {
 
     updateProgress(60);
 
-    const baseUrl = "https://suspect147.github.io/LUCU/";
-    const imageAssetsArrayWithBase = imageAssetsArray.map(img => baseUrl + img);
+    const imageBaseUrl = "https://suspect147.github.io/LUCU/"; // Переименовали для ясности
+    const imageAssetsArrayWithBase = imageAssetsArray.map(img => imageBaseUrl + img);
 
     await preloadImagesWithProgress(imageAssetsArrayWithBase, (progress) => {
         const adjustedProgress = 60 + (progress * 0.4);
