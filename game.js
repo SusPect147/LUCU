@@ -306,6 +306,20 @@ const UI = {
     }
 };
 
+function getRandomOutcome(outcomes) {
+    const rand = Math.random(); // Число от 0 до 1
+    let cumulativeProbability = 0;
+    
+    for (const outcome of outcomes) {
+        cumulativeProbability += outcome.probability;
+        if (rand <= cumulativeProbability) {
+            return outcome;
+        }
+    }
+    return outcomes[outcomes.length - 1]; // На случай ошибок округления
+}
+
+
 const Game = {
     elements: {
         cube: null,
@@ -380,191 +394,174 @@ const Game = {
         this.rollCube();
     },
     async rollCube() {
-        if (this.state.isAnimating) return;
+    if (this.state.isAnimating) return;
 
-        this.state.isAnimating = true;
+    this.state.isAnimating = true;
 
-        const userId = tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            console.error("User ID is missing in Telegram initData");
-            this.state.isAnimating = false;
-            this.elements.coinsDisplay.textContent = "User ID not found";
-            return;
+    const userId = tg?.initDataUnsafe?.user?.id?.toString();
+    if (!userId) {
+        console.error("User ID is missing in Telegram initData");
+        this.state.isAnimating = false;
+        this.elements.coinsDisplay.textContent = "User ID not found";
+        return;
+    }
+
+    try {
+        // Локальная генерация результата броска
+        const skinConfig = this.getSkinConfig();
+        const currentSkin = skinConfig[this.state.equippedSkin];
+        const outcome = getRandomOutcome(currentSkin.outcomes);
+
+        this.elements.cube.src = outcome.src;
+        this.startProgress(AppConfig.ANIMATION_DURATION);
+
+        // Вычисление новых значений на основе локального результата
+        const newCoins = this.state.coins + outcome.coins;
+        const newRolls = this.state.rolls + 1;
+        const newLuck = Math.min(this.state.bestLuck, outcome.value);
+
+        // Отправка результата на сервер для синхронизации
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            headers: {
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                coins: newCoins,
+                rolls: newRolls,
+                luck: newLuck,
+                skin: this.state.equippedSkin,
+                outcome_value: outcome.value
+            })
+        });
+
+        if (!response.success) {
+            throw new Error("Server failed to update roll");
         }
 
-        try {
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                headers: {
-                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-                },
-                body: JSON.stringify({ user_id: userId })
-            });
-
-            if (!response.src || response.c === undefined || response.l === undefined) {
-                throw new Error("Invalid server response: missing required fields");
-            }
-
-            this.elements.cube.src = response.src;
-            this.startProgress(AppConfig.ANIMATION_DURATION);
-
-            AppState.userData = {
-                ...AppState.userData,
-                coins: response.c,
-                rolls: response.r,
-                min_luck: Math.min(AppState.userData.min_luck || 1001, response.l),
-                equipped_skin: response.es
-            };
-
-            if (AppState.userData.ban !== "yes") {
-                document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(response.rb ? "pink-gradient" : "gray-gradient");
-
-                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.c;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.c)} $LUCU`;
-                }, coinUpdateDelay);
-
-                await Utils.wait(AppConfig.ANIMATION_DURATION);
-
-                if (response.l < this.state.bestLuck) {
-                    this.state.bestLuck = response.l;
-                }
-                this.state.rolls = response.r;
-                this.state.equippedSkin = response.es;
-
-                this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-                this.updateAchievementProgress(response.r);
-
-                if (response.rb) {
-                    document.body.classList.remove("pink-gradient");
-                    document.body.classList.add("gray-gradient");
-                }
-            } else {
-                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = response.c;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(response.c)} $LUCU`;
-                }, coinUpdateDelay);
-                await Utils.wait(AppConfig.ANIMATION_DURATION);
-            }
-
-            this.setInitialCube();
-        } catch (error) {
-            console.error("Roll cube error:", error);
-
-            if (error.message.includes("422")) {
-                this.elements.coinsDisplay.textContent = "Invalid request data";
-            } else if (error.message.includes("401")) {
-                this.elements.coinsDisplay.textContent = "Unauthorized access";
-            } else if (error.message.includes("403")) {
-                this.elements.coinsDisplay.textContent = "You are banned";
-            } else if (error.message.includes("429")) {
-                this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
-            } else {
-                this.elements.coinsDisplay.textContent = "Server error, try again later";
-            }
-
-            this.setInitialCube();
-            await Utils.wait(2000);
-        } finally {
-            this.state.isAnimating = false;
-        }
-    },
-    startProgress(duration) {
-        this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
-        this.elements.progressBar.style.width = "100%";
-        setTimeout(() => {
-            this.elements.progressBar.style.transition = "none";
-            this.elements.progressBar.style.width = "0%";
-        }, duration);
-    },
-    getSkinConfig() {
-        return {
-            "banned": {
-                "initial": "ban.gif",
-                "default": [{"range": 100, "src": "ban.gif", "coins": -1}],
-                "rainbow": [{"range": 100, "src": "ban.gif", "coins": -100}]
-            },
-            "classic": {
-                "initial": "pictures/cubics/классика/начальный-кубик.gif",
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1},
-                    {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2},
-                    {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3},
-                    {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4},
-                    {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5},
-                    {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6}
-                ],
-                "rainbow": [
-                    {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 2},
-                    {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 4},
-                    {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 6},
-                    {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 8},
-                    {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 10},
-                    {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 12}
-                ]
-            },
-            "negative": {
-                "initial": "pictures/cubics/негатив/начальный-кубик-негатив.gif",
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2},
-                    {"range": 65, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3},
-                    {"range": 80, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4},
-                    {"range": 90, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5},
-                    {"range": 97, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6},
-                    {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7}
-                ],
-                "rainbow": [
-                    {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
-                    {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
-                    {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
-                    {"themselves": "pictures/cubics/негатив/4-кубик-негатив.gif",
-                    {"range": 85, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 10},
-                    {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
-                    {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
-                ]
-            },
-            "Emerald": {
-                "initial": "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3},
-                    {"range": 65, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4},
-                    {"range": 80, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5},
-                    {"range": 90, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6},
-                    {"range": 97, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7},
-                    {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8}
-                ],
-                "rainbow": [
-                    {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
-                    {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
-                    {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
-                    {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 12},
-                    {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
-                    {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
-                ]
-            },
-            "Pixel": {
-                "initial": "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
-                "default": [
-                    {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10},
-                    {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11},
-                    {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12},
-                    {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13},
-                    {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14},
-                    {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15}
-                ],
-                "rainbow": [
-                    {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 20},
-                    {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 22},
-                    {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 24},
-                    {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 26},
-                    {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 28},
-                    {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 30}
-                ]
-            }
+        // Обновление состояния после подтверждения сервера
+        AppState.userData = {
+            ...AppState.userData,
+            coins: newCoins,
+            rolls: newRolls,
+            min_luck: newLuck,
+            equipped_skin: this.state.equippedSkin
         };
+
+        if (AppState.userData.ban !== "yes") {
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(response.rb ? "pink-gradient" : "gray-gradient");
+
+            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = newCoins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
+            }, coinUpdateDelay);
+
+            await Utils.wait(AppConfig.ANIMATION_DURATION);
+
+            if (newLuck < this.state.bestLuck) {
+                this.state.bestLuck = newLuck;
+            }
+            this.state.rolls = newRolls;
+            this.state.equippedSkin = this.state.equippedSkin;
+
+            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            this.updateAchievementProgress(newRolls);
+
+            if (response.rb) {
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
+            }
+        } else {
+            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = newCoins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
+            }, coinUpdateDelay);
+            await Utils.wait(AppConfig.ANIMATION_DURATION);
+        }
+
+        this.setInitialCube();
+    } catch (error) {
+        console.error("Roll cube error:", error);
+
+        if (error.message.includes("422")) {
+            this.elements.coinsDisplay.textContent = "Invalid request data";
+        } else if (error.message.includes("401")) {
+            this.elements.coinsDisplay.textContent = "Unauthorized access";
+        } else if (error.message.includes("403")) {
+            this.elements.coinsDisplay.textContent = "You are banned";
+        } else if (error.message.includes("429")) {
+            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
+        } else {
+            this.elements.coinsDisplay.textContent = "Server error, try again later";
+        }
+
+        this.setInitialCube();
+        await Utils.wait(2000);
+    } finally {
+        this.state.isAnimating = false;
+    }
+},
+
+startProgress(duration) {
+    this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
+    this.elements.progressBar.style.width = "100%";
+    setTimeout(() => {
+        this.elements.progressBar.style.transition = "none";
+        this.elements.progressBar.style.width = "0%";
+    }, duration);
+},
+getSkinConfig() {
+    return {
+        "classic": {
+            "initial": "pictures/cubics/классика/начальный-кубик.gif",
+            "outcomes": [
+                { "value": 1, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1, "probability": 0.40 }, // 40%
+                { "value": 2, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2, "probability": 0.25 }, // 25%
+                { "value": 3, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3, "probability": 0.15 }, // 15%
+                { "value": 4, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4, "probability": 0.10 }, // 10%
+                { "value": 5, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5, "probability": 0.07 }, // 7%
+                { "value": 6, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6, "probability": 0.03 }  // 3%
+            ]
+        },
+        "negative": {
+            "initial": "pictures/cubics/негатив/начальный-кубик-негатив.gif",
+            "outcomes": [
+                { "value": 1, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2, "probability": 0.30 },
+                { "value": 2, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3, "probability": 0.25 },
+                { "value": 3, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4, "probability": 0.20 },
+                { "value": 4, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5, "probability": 0.15 },
+                { "value": 5, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6, "probability": 0.07 },
+                { "value": 6, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7, "probability": 0.03 }
+            ]
+        },
+        "Emerald": {
+            "initial": "pictures/cubics/перевернутый/начальный-кубик-перевернутый.gif",
+            "outcomes": [
+                { "value": 1, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3, "probability": 0.20 },
+                { "value": 2, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4, "probability": 0.20 },
+                { "value": 3, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5, "probability": 0.20 },
+                { "value": 4, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6, "probability": 0.20 },
+                { "value": 5, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7, "probability": 0.15 },
+                { "value": 6, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8, "probability": 0.05 }
+            ]
+        },
+        "Pixel": {
+            "initial": "pictures/cubics/пиксель/начальный-кубик-пиксель.gif",
+            "outcomes": [
+                { "value": 1, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10, "probability": 0.10 },
+                { "value": 2, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11, "probability": 0.15 },
+                { "value": 3, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12, "probability": 0.20 },
+                { "value": 4, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13, "probability": 0.25 },
+                { "value": 5, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14, "probability": 0.20 },
+                { "value": 6, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15, "probability": 0.10 }
+            ]
+        }
+    };
+}
     },
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
