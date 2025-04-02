@@ -56,48 +56,6 @@ async function loadConfig(tg) {
 
 const tg = window.Telegram?.WebApp;
 
-// TON Connect UI
-let tonConnectUI;
-let tonConnectAttempts = 0;
-const maxTonConnectAttempts = 2;
-
-async function initializeTonConnect() {
-    if (!window.TON_CONNECT_UI) {
-        tonConnectAttempts++;
-        if (tonConnectAttempts <= maxTonConnectAttempts) {
-            console.warn(`TON Connect SDK is not loaded. Attempt ${tonConnectAttempts}/${maxTonConnectAttempts}. Retrying in 5 seconds...`);
-            setTimeout(initializeTonConnect, 5000);
-        } else {
-            console.error("TON Connect SDK failed to load after maximum attempts.");
-            console.log("TON wallet integration unavailable. Please reload the page or continue without it.");
-        }
-        return;
-    }
-
-    try {
-        tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: "https://suspect147.github.io/LUCU/manifest.json",
-            buttonRootId: "ton-connect"
-        });
-        tonConnectUI.onStatusChange(walletInfo => {
-            if (walletInfo) {
-                console.log("Wallet connected:", walletInfo);
-            } else {
-                console.warn("Wallet disconnected");
-                console.log("Please connect your TON wallet to continue.");
-            }
-        });
-    } catch (error) {
-        console.error("Failed to initialize TON Connect UI:", error);
-        console.log("TON wallet unavailable. You can continue without it.");
-    }
-}
-
-// Вызываем при загрузке страницы
-document.addEventListener("DOMContentLoaded", () => {
-    initializeTonConnect();
-});
-
 const Utils = {
     formatCoins(amount) {
         if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
@@ -562,7 +520,8 @@ const Game = {
                     {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
                     {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
                     {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
-                    {"range": 85, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 10},
+                    {"themselves": "pictures/cubics/негатив/4-кубик-негатив.gif",
+                    {"range": 85, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 10},
                     {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
                     {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
                 ]
@@ -1547,11 +1506,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (coinsDisplay) {
         Utils.adjustFontSize(coinsDisplay);
         window.addEventListener("resize", () => Utils.adjustFontSize(coinsDisplay));
-    }
-
-    const tonConnectButton = document.getElementById("ton-connect");
-    if (tonConnectButton) {
-        tonConnectButton.style.display = "block";
     }
 });
 
