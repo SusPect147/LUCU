@@ -187,14 +187,13 @@ async function refreshToken() {
         if (!userId) {
             throw new Error("User ID is unavailable for token refresh");
         }
-        const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Telegram-Init-Data": telegramInitData
-            },
-            body: JSON.stringify({ user_id: userId }) // Добавляем тело запроса
-        });
+const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": telegramInitData
+    }
+});
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Failed to refresh token: ${response.status} - ${errorText}`);
