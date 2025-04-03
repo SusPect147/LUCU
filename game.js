@@ -99,7 +99,7 @@ const API = {
         "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
     },
     pendingRequests: new Map(),
-    async fetch(endpoint, options = {}) {
+async fetch(endpoint, options = {}) {
         const key = `${endpoint}:${JSON.stringify(options.body)}`;
         if (this.pendingRequests.has(key)) return this.pendingRequests.get(key);
 
@@ -120,16 +120,14 @@ const API = {
             }
         }
 
-        const originalFetch = window.fetch.bind(window);
-
         const promise = (async () => {
             while (attempts < maxAttempts) {
                 try {
                     console.log("Fetching with token:", AppState.token);
                     console.log("Request URL:", url);
-                    const response = await originalFetch(url, {
+                    const response = await fetch(url, {
                         ...options,
-                        signal: AbortSignal.timeout(1000),
+                        signal: AbortSignal.timeout(5000), // Увеличиваем таймаут до 5 секунд
                         headers: {
                             ...this.defaultHeaders,
                             "Authorization": `Bearer ${AppState.token}`,
@@ -144,9 +142,6 @@ const API = {
                         if (error.status === 401 && attempts < maxAttempts - 1) {
                             console.warn("Token invalid, attempting to refresh...");
                             await refreshToken();
-                            if (!AppState.token) {
-                                throw new Error("Token refresh failed. Please reload the app.");
-                            }
                             attempts++;
                             continue;
                         }
@@ -158,10 +153,10 @@ const API = {
                     return data;
                 } catch (error) {
                     attempts++;
-                    console.error(`Attempt ${attempts} failed:`, error);
+                    console.error(`Attempt ${attempts} failed for ${url}:`, error);
                     if (attempts === maxAttempts) {
-                        if (error.name === "AbortError") {
-                            throw new Error(`Request to ${url} timed out after 1 second. Check your network or server status.`);
+                        if (error.name === "AbortError" || error.name === "TimeoutError") {
+                            throw new Error(`Request to ${url} timed out after 5 seconds. Check your network or server status.`);
                         } else if (error.status === 401) {
                             throw new Error("Authentication failed after multiple attempts. Please reload the app.");
                         }
@@ -242,8 +237,9 @@ class Particle {
 
 class ParticleSystem {
     constructor(canvas, size) {
-        if (!(canvas instanceof HTMLCanvasElement)) {
-            throw new Error("Invalid canvas element provided to ParticleSystem");
+        if (!canvas || typeof canvas.getContext !== 'function') {
+            console.error("Invalid canvas provided:", canvas);
+            throw new Error("Invalid or missing canvas element provided to ParticleSystem");
         }
         this.canvas = canvas;
         this.size = size;
@@ -402,7 +398,7 @@ const Game = {
         }
         this.rollCube();
     },
-    async rollCube() {
+async rollCube() {
     if (this.state.isAnimating) return;
 
     this.state.isAnimating = true;
@@ -416,20 +412,7 @@ const Game = {
     }
 
     try {
-        // Локальная генерация результата броска
-        const skinConfig = this.getSkinConfig();
-        const currentSkin = skinConfig[this.state.equippedSkin];
-        const outcome = getRandomOutcome(currentSkin.outcomes);
-
-        this.elements.cube.src = outcome.src;
-        this.startProgress(AppConfig.ANIMATION_DURATION);
-
-        // Вычисление новых значений на основе локального результата
-        const newCoins = this.state.coins + outcome.coins;
-        const newRolls = this.state.rolls + 1;
-        const newLuck = Math.min(this.state.bestLuck, outcome.value);
-
-        // Отправка результата на сервер для синхронизации
+        // Запрос на сервер для получения результата броска
         const response = await API.fetch("/roll_cube", {
             method: "POST",
             headers: {
@@ -437,26 +420,23 @@ const Game = {
             },
             body: JSON.stringify({
                 user_id: userId,
-                coins: newCoins,
-                rolls: newRolls,
-                luck: newLuck,
-                skin: this.state.equippedSkin,
-                outcome_value: outcome.value
+                skin: this.state.equippedSkin
             })
         });
 
         if (!response.success) {
-            throw new Error("Server failed to update roll");
+            throw new Error(response.message || "Server failed to process roll");
         }
 
-        // Обновление состояния после подтверждения сервера
-        AppState.userData = {
-            ...AppState.userData,
-            coins: newCoins,
-            rolls: newRolls,
-            min_luck: newLuck,
-            equipped_skin: this.state.equippedSkin
-        };
+        // Используем данные от сервера
+        const outcome = response.outcome; // Ожидаем, что сервер вернёт { value, src, coins }
+        const newCoins = response.new_coins;
+        const newRolls = response.new_rolls;
+        const newLuck = response.new_luck;
+
+        // Обновляем UI
+        this.elements.cube.src = outcome.src;
+        this.startProgress(AppConfig.ANIMATION_DURATION);
 
         if (AppState.userData.ban !== "yes") {
             document.body.classList.remove("pink-gradient", "gray-gradient");
@@ -470,12 +450,8 @@ const Game = {
 
             await Utils.wait(AppConfig.ANIMATION_DURATION);
 
-            if (newLuck < this.state.bestLuck) {
-                this.state.bestLuck = newLuck;
-            }
+            this.state.bestLuck = newLuck;
             this.state.rolls = newRolls;
-            this.state.equippedSkin = this.state.equippedSkin;
-
             this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
             this.updateAchievementProgress(newRolls);
 
@@ -492,11 +468,20 @@ const Game = {
             await Utils.wait(AppConfig.ANIMATION_DURATION);
         }
 
+        // Обновляем AppState
+        AppState.userData = {
+            ...AppState.userData,
+            coins: newCoins,
+            rolls: newRolls,
+            min_luck: newLuck,
+            equipped_skin: this.state.equippedSkin
+        };
+
         this.setInitialCube();
     } catch (error) {
         console.error("Roll cube error:", error);
 
-        if (error.message.includes("422")) {
+        if (error.message.includes("400")) {
             this.elements.coinsDisplay.textContent = "Invalid request data";
         } else if (error.message.includes("401")) {
             this.elements.coinsDisplay.textContent = "Unauthorized access";
@@ -514,7 +499,6 @@ const Game = {
         this.state.isAnimating = false;
     }
 },
-
 startProgress(duration) {
     this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
     this.elements.progressBar.style.width = "100%";
