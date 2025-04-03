@@ -561,8 +561,7 @@ getSkinConfig() {
             ]
         }
     };
-}
-    },
+},
     updateAchievementProgress(rolls) {
         const targetRolls = 123456;
         const rollsProgress = Math.min((rolls / targetRolls) * 100, 100);
