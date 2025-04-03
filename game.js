@@ -242,6 +242,9 @@ class Particle {
 
 class ParticleSystem {
     constructor(canvas, size) {
+        if (!(canvas instanceof HTMLCanvasElement)) {
+            throw new Error("Invalid canvas element provided to ParticleSystem");
+        }
         this.canvas = canvas;
         this.size = size;
         this.particles = new Map();
@@ -1206,16 +1209,16 @@ const Friends = {
 const Particles = {
     init() {
         const canvas = document.getElementById(AppConfig.CANVAS_ID);
-        if (!canvas) return;
+        if (!canvas) {
+            console.error(`Canvas element with ID "${AppConfig.CANVAS_ID}" not found in DOM. Particle system will not initialize.`);
+            return;
+        }
+        console.log("Canvas found:", canvas); // Для отладки
         const particleSystem = new ParticleSystem(canvas, {
             x: window.innerWidth,
             y: window.innerHeight
         });
         particleSystem.init();
-        window.addEventListener("resize", () => {
-            const oldSize = { x: particleSystem.size.x, y: particleSystem.size.y };
-            particleSystem.resize({ x: window.innerWidth, y: window.innerHeight }, oldSize);
-        });
     }
 };
 
