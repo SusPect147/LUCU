@@ -192,7 +192,8 @@ const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
     headers: {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": telegramInitData
-    }
+    },
+    body: JSON.stringify({ user_id: userId })
 });
         if (!response.ok) {
             const errorText = await response.text();
