@@ -183,12 +183,17 @@ async function refreshToken() {
         if (!telegramInitData) {
             throw new Error("Telegram initData is unavailable for token refresh");
         }
+        const userId = window.Telegram.WebApp.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            throw new Error("User ID is unavailable for token refresh");
+        }
         const response = await fetch(`${AppConfig.API_BASE_URL}/init`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "X-Telegram-Init-Data": telegramInitData
-            }
+            },
+            body: JSON.stringify({ user_id: userId }) // Добавляем тело запроса
         });
         if (!response.ok) {
             const errorText = await response.text();
@@ -209,6 +214,7 @@ async function refreshToken() {
         throw error;
     }
 }
+
 
 class Particle {
     constructor(id, parent) {
