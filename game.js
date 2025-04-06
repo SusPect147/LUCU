@@ -310,11 +310,11 @@ addSwipeHandler(element, onSwipeDown, withinList = false) {
             const deltaY = e.touches[0].clientY - startY;
             const target = e.target;
             const isWithinList = withinList && (target.closest('#quests-list') || target.closest('#achievements-list'));
-            // Закрываем меню только при свайпе вниз (deltaY > 0) и если не внутри прокручиваемого списка
+            // Закрываем только при сильном свайпе вниз и если не внутри прокручиваемого списка
             if (deltaY > 50 && !isWithinList) {
                 onSwipeDown();
             }
-            // Игнорируем свайп вверх (deltaY < 0), чтобы не мешать прокрутке
+            // Прокрутка вверх или вниз внутри меню не вызывает закрытие
         });
     }
 };
@@ -373,11 +373,21 @@ init() {
             console.error("Error adding event listener to cube:", error);
             return false;
         }
-        
-        // Устанавливаем начальное изображение кубика сразу при инициализации
+
+        // Устанавливаем начальное изображение кубика
         this.updateFromAppState();
         const initialSrc = this.getSkinConfig()[this.state.equippedSkin].initial + `?t=${Date.now()}`;
         this.elements.cube.src = initialSrc;
+
+        // Настройка поведения свайпов через Telegram Mini Apps API
+        if (window.Telegram?.WebApp?.isVersionAtLeast?.("7.7")) {
+            window.Telegram.WebApp.postEvent("web_app_setup_swipe_behavior", {
+                allow_vertical_swipe: false // Отключаем вертикальные свайпы
+            });
+            console.log("Vertical swipes disabled via web_app_setup_swipe_behavior");
+        } else {
+            console.warn("Telegram Mini Apps version < 7.7, swipe behavior control not supported");
+        }
 
         console.log("Game initialized successfully");
         return true;
@@ -630,18 +640,23 @@ init() {
 
         this.elements.button.addEventListener("click", () => UI.toggleMenu(this.elements.menu, true));
         this.elements.menu.addEventListener("click", e => {
+            // Закрытие только при клике вне содержимого меню
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
-        // Добавляем обработчик свайпа только для закрытия вниз
-        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+
+        // Убираем обработчик свайпа, так как теперь используем web_app_setup_swipe_behavior
+        // UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+
         this.elements.buyNegative.addEventListener("click", () => this.handleSkin("negative"));
         this.elements.buyEmerald.addEventListener("click", () => this.handleSkin("Emerald"));
         this.elements.buyPixel.addEventListener("click", () => this.handleSkin("Pixel"));
         this.elements.equipClassic.addEventListener("click", () => this.handleSkin("classic"));
         this.updateFromAppState();
 
-        // Добавляем возможность прокрутки меню
+        // Настраиваем прокрутку меню
         this.elements.menu.style.overflowY = "auto"; // Разрешаем вертикальную прокрутку
+        this.elements.menu.style.height = "80vh"; // Ограничиваем высоту меню (можно настроить под ваши нужды)
+        this.elements.menu.style.maxHeight = "80vh"; // Устанавливаем максимальную высоту
     },
     updateFromAppState() {
         const data = AppState.userData;
