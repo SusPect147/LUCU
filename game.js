@@ -1168,12 +1168,11 @@ const Friends = {
         this.elements.referralInput.value = referralLink;
         this.elements.button.addEventListener("click", () => {
             UI.toggleMenu(this.elements.menu, true);
-            this.updateFriendsCount();
+            this.updateFriendsCount(); // Вызов метода внутри объекта
         });
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
-        // Убираем UI.addSwipeHandler, так как свайп не должен закрывать меню
         this.elements.menu.style.overflowY = "auto"; // Включаем прокрутку
         const img = this.elements.menu.querySelector("img");
         if (img) {
@@ -1196,7 +1195,30 @@ const Friends = {
                 body: JSON.stringify({ user_id: userId, referrer_id: referrerId })
             }).catch(error => {});
         }
-        this.updateFriendsCount();
+        this.updateFriendsCount(); // Вызов метода внутри объекта
+    },
+    async updateFriendsCount() {
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        if (!userId || !this.elements.friendsCount) return;
+
+        try {
+            // Если данные о друзьях уже есть в AppState.userData
+            if (AppState.userData && typeof AppState.userData.friends_count !== "undefined") {
+                this.elements.friendsCount.textContent = `${AppState.userData.friends_count} friends`;
+            } else {
+                // Если нужно запросить данные с сервера
+                const response = await API.fetch(`/get_user_data_new/${userId}`);
+                if (response && typeof response.friends_count !== "undefined") {
+                    AppState.userData = { ...AppState.userData, friends_count: response.friends_count };
+                    this.elements.friendsCount.textContent = `${response.friends_count} friends`;
+                } else {
+                    this.elements.friendsCount.textContent = "0 friends"; // Значение по умолчанию
+                }
+            }
+        } catch (error) {
+            console.error("Failed to update friends count:", error);
+            this.elements.friendsCount.textContent = "Error"; // Отображение ошибки
+        }
     }
 };
 
@@ -1442,7 +1464,7 @@ async function fullInit(tg) {
 
         Game.updateFromAppState();
         Skins.updateFromAppState();
-        Friends.updateFriendsCount();
+        Friends.updateFriendsCount(); // Исправленный вызов метода
     } catch (error) {
         console.error("User data fetch error:", error);
         console.log("Failed to load user data. Please try again.");
