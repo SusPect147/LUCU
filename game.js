@@ -316,7 +316,7 @@ function getRandomOutcome(outcomes) {
     let cumulativeProbability = 0;
     
     for (const outcome of outcomes) {
-        cumulativeProbability += outcome.probability;
+        cumulativeProbability += outcome.p; // Используем "p" вместо "probability"
         if (rand <= cumulativeProbability) {
             return outcome;
         }
@@ -386,11 +386,10 @@ const Game = {
             ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
             : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
     },
-    setInitialCube() {
-        const skinConfig = this.getSkinConfig();
-        const initialSrc = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
-        this.elements.cube.src = initialSrc;
-    },
+setInitialCube() {
+    const initialSrc = outcomes[this.state.equippedSkin]["default"][0].s + `?t=${Date.now()}`; // Используем первый исход как начальный
+    this.elements.cube.src = initialSrc;
+},
     handleClick(event) {
         if (this.state.isAnimating) {
             event.preventDefault();
@@ -414,19 +413,24 @@ async rollCube() {
     try {
         // Текущие монеты из состояния
         const currentCoins = this.state.coins;
-        // Генерируем luck
+        // Генерируем luck локально
         const luck = Math.random() * 100;
-        const skinConfig = this.getSkinConfig()[this.state.equippedSkin];
-        const outcome = getRandomOutcome(skinConfig.outcomes); // Локальный результат
-        const coinsChange = outcome.coins; // Изменение монет
+        // Локальный исход для анимации (используем outcomes вместо getSkinConfig)
+        const isRainbow = Math.random() < 0.1; // Симулируем rainbow как на сервере
+        const skinOutcomes = outcomes[this.state.equippedSkin][isRainbow ? "rainbow" : "default"];
+        const localOutcome = getRandomOutcome(skinOutcomes);
 
-        // Отправляем запрос
+        // Показываем анимацию сразу
+        this.elements.cube.src = localOutcome.s; // Используем "s" вместо "src"
+        this.startProgress(AppConfig.ANIMATION_DURATION);
+
+        // Отправляем запрос на сервер
         console.log("Sending roll_cube request:", {
             user_id: userId,
             skin: this.state.equippedSkin,
             luck: luck,
-            coins: currentCoins + coinsChange, // Новое значение монет
-            outcome_value: outcome.value
+            coins: currentCoins,
+            outcome_value: localOutcome.c // Используем "c" как значение для клиента
         });
 
         const response = await API.fetch("/roll_cube", {
@@ -438,8 +442,8 @@ async rollCube() {
                 user_id: userId,
                 skin: this.state.equippedSkin,
                 luck: luck,
-                coins: currentCoins + coinsChange,
-                outcome_value: outcome.value
+                coins: currentCoins,
+                outcome_value: localOutcome.c // Отправляем "c" как outcome_value
             })
         });
 
@@ -447,16 +451,17 @@ async rollCube() {
             throw new Error(response.message || "Server failed to process roll");
         }
 
-        // Обновляем UI
+        // Обновляем состояние после ответа сервера
         const newCoins = response.c;
         const newRolls = response.tr;
-        const newLuck = response.l;
-        this.elements.cube.src = response.os;
-        this.startProgress(AppConfig.ANIMATION_DURATION);
+        const serverLuck = response.l;
+        const minLuck = response.ml || this.state.bestLuck;
+        const serverIsRainbow = response.rb;
 
+        // Обновляем UI
         if (AppState.userData.ban !== "yes") {
             document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(response.rb ? "pink-gradient" : "gray-gradient");
+            document.body.classList.add(serverIsRainbow ? "pink-gradient" : "gray-gradient");
 
             const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
             setTimeout(() => {
@@ -466,12 +471,14 @@ async rollCube() {
 
             await Utils.wait(AppConfig.ANIMATION_DURATION);
 
-            this.state.bestLuck = newLuck;
+            this.state.bestLuck = minLuck;
             this.state.rolls = newRolls;
-            this.elements.bestLuckDisplay.innerHTML = `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
+                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
             this.updateAchievementProgress(newRolls);
 
-            if (response.rb) {
+            if (serverIsRainbow) {
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
             }
@@ -481,7 +488,7 @@ async rollCube() {
             ...AppState.userData,
             coins: newCoins,
             rolls: newRolls,
-            min_luck: newLuck,
+            min_luck: minLuck,
             equipped_skin: this.state.equippedSkin
         };
 
@@ -489,13 +496,12 @@ async rollCube() {
     } catch (error) {
         console.error("Roll cube error:", error);
         this.elements.coinsDisplay.textContent = error.status === 400 ? "Invalid roll, try again" : "Error, try again";
+        await Utils.wait(AppConfig.ANIMATION_DURATION);
         this.setInitialCube();
-        await Utils.wait(2000);
     } finally {
         this.state.isAnimating = false;
     }
 },
-
 
 startProgress(duration) {
     this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
@@ -1206,79 +1212,79 @@ const Particles = {
 
 const outcomes = {
     "banned": {
-        "default": [{"range": 100, "src": "ban.gif", "coins": -1}],
-        "rainbow": [{"range": 100, "src": "ban.gif", "coins": -100}]
+        "default": [{"p": 1.0, "s": "ban.gif", "c": -1}],
+        "rainbow": [{"p": 1.0, "s": "ban.gif", "c": -100}]
     },
     "classic": {
         "default": [
-            {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 1},
-            {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 2},
-            {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 3},
-            {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 4},
-            {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 5},
-            {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 6}
+            {"p": 0.40, "s": "pictures/cubics/классика/1-кубик.gif", "c": 1},
+            {"p": 0.25, "s": "pictures/cubics/классика/2-кубик.gif", "c": 2},
+            {"p": 0.15, "s": "pictures/cubics/классика/3-кубик.gif", "c": 3},
+            {"p": 0.10, "s": "pictures/cubics/классика/4-кубик.gif", "c": 4},
+            {"p": 0.07, "s": "pictures/cubics/классика/5-кубик.gif", "c": 5},
+            {"p": 0.03, "s": "pictures/cubics/классика/6-кубик.gif", "c": 6}
         ],
         "rainbow": [
-            {"range": 40, "src": "pictures/cubics/классика/1-кубик.gif", "coins": 2},
-            {"range": 65, "src": "pictures/cubics/классика/2-кубик.gif", "coins": 4},
-            {"range": 80, "src": "pictures/cubics/классика/3-кубик.gif", "coins": 6},
-            {"range": 90, "src": "pictures/cubics/классика/4-кубик.gif", "coins": 8},
-            {"range": 97, "src": "pictures/cubics/классика/5-кубик.gif", "coins": 10},
-            {"range": 100, "src": "pictures/cubics/классика/6-кубик.gif", "coins": 12}
+            {"p": 0.40, "s": "pictures/cubics/классика/1-кубик.gif", "c": 2},
+            {"p": 0.25, "s": "pictures/cubics/классика/2-кубик.gif", "c": 4},
+            {"p": 0.15, "s": "pictures/cubics/классика/3-кубик.gif", "c": 6},
+            {"p": 0.10, "s": "pictures/cubics/классика/4-кубик.gif", "c": 8},
+            {"p": 0.07, "s": "pictures/cubics/классика/5-кубик.gif", "c": 10},
+            {"p": 0.03, "s": "pictures/cubics/классика/6-кубик.gif", "c": 12}
         ]
     },
     "negative": {
         "default": [
-            {"range": 40, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 2},
-            {"range": 65, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 3},
-            {"range": 80, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 4},
-            {"range": 90, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 5},
-            {"range": 97, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 6},
-            {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 7}
+            {"p": 0.30, "s": "pictures/cubics/негатив/1-кубик-негатив.gif", "c": 2},
+            {"p": 0.25, "s": "pictures/cubics/негатив/2-кубик-негатив.gif", "c": 3},
+            {"p": 0.20, "s": "pictures/cubics/негатив/3-кубик-негатив.gif", "c": 4},
+            {"p": 0.15, "s": "pictures/cubics/негатив/4-кубик-негатив.gif", "c": 5},
+            {"p": 0.07, "s": "pictures/cubics/негатив/5-кубик-негатив.gif", "c": 6},
+            {"p": 0.03, "s": "pictures/cubics/негатив/6-кубик-негатив.gif", "c": 7}
         ],
         "rainbow": [
-            {"range": 15, "src": "pictures/cubics/негатив/1-кубик-негатив.gif", "coins": 4},
-            {"range": 45, "src": "pictures/cubics/негатив/2-кубик-негатив.gif", "coins": 6},
-            {"range": 70, "src": "pictures/cubics/негатив/3-кубик-негатив.gif", "coins": 8},
-            {"range": 85, "src": "pictures/cubics/негатив/4-кубик-негатив.gif", "coins": 10},
-            {"range": 94, "src": "pictures/cubics/негатив/5-кубик-негатив.gif", "coins": 12},
-            {"range": 100, "src": "pictures/cubics/негатив/6-кубик-негатив.gif", "coins": 14}
+            {"p": 0.15, "s": "pictures/cubics/негатив/1-кубик-негатив.gif", "c": 4},
+            {"p": 0.30, "s": "pictures/cubics/негатив/2-кубик-негатив.gif", "c": 6},
+            {"p": 0.25, "s": "pictures/cubics/негатив/3-кубик-негатив.gif", "c": 8},
+            {"p": 0.15, "s": "pictures/cubics/негатив/4-кубик-негатив.gif", "c": 10},
+            {"p": 0.09, "s": "pictures/cubics/негатив/5-кубик-негатив.gif", "c": 12},
+            {"p": 0.06, "s": "pictures/cubics/негатив/6-кубик-негатив.gif", "c": 14}
         ]
     },
     "Emerald": {
         "default": [
-            {"range": 40, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 3},
-            {"range": 65, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 4},
-            {"range": 80, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 5},
-            {"range": 90, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 6},
-            {"range": 97, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 7},
-            {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 8}
+            {"p": 0.20, "s": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "c": 3},
+            {"p": 0.20, "s": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "c": 4},
+            {"p": 0.20, "s": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "c": 5},
+            {"p": 0.20, "s": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "c": 6},
+            {"p": 0.15, "s": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "c": 7},
+            {"p": 0.05, "s": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "c": 8}
         ],
         "rainbow": [
-            {"range": 15, "src": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "coins": 6},
-            {"range": 45, "src": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "coins": 8},
-            {"range": 70, "src": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "coins": 10},
-            {"range": 85, "src": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "coins": 12},
-            {"range": 94, "src": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "coins": 14},
-            {"range": 100, "src": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "coins": 16}
+            {"p": 0.15, "s": "pictures/cubics/перевернутый/1-кубик-перевернутый.gif", "c": 6},
+            {"p": 0.30, "s": "pictures/cubics/перевернутый/2-кубик-перевернутый.gif", "c": 8},
+            {"p": 0.25, "s": "pictures/cubics/перевернутый/3-кубик-перевернутый.gif", "c": 10},
+            {"p": 0.15, "s": "pictures/cubics/перевернутый/4-кубик-перевернутый.gif", "c": 12},
+            {"p": 0.09, "s": "pictures/cubics/перевернутый/5-кубик-перевернутый.gif", "c": 14},
+            {"p": 0.06, "s": "pictures/cubics/перевернутый/6-кубик-перевернутый.gif", "c": 16}
         ]
     },
     "Pixel": {
         "default": [
-            {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 10},
-            {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 11},
-            {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 12},
-            {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 13},
-            {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 14},
-            {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 15}
+            {"p": 0.10, "s": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "c": 10},
+            {"p": 0.15, "s": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "c": 11},
+            {"p": 0.20, "s": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "c": 12},
+            {"p": 0.25, "s": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "c": 13},
+            {"p": 0.20, "s": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "c": 14},
+            {"p": 0.10, "s": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "c": 15}
         ],
         "rainbow": [
-            {"range": 40, "src": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "coins": 20},
-            {"range": 65, "src": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "coins": 22},
-            {"range": 80, "src": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "coins": 24},
-            {"range": 90, "src": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "coins": 26},
-            {"range": 97, "src": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "coins": 28},
-            {"range": 100, "src": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "coins": 30}
+            {"p": 0.40, "s": "pictures/cubics/пиксель/1-кубик-пиксель.gif", "c": 20},
+            {"p": 0.25, "s": "pictures/cubics/пиксель/2-кубик-пиксель.gif", "c": 22},
+            {"p": 0.15, "s": "pictures/cubics/пиксель/3-кубик-пиксель.gif", "c": 24},
+            {"p": 0.10, "s": "pictures/cubics/пиксель/4-кубик-пиксель.gif", "c": 26},
+            {"p": 0.07, "s": "pictures/cubics/пиксель/5-кубик-пиксель.gif", "c": 28},
+            {"p": 0.03, "s": "pictures/cubics/пиксель/6-кубик-пиксель.gif", "c": 30}
         ]
     }
 };
@@ -1299,12 +1305,11 @@ const imageAssets = new Set();
 Object.keys(outcomes).forEach(type => {
     Object.keys(outcomes[type]).forEach(variant => {
         outcomes[type][variant].forEach(outcome => {
-            imageAssets.add(outcome.src);
+            imageAssets.add(outcome.s); // Используем "s"
         });
     });
 });
 additionalImages.forEach(img => imageAssets.add(img));
-
 const imageAssetsArray = Array.from(imageAssets);
 
 async function preloadImages(imageUrls) {
