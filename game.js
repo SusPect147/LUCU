@@ -379,16 +379,6 @@ init() {
         const initialSrc = this.getSkinConfig()[this.state.equippedSkin].initial + `?t=${Date.now()}`;
         this.elements.cube.src = initialSrc;
 
-        // Настройка поведения свайпов через Telegram Mini Apps API
-        if (window.Telegram?.WebApp?.isVersionAtLeast?.("7.7")) {
-            window.Telegram.WebApp.postEvent("web_app_setup_swipe_behavior", {
-                allow_vertical_swipe: false // Отключаем вертикальные свайпы
-            });
-            console.log("Vertical swipes disabled via web_app_setup_swipe_behavior");
-        } else {
-            console.warn("Telegram Mini Apps version < 7.7, swipe behavior control not supported");
-        }
-
         console.log("Game initialized successfully");
         return true;
     },
@@ -1551,6 +1541,16 @@ async function initApp() {
     }
 
     try {
+        // Настраиваем поведение свайпов сразу после проверки Telegram WebApp
+        if (tg.isVersionAtLeast && tg.isVersionAtLeast("7.7") && typeof tg.postEvent === "function") {
+            tg.postEvent("web_app_setup_swipe_behavior", {
+                allow_vertical_swipe: false // Отключаем вертикальные свайпы для всего приложения
+            });
+            console.log("Vertical swipes disabled via web_app_setup_swipe_behavior");
+        } else {
+            console.warn("Swipe behavior control not supported. Telegram version < 7.7 or postEvent unavailable.");
+        }
+
         const minimalSuccess = await minimalInit(tg);
         if (!minimalSuccess) {
             console.log("Minimal initialization failed. Please reload the app.");
