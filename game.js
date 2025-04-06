@@ -301,12 +301,18 @@ const UI = {
             setTimeout(() => menu.classList.remove("hide"), 400);
         }
     },
-    addSwipeHandler(menu, onSwipeDown) {
+    addSwipeHandler(element, onSwipeDown, withinList = false) {
         let startY;
-        menu.addEventListener("touchstart", e => startY = e.touches[0].clientY);
-        menu.addEventListener("touchmove", e => {
+        element.addEventListener("touchstart", e => {
+            startY = e.touches[0].clientY;
+        });
+        element.addEventListener("touchmove", e => {
             const deltaY = e.touches[0].clientY - startY;
-            if (deltaY > 50) onSwipeDown();
+            const target = e.target;
+            const isWithinList = withinList && (target.closest('#quests-list') || target.closest('#achievements-list'));
+            if (deltaY > 50 && !isWithinList) {
+                onSwipeDown();
+            }
         });
     }
 };
@@ -337,7 +343,8 @@ const Game = {
         bestLuck: 1001,
         isAnimating: false,
         equippedSkin: AppConfig.DEFAULT_SKIN,
-        rolls: 0
+        rolls: 0,
+        animationTimeout: null // Добавляем для отслеживания таймаута
     },
     init() {
         this.elements.cube = document.getElementById("cube");
@@ -353,7 +360,6 @@ const Game = {
 
         if (missingElements.length > 0) {
             console.error("Game.init failed: Required DOM elements are missing:", missingElements);
-            console.log("Failed to initialize game. Please reload the app.");
             return false;
         }
 
@@ -363,7 +369,6 @@ const Game = {
             this.elements.cube.addEventListener("click", this.handleClick.bind(this));
         } catch (error) {
             console.error("Error adding event listener to cube:", error);
-            console.log("Failed to set up cube interaction. Please reload the app.");
             return false;
         }
         this.updateFromAppState();
@@ -372,24 +377,17 @@ const Game = {
     },
     updateFromAppState() {
         const data = AppState.userData;
-        if (!data) {
-            return;
-        }
+        if (!data) return;
         this.state.coins = data.coins || 0;
         this.state.bestLuck = data.min_luck === undefined || data.min_luck === null ? 1001 : data.min_luck;
         this.state.equippedSkin = data.equipped_skin || AppConfig.DEFAULT_SKIN;
         this.state.rolls = data.rolls || 0;
-        const skinConfig = this.getSkinConfig();
-        this.elements.cube.src = skinConfig[this.state.equippedSkin].initial + `?t=${Date.now()}`;
-        this.elements.coinsDisplay.textContent = `${Utils.formatCoins(this.state.coins)} $LUCU`;
-        this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
-            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+        this.setInitialCube(); // Устанавливаем начальный кубик при обновлении состояния
     },
-setInitialCube() {
-    const initialSrc = outcomes[this.state.equippedSkin]["default"][0].s + `?t=${Date.now()}`; // Используем первый исход как начальный
-    this.elements.cube.src = initialSrc;
-},
+    setInitialCube() {
+        const initialSrc = outcomes[this.state.equippedSkin]["default"][0].s + `?t=${Date.now()}`;
+        this.elements.cube.src = initialSrc;
+    },
     handleClick(event) {
         if (this.state.isAnimating) {
             event.preventDefault();
@@ -397,120 +395,127 @@ setInitialCube() {
         }
         this.rollCube();
     },
-async rollCube() {
-    if (this.state.isAnimating) return;
+    async rollCube() {
+        if (this.state.isAnimating) return;
 
-    this.state.isAnimating = true;
+        this.state.isAnimating = true;
+        clearTimeout(this.state.animationTimeout); // Очищаем предыдущий таймаут
 
-    const userId = tg?.initDataUnsafe?.user?.id?.toString();
-    if (!userId) {
-        console.error("User ID is missing in Telegram initData");
-        this.state.isAnimating = false;
-        this.elements.coinsDisplay.textContent = "User ID not found";
-        return;
-    }
+        const userId = tg?.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            console.error("User ID is missing in Telegram initData");
+            this.state.isAnimating = false;
+            this.elements.coinsDisplay.textContent = "User ID not found";
+            return;
+        }
 
-    try {
-        // Текущие монеты из состояния
-        const currentCoins = this.state.coins;
-        // Генерируем luck локально
-        const luck = Math.random() * 100;
-        // Локальный исход для анимации (используем outcomes вместо getSkinConfig)
-        const isRainbow = Math.random() < 0.1; // Симулируем rainbow как на сервере
-        const skinOutcomes = outcomes[this.state.equippedSkin][isRainbow ? "rainbow" : "default"];
-        const localOutcome = getRandomOutcome(skinOutcomes);
+        try {
+            // Получаем актуальные данные с сервера перед броском
+            const userDataResponse = await API.fetch(`/get_user_data_new/${userId}`);
+            this.state.coins = userDataResponse.coins || 0;
+            AppState.userData = { ...AppState.userData, ...userDataResponse };
 
-        // Показываем анимацию сразу
-        this.elements.cube.src = localOutcome.s; // Используем "s" вместо "src"
-        this.startProgress(AppConfig.ANIMATION_DURATION);
+            const currentCoins = this.state.coins;
+            const luck = Math.random() * 100;
+            const isRainbow = Math.random() < 0.1;
+            const skinOutcomes = outcomes[this.state.equippedSkin][isRainbow ? "rainbow" : "default"];
+            const localOutcome = getRandomOutcome(skinOutcomes);
 
-        // Отправляем запрос на сервер
-        console.log("Sending roll_cube request:", {
-            user_id: userId,
-            skin: this.state.equippedSkin,
-            luck: luck,
-            coins: currentCoins,
-            outcome_value: localOutcome.c // Используем "c" как значение для клиента
-        });
+            // Сбрасываем прогресс-бар перед началом
+            this.elements.progressBar.style.transition = "none";
+            this.elements.progressBar.style.width = "0%";
+            this.elements.cube.src = localOutcome.s;
+            this.startProgress(AppConfig.ANIMATION_DURATION);
 
-        const response = await API.fetch("/roll_cube", {
-            method: "POST",
-            headers: {
-                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-            },
-            body: JSON.stringify({
+            console.log("Sending roll_cube request:", {
                 user_id: userId,
                 skin: this.state.equippedSkin,
                 luck: luck,
                 coins: currentCoins,
-                outcome_value: localOutcome.c // Отправляем "c" как outcome_value
-            })
-        });
+                outcome_value: localOutcome.c
+            });
 
-        if (!response.success) {
-            throw new Error(response.message || "Server failed to process roll");
-        }
+            const response = await API.fetch("/roll_cube", {
+                method: "POST",
+                headers: {
+                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    skin: this.state.equippedSkin,
+                    luck: luck,
+                    coins: currentCoins,
+                    outcome_value: localOutcome.c
+                })
+            });
 
-        // Обновляем состояние после ответа сервера
-        const newCoins = response.c;
-        const newRolls = response.tr;
-        const serverLuck = response.l;
-        const minLuck = response.ml || this.state.bestLuck;
-        const serverIsRainbow = response.rb;
-
-        // Обновляем UI
-        if (AppState.userData.ban !== "yes") {
-            document.body.classList.remove("pink-gradient", "gray-gradient");
-            document.body.classList.add(serverIsRainbow ? "pink-gradient" : "gray-gradient");
-
-            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = newCoins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
-            }, coinUpdateDelay);
-
-            await Utils.wait(AppConfig.ANIMATION_DURATION);
-
-            this.state.bestLuck = minLuck;
-            this.state.rolls = newRolls;
-            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
-                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-            this.updateAchievementProgress(newRolls);
-
-            if (serverIsRainbow) {
-                document.body.classList.remove("pink-gradient");
-                document.body.classList.add("gray-gradient");
+            if (!response.success) {
+                throw new Error(response.message || "Server failed to process roll");
             }
+
+            const newCoins = response.c;
+            const newRolls = response.tr;
+            const serverLuck = response.l;
+            const minLuck = response.ml || this.state.bestLuck;
+            const serverIsRainbow = response.rb;
+
+            if (AppState.userData.ban !== "yes") {
+                document.body.classList.remove("pink-gradient", "gray-gradient");
+                document.body.classList.add(serverIsRainbow ? "pink-gradient" : "gray-gradient");
+
+                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+                setTimeout(() => {
+                    this.state.coins = newCoins;
+                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
+                }, coinUpdateDelay);
+
+                await Utils.wait(AppConfig.ANIMATION_DURATION);
+
+                this.state.bestLuck = minLuck;
+                this.state.rolls = newRolls;
+                this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
+                    ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                    : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+                this.updateAchievementProgress(newRolls);
+
+                if (serverIsRainbow) {
+                    document.body.classList.remove("pink-gradient");
+                    document.body.classList.add("gray-gradient");
+                }
+            }
+
+            AppState.userData = {
+                ...AppState.userData,
+                coins: newCoins,
+                rolls: newRolls,
+                min_luck: minLuck,
+                equipped_skin: this.state.equippedSkin
+            };
+
+            this.setInitialCube();
+        } catch (error) {
+            console.error("Roll cube error:", error);
+            this.elements.coinsDisplay.textContent = error.status === 400 ? "Invalid roll, try again" : "Error, try again";
+            await Utils.wait(AppConfig.ANIMATION_DURATION);
+            this.setInitialCube();
+        } finally {
+            this.state.isAnimating = false;
         }
-
-        AppState.userData = {
-            ...AppState.userData,
-            coins: newCoins,
-            rolls: newRolls,
-            min_luck: minLuck,
-            equipped_skin: this.state.equippedSkin
-        };
-
-        this.setInitialCube();
-    } catch (error) {
-        console.error("Roll cube error:", error);
-        this.elements.coinsDisplay.textContent = error.status === 400 ? "Invalid roll, try again" : "Error, try again";
-        await Utils.wait(AppConfig.ANIMATION_DURATION);
-        this.setInitialCube();
-    } finally {
-        this.state.isAnimating = false;
-    }
-},
-
-startProgress(duration) {
-    this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
-    this.elements.progressBar.style.width = "100%";
-    setTimeout(() => {
+    },
+    startProgress(duration) {
+        // Очищаем предыдущую анимацию
         this.elements.progressBar.style.transition = "none";
         this.elements.progressBar.style.width = "0%";
-    }, duration);
-},
+        // Запускаем новую анимацию
+        requestAnimationFrame(() => {
+            this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
+            this.elements.progressBar.style.width = "100%";
+            this.state.animationTimeout = setTimeout(() => {
+                this.elements.progressBar.style.transition = "none";
+                this.elements.progressBar.style.width = "0%";
+            }, duration);
+        });
+    },
 getSkinConfig() {
     return {
         "classic": {
@@ -722,7 +727,7 @@ const Quests = {
         questsList: document.getElementById("quests-list"),
         achievementsList: document.getElementById("achievements-list")
     },
-    init() {
+init() {
         Telegram.WebApp.ready();
 
         this.elements.button.addEventListener("click", () => {
@@ -737,7 +742,8 @@ const Quests = {
             }
         });
 
-        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+        // Обновляем свайп с поддержкой withinList
+        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false), true);
 
         this.elements.questsList.querySelectorAll(".quest-btn").forEach(button => {
             button.addEventListener("click", () => {
@@ -1102,44 +1108,46 @@ const Leaderboard = {
         });
     },
     async load(type) {
-        try {
-            const data = await API.fetch(`/leaderboard_${type}`);
-            this.elements.list.innerHTML = "";
-            const userId = tg.initDataUnsafe?.user?.id?.toString();
-            const userIndex = data.findIndex(p => p.u === userId);
-            this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
-            if (!data?.length) {
-                this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
-                return;
-            }
-            for (let i = 0; i < data.length; i++) {
-                const player = data[i];
-                const isCurrentUser = userId && player.u === userId;
-                const li = document.createElement("li");
-                li.classList.add("leaderboard-item");
-                if (isCurrentUser) li.classList.add("highlight");
-                const value = type === "coins" ? Utils.formatCoins(player.c) + " $LUCU" : Utils.formatNumber(player.ml) || "N/A";
-                li.innerHTML = `
-                    <div class="leaderboard-item-content">
-                        <div class="player-left">
-                            <span class="player-${type}">${value}</span>
-                        </div>
-                        <div class="player-right">
-                            <img src="${player.pu || AppConfig.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
-                                 onerror="this.src='${AppConfig.FALLBACK_AVATAR}'">
-                            <div class="player-info">
-                                <span class="player-name">${player.un}</span>
-                                <span class="player-rank">#${i + 1}</span>
-                            </div>
+    try {
+        const data = await API.fetch(`/leaderboard_${type}`);
+        this.elements.list.innerHTML = "";
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        const userIndex = data.findIndex(p => p.u === userId);
+        this.elements.placeBadge.textContent = userIndex >= 0 ? `Your place #${userIndex + 1}` : "Your place #--";
+        if (!data?.length) {
+            this.elements.list.innerHTML = '<li class="coming-soon">No data available</li>';
+            return;
+        }
+        for (let i = 0; i < data.length; i++) {
+            const player = data[i];
+            const isCurrentUser = userId && player.u === userId;
+            const li = document.createElement("li");
+            li.classList.add("leaderboard-item");
+            if (isCurrentUser) li.classList.add("highlight");
+            const value = type === "coins" ? Utils.formatCoins(player.c) + " $LUCU" : Utils.formatNumber(player.ml) || "N/A";
+            const username = player.u || "Unknown"; // Устанавливаем значение по умолчанию, если ник отсутствует
+            li.innerHTML = `
+                <div class="leaderboard-item-content">
+                    <div class="player-left">
+                        <span class="player-${type}">${value}</span>
+                    </div>
+                    <div class="player-right">
+                        <img src="${player.pu || AppConfig.FALLBACK_AVATAR}" class="player-avatar" alt="Avatar" 
+                             onerror="this.src='${AppConfig.FALLBACK_AVATAR}'">
+                        <div class="player-info">
+                            <span class="player-name">${username}</span>
+                            <span class="player-rank">#${i + 1}</span>
                         </div>
                     </div>
-                `;
-                this.elements.list.appendChild(li);
-            }
-        } catch (error) {
-            this.elements.list.innerHTML = '<li class="coming-soon">Failed to load leaderboard</li>';
+                </div>
+            `;
+            this.elements.list.appendChild(li);
         }
+    } catch (error) {
+        console.error("Leaderboard load error:", error);
+        this.elements.list.innerHTML = '<li class="coming-soon">Failed to load leaderboard</li>';
     }
+}
 };
 
 const Friends = {
@@ -1165,7 +1173,13 @@ const Friends = {
         this.elements.menu.addEventListener("click", e => {
             if (e.target === this.elements.menu) UI.toggleMenu(this.elements.menu, false);
         });
-        UI.addSwipeHandler(this.elements.menu, () => UI.toggleMenu(this.elements.menu, false));
+        // Убираем UI.addSwipeHandler, так как свайп не должен закрывать меню
+        this.elements.menu.style.overflowY = "auto"; // Включаем прокрутку
+        const img = this.elements.menu.querySelector("img");
+        if (img) {
+            img.style.position = "sticky"; // Фиксируем картинку
+            img.style.top = "0";
+        }
         this.elements.copyButton.addEventListener("click", () => {
             Utils.copyToClipboard(referralLink);
             this.elements.copyButton.textContent = "Copied!";
@@ -1183,14 +1197,6 @@ const Friends = {
             }).catch(error => {});
         }
         this.updateFriendsCount();
-    },
-    updateFriendsCount() {
-        const data = AppState.userData;
-        if (!data || data.referral_count === undefined) {
-            this.elements.friendsCount.textContent = "Your friends: 0";
-            return;
-        }
-        this.elements.friendsCount.textContent = `Your friends: ${data.referral_count || 0}`;
     }
 };
 
