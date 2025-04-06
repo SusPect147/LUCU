@@ -412,14 +412,23 @@ async rollCube() {
     }
 
     try {
-        // Генерируем случайное значение luck (от 0 до 100)
+        // Текущие монеты из состояния
+        const currentCoins = this.state.coins;
+        // Генерируем luck
         const luck = Math.random() * 100;
         const skinConfig = this.getSkinConfig()[this.state.equippedSkin];
-        const outcome = getRandomOutcome(skinConfig.outcomes); // Используем существующую функцию
-        const coinsChange = outcome.coins; // Изменение монет из исхода
-        const currentCoins = this.state.coins; // Текущие монеты
+        const outcome = getRandomOutcome(skinConfig.outcomes); // Локальный результат
+        const coinsChange = outcome.coins; // Изменение монет
 
-        // Отправляем запрос с необходимыми полями
+        // Отправляем запрос
+        console.log("Sending roll_cube request:", {
+            user_id: userId,
+            skin: this.state.equippedSkin,
+            luck: luck,
+            coins: currentCoins + coinsChange, // Новое значение монет
+            outcome_value: outcome.value
+        });
+
         const response = await API.fetch("/roll_cube", {
             method: "POST",
             headers: {
@@ -429,8 +438,8 @@ async rollCube() {
                 user_id: userId,
                 skin: this.state.equippedSkin,
                 luck: luck,
-                coins: currentCoins + coinsChange, // Новое значение монет
-                outcome_value: outcome.value // Значение исхода (1-6)
+                coins: currentCoins + coinsChange,
+                outcome_value: outcome.value
             })
         });
 
@@ -438,11 +447,11 @@ async rollCube() {
             throw new Error(response.message || "Server failed to process roll");
         }
 
-        // Обновляем UI на основе ответа сервера
+        // Обновляем UI
         const newCoins = response.c;
         const newRolls = response.tr;
         const newLuck = response.l;
-        this.elements.cube.src = response.os; // outcome src от сервера
+        this.elements.cube.src = response.os;
         this.startProgress(AppConfig.ANIMATION_DURATION);
 
         if (AppState.userData.ban !== "yes") {
@@ -468,7 +477,6 @@ async rollCube() {
             }
         }
 
-        // Обновляем AppState
         AppState.userData = {
             ...AppState.userData,
             coins: newCoins,
@@ -480,13 +488,15 @@ async rollCube() {
         this.setInitialCube();
     } catch (error) {
         console.error("Roll cube error:", error);
-        this.elements.coinsDisplay.textContent = "Error, try again";
+        this.elements.coinsDisplay.textContent = error.status === 400 ? "Invalid roll, try again" : "Error, try again";
         this.setInitialCube();
         await Utils.wait(2000);
     } finally {
         this.state.isAnimating = false;
     }
 },
+
+
 startProgress(duration) {
     this.elements.progressBar.style.transition = `width ${duration / 1000}s linear`;
     this.elements.progressBar.style.width = "100%";
