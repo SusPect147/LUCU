@@ -412,7 +412,14 @@ async rollCube() {
     }
 
     try {
-        // Запрос на сервер для получения результата броска
+        // Генерируем случайное значение luck (от 0 до 100)
+        const luck = Math.random() * 100;
+        const skinConfig = this.getSkinConfig()[this.state.equippedSkin];
+        const outcome = getRandomOutcome(skinConfig.outcomes); // Используем существующую функцию
+        const coinsChange = outcome.coins; // Изменение монет из исхода
+        const currentCoins = this.state.coins; // Текущие монеты
+
+        // Отправляем запрос с необходимыми полями
         const response = await API.fetch("/roll_cube", {
             method: "POST",
             headers: {
@@ -420,7 +427,10 @@ async rollCube() {
             },
             body: JSON.stringify({
                 user_id: userId,
-                skin: this.state.equippedSkin
+                skin: this.state.equippedSkin,
+                luck: luck,
+                coins: currentCoins + coinsChange, // Новое значение монет
+                outcome_value: outcome.value // Значение исхода (1-6)
             })
         });
 
@@ -428,14 +438,11 @@ async rollCube() {
             throw new Error(response.message || "Server failed to process roll");
         }
 
-        // Используем данные от сервера
-        const outcome = response.outcome; // Ожидаем, что сервер вернёт { value, src, coins }
-        const newCoins = response.new_coins;
-        const newRolls = response.new_rolls;
-        const newLuck = response.new_luck;
-
-        // Обновляем UI
-        this.elements.cube.src = outcome.src;
+        // Обновляем UI на основе ответа сервера
+        const newCoins = response.c;
+        const newRolls = response.tr;
+        const newLuck = response.l;
+        this.elements.cube.src = response.os; // outcome src от сервера
         this.startProgress(AppConfig.ANIMATION_DURATION);
 
         if (AppState.userData.ban !== "yes") {
@@ -459,13 +466,6 @@ async rollCube() {
                 document.body.classList.remove("pink-gradient");
                 document.body.classList.add("gray-gradient");
             }
-        } else {
-            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-            setTimeout(() => {
-                this.state.coins = newCoins;
-                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
-            }, coinUpdateDelay);
-            await Utils.wait(AppConfig.ANIMATION_DURATION);
         }
 
         // Обновляем AppState
@@ -480,19 +480,7 @@ async rollCube() {
         this.setInitialCube();
     } catch (error) {
         console.error("Roll cube error:", error);
-
-        if (error.message.includes("400")) {
-            this.elements.coinsDisplay.textContent = "Invalid request data";
-        } else if (error.message.includes("401")) {
-            this.elements.coinsDisplay.textContent = "Unauthorized access";
-        } else if (error.message.includes("403")) {
-            this.elements.coinsDisplay.textContent = "You are banned";
-        } else if (error.message.includes("429")) {
-            this.elements.coinsDisplay.textContent = "Too many requests, wait a second";
-        } else {
-            this.elements.coinsDisplay.textContent = "Server error, try again later";
-        }
-
+        this.elements.coinsDisplay.textContent = "Error, try again";
         this.setInitialCube();
         await Utils.wait(2000);
     } finally {
