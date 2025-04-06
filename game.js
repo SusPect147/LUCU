@@ -395,113 +395,118 @@ const Game = {
         }
         this.rollCube();
     },
-    async rollCube() {
-        if (this.state.isAnimating) return;
+async rollCube() {
+    if (this.state.isAnimating) return;
 
-        this.state.isAnimating = true;
-        clearTimeout(this.state.animationTimeout); // Очищаем предыдущий таймаут
+    this.state.isAnimating = true;
+    clearTimeout(this.state.animationTimeout);
 
-        const userId = tg?.initDataUnsafe?.user?.id?.toString();
-        if (!userId) {
-            console.error("User ID is missing in Telegram initData");
-            this.state.isAnimating = false;
-            this.elements.coinsDisplay.textContent = "User ID not found";
-            return;
-        }
+    const userId = tg?.initDataUnsafe?.user?.id?.toString();
+    if (!userId) {
+        console.error("User ID is missing in Telegram initData");
+        this.state.isAnimating = false;
+        this.elements.coinsDisplay.textContent = "User ID not found";
+        return;
+    }
 
-        try {
-            // Получаем актуальные данные с сервера перед броском
-            const userDataResponse = await API.fetch(`/get_user_data_new/${userId}`);
-            this.state.coins = userDataResponse.coins || 0;
-            AppState.userData = { ...AppState.userData, ...userDataResponse };
+    try {
+        // Получаем актуальные данные с сервера перед броском
+        const userDataResponse = await API.fetch(`/get_user_data_new/${userId}`);
+        this.state.coins = userDataResponse.coins || 0;
+        AppState.userData = { ...AppState.userData, ...userDataResponse };
 
-            const currentCoins = this.state.coins;
-            const luck = Math.random() * 100;
-            const isRainbow = Math.random() < 0.1;
-            const skinOutcomes = outcomes[this.state.equippedSkin][isRainbow ? "rainbow" : "default"];
-            const localOutcome = getRandomOutcome(skinOutcomes);
+        const currentCoins = this.state.coins;
+        const luck = Math.random() * 100;
+        const isRainbow = Math.random() < 0.1;
+        const skinOutcomes = outcomes[this.state.equippedSkin][isRainbow ? "rainbow" : "default"];
+        const localOutcome = getRandomOutcome(skinOutcomes);
 
-            // Сбрасываем прогресс-бар перед началом
-            this.elements.progressBar.style.transition = "none";
-            this.elements.progressBar.style.width = "0%";
-            this.elements.cube.src = localOutcome.s;
-            this.startProgress(AppConfig.ANIMATION_DURATION);
+        // Сбрасываем прогресс-бар перед началом
+        this.elements.progressBar.style.transition = "none";
+        this.elements.progressBar.style.width = "0%";
+        this.elements.cube.src = localOutcome.s;
+        this.startProgress(AppConfig.ANIMATION_DURATION);
 
-            console.log("Sending roll_cube request:", {
+        console.log("Sending roll_cube request:", {
+            user_id: userId,
+            skin: this.state.equippedSkin,
+            luck: luck,
+            coins: currentCoins,
+            outcome_value: localOutcome.c
+        });
+
+        const response = await API.fetch("/roll_cube", {
+            method: "POST",
+            headers: {
+                "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
+            },
+            body: JSON.stringify({
                 user_id: userId,
                 skin: this.state.equippedSkin,
                 luck: luck,
                 coins: currentCoins,
                 outcome_value: localOutcome.c
-            });
+            })
+        });
 
-            const response = await API.fetch("/roll_cube", {
-                method: "POST",
-                headers: {
-                    "X-Telegram-Init-Data": window.Telegram.WebApp.initData || ""
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    skin: this.state.equippedSkin,
-                    luck: luck,
-                    coins: currentCoins,
-                    outcome_value: localOutcome.c
-                })
-            });
-
-            if (!response.success) {
-                throw new Error(response.message || "Server failed to process roll");
-            }
-
-            const newCoins = response.c;
-            const newRolls = response.tr;
-            const serverLuck = response.l;
-            const minLuck = response.ml || this.state.bestLuck;
-            const serverIsRainbow = response.rb;
-
-            if (AppState.userData.ban !== "yes") {
-                document.body.classList.remove("pink-gradient", "gray-gradient");
-                document.body.classList.add(serverIsRainbow ? "pink-gradient" : "gray-gradient");
-
-                const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
-                setTimeout(() => {
-                    this.state.coins = newCoins;
-                    this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
-                }, coinUpdateDelay);
-
-                await Utils.wait(AppConfig.ANIMATION_DURATION);
-
-                this.state.bestLuck = minLuck;
-                this.state.rolls = newRolls;
-                this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
-                    ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
-                    : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
-                this.updateAchievementProgress(newRolls);
-
-                if (serverIsRainbow) {
-                    document.body.classList.remove("pink-gradient");
-                    document.body.classList.add("gray-gradient");
-                }
-            }
-
-            AppState.userData = {
-                ...AppState.userData,
-                coins: newCoins,
-                rolls: newRolls,
-                min_luck: minLuck,
-                equipped_skin: this.state.equippedSkin
-            };
-
-            this.setInitialCube();
-        } catch (error) {
-            console.error("Roll cube error:", error);
-            this.elements.coinsDisplay.textContent = error.status === 400 ? "Invalid roll, try again" : "Error, try again";
-            await Utils.wait(AppConfig.ANIMATION_DURATION);
-            this.setInitialCube();
-        } finally {
-            this.state.isAnimating = false;
+        if (!response.success) {
+            throw new Error(response.message || "Server failed to process roll");
         }
-    },
+
+        const newCoins = response.c;
+        const newRolls = response.tr;
+        const serverLuck = response.l;
+        const minLuck = response.ml || this.state.bestLuck;
+        const serverIsRainbow = response.rb;
+
+        if (AppState.userData.ban !== "yes") {
+            document.body.classList.remove("pink-gradient", "gray-gradient");
+            document.body.classList.add(serverIsRainbow ? "pink-gradient" : "gray-gradient");
+
+            const coinUpdateDelay = AppConfig.ANIMATION_DURATION - 500;
+            setTimeout(() => {
+                this.state.coins = newCoins;
+                this.elements.coinsDisplay.textContent = `${Utils.formatCoins(newCoins)} $LUCU`;
+            }, coinUpdateDelay);
+
+            await Utils.wait(AppConfig.ANIMATION_DURATION);
+
+            this.state.bestLuck = minLuck;
+            this.state.rolls = newRolls;
+            this.elements.bestLuckDisplay.innerHTML = this.state.bestLuck === 1001
+                ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+                : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(this.state.bestLuck)}</span>`;
+            this.updateAchievementProgress(newRolls);
+
+            if (serverIsRainbow) {
+                document.body.classList.remove("pink-gradient");
+                document.body.classList.add("gray-gradient");
+            }
+
+            // Устанавливаем начальное изображение кубика после анимации
+            const initialSrc = Game.getSkinConfig()[this.state.equippedSkin].initial + `?t=${Date.now()}`;
+            this.elements.cube.src = initialSrc;
+        }
+
+        AppState.userData = {
+            ...AppState.userData,
+            coins: newCoins,
+            rolls: newRolls,
+            min_luck: minLuck,
+            equipped_skin: this.state.equippedSkin
+        };
+
+    } catch (error) {
+        console.error("Roll cube error:", error);
+        this.elements.coinsDisplay.textContent = error.status === 400 ? "Invalid roll, try again" : "Error, try again";
+        await Utils.wait(AppConfig.ANIMATION_DURATION);
+        // Устанавливаем начальное изображение даже при ошибке
+        const initialSrc = Game.getSkinConfig()[this.state.equippedSkin].initial + `?t=${Date.now()}`;
+        this.elements.cube.src = initialSrc;
+    } finally {
+        this.state.isAnimating = false;
+    }
+},
     startProgress(duration) {
         // Очищаем предыдущую анимацию
         this.elements.progressBar.style.transition = "none";
@@ -1452,19 +1457,37 @@ async function fullInit(tg) {
     updateProgress(50);
 
     try {
-        const userDataResponse = await API.fetch(`/get_user_data_new/${AppState.userId}`, {
-            signal: AbortSignal.timeout(1000)
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        if (!userId) {
+            throw new Error("User ID not found in Telegram init data");
+        }
+        AppState.userId = userId;
+
+        const userDataResponse = await API.fetch(`/get_user_data_new/${userId}`, {
+            signal: AbortSignal.timeout(1000),
+            headers: {
+                "Authorization": `Bearer ${AppState.token}`,
+                "X-Telegram-User-ID": userId
+            }
         });
 
         if (!userDataResponse || userDataResponse.error) {
-            throw new Error("Failed to load user data");
+            throw new Error("Failed to load user data: " + (userDataResponse?.error || "Unknown error"));
         }
+
+        console.log("Received user data:", userDataResponse);
 
         AppState.userData = userDataResponse;
 
+        // Немедленное обновление UI после получения данных
         Game.updateFromAppState();
+        Game.elements.coinsDisplay.textContent = `${Utils.formatCoins(Game.state.coins)} $LUCU`;
+        Game.elements.bestLuckDisplay.innerHTML = Game.state.bestLuck === 1001
+            ? `Your Best MIN number: <span style="color: #F80000;">N/A</span>`
+            : `Your Best MIN number: <span style="color: #F80000;">${Utils.formatNumber(Game.state.bestLuck)}</span>`;
         Skins.updateFromAppState();
-        Friends.updateFriendsCount(); // Исправленный вызов метода
+        Friends.updateFriendsCount();
+
     } catch (error) {
         console.error("User data fetch error:", error);
         console.log("Failed to load user data. Please try again.");
