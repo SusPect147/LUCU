@@ -47,17 +47,14 @@ async function loadConfig(tg) {
 
     const data = await response.json();
     Object.assign(AppConfig, {
-      API_BASE_URL: data.u, // "u" вместо "API_BASE_URL"
-      CHANNEL_USERNAME: data.c, // "c" вместо "CHANNEL_USERNAME"
+      API_BASE_URL: data.u || "https://backend12-production-1210.up.railway.app",
+      CHANNEL_USERNAME: data.c || "LuckyCubesChannel", // Убедимся, что используем правильный канал
     });
   } catch (error) {
     console.error("Failed to load config:", error);
-    if (error.message.includes("401")) {
-      console.log("Authorization failed. Please restart the app.");
-    }
     Object.assign(AppConfig, {
       API_BASE_URL: "https://backend12-production-1210.up.railway.app",
-      CHANNEL_USERNAME: "LuckyCubesChannel",
+      CHANNEL_USERNAME: "LuckyCubesChannel", // Значение по умолчанию
     });
   }
 }
@@ -984,31 +981,31 @@ const Quests = {
     }
   },
 
-  async handleSubscription(userId) {
-    await this.refreshUserData();
-    try {
-      const subscriptionResponse = await API.fetch("/check_subscription", {
-        method: "POST",
-        body: JSON.stringify({ user_id: userId }),
-      });
+async handleSubscription(userId) {
+  await this.refreshUserData();
+  try {
+    const subscriptionResponse = await API.fetch("/check_subscription", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
 
-      if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
-        await this.completeQuest(userId, "subscription_quest");
-      } else {
-        const tg = window.Telegram?.WebApp;
-        tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}`);
-        setTimeout(async () => {
-          await this.checkPendingQuests(userId);
-          const userData = await API.fetch(`/get_user_data_new/${userId}`);
-          if (userData.quests["subscription_quest"] === "pending") {
-            await this.completeQuest(userId, "subscription_quest");
-          }
-        }, 6000);
-      }
-    } catch (error) {
-      console.error("Error checking subscription:", error);
+    if (subscriptionResponse.success || AppState.userData.quests["subscription_quest"] === "pending") {
+      await this.completeQuest(userId, "subscription_quest");
+    } else {
+      const tg = window.Telegram?.WebApp;
+      tg.openLink(`https://t.me/LuckyCubesChannel`); // Явно указываем канал
+      setTimeout(async () => {
+        await this.checkPendingQuests(userId);
+        const userData = await API.fetch(`/get_user_data_new/${userId}`);
+        if (userData.quests["subscription_quest"] === "pending") {
+          await this.completeQuest(userId, "subscription_quest");
+        }
+      }, 100);
     }
-  },
+  } catch (error) {
+    console.error("Error checking subscription:", error);
+  }
+},
 
   async handleForwardMessage(userId) {
     const tg = window.Telegram?.WebApp;
@@ -1022,86 +1019,102 @@ const Quests = {
       if (response.success) {
         await this.completeQuest(userId, "forward_message");
       }
-    }, 6000);
+    }, 100);
   },
 
-  async handleDiceStatus(userId) {
-    try {
-      if (!AppState.isPremium) {
-        console.log("This quest requires Telegram Premium. Please upgrade your account.");
-        console.log("User is not Premium. Cannot set emoji status.");
-        return;
-      }
-
-      const customEmojiId = "5384541907051357217";
-      console.log(`Attempting to set emoji status with custom_emoji_id: ${customEmojiId}`);
-      await Telegram.WebApp.setEmojiStatus(customEmojiId);
-
-      setTimeout(async () => {
-        try {
-          const response = await API.fetch("/check_dice_status", {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId }),
-          });
-
-          if (response.success) {
-            await this.completeQuest(userId, "dice_status");
-            console.log("Dice status set successfully! Quest completed.");
-          } else {
-            console.warn("Failed to verify status. Please try again.");
-            console.warn("Server verification failed:", response);
-          }
-        } catch (serverError) {
-          console.error("Server error during status check:", serverError);
-          console.log("Server error. Please try again later.");
-        }
-      }, 6000);
-    } catch (error) {
-      console.error("Error setting emoji status:", error);
-      if (error.message && error.message.includes("SUGGESTED_EMOJI_INVALID")) {
-        console.log("This emoji (1️⃣) is not supported for status. Contact support.");
-        console.warn(`Emoji ID ${customEmojiId} is invalid for status.`);
-      } else {
-        console.log("Unexpected error: " + error.message);
-      }
+async handleDiceStatus(userId) {
+  try {
+    if (!AppState.isPremium) {
+      console.log("This quest requires Telegram Premium. Please upgrade your account.");
+      return;
     }
-  },
 
-  async handleDiceNickname(userId) {
-    try {
-      const response = await API.fetch("/check_dice_nickname", {
-        method: "POST",
-        body: JSON.stringify({ user_id: userId }),
-      });
+    const customEmojiId = "5384541907051357217";
+    console.log(`Attempting to set emoji status with ID: ${customEmojiId}`);
 
-      if (typeof response.success !== "boolean") {
-        throw new Error("Invalid server response: 'success' field missing or invalid");
-      }
-
-      if (response.success) {
-        await this.completeQuest(userId, "dice_nickname");
-      } else {
-        console.log("Please add the 🎲 emoji to your Telegram nickname and try again.");
-      }
-    } catch (error) {
-      console.error("Error checking dice nickname:", error);
+    if (typeof Telegram.WebApp.setEmojiStatus !== "function") {
+      console.error("setEmojiStatus is not supported in this Telegram version.");
+      return;
     }
-  },
 
-  async handleBoostChannel(userId) {
-    const tg = window.Telegram?.WebApp;
-    tg.openLink(`https://t.me/${AppConfig.CHANNEL_USERNAME}?boost`);
+    await Telegram.WebApp.setEmojiStatus(customEmojiId);
+
     setTimeout(async () => {
-      const boostResponse = await API.fetch("/check_boost_channel", {
-        method: "POST",
-        body: JSON.stringify({ user_id: userId }),
-      });
-      if (boostResponse.success) {
-        await this.completeQuest(userId, "boost_channel");
-      }
-    }, 6000);
-  },
+      try {
+        const response = await API.fetch("/check_dice_status", {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId }),
+        });
 
+        if (response.success) {
+          await this.completeQuest(userId, "dice_status");
+          console.log("Dice status set successfully! Quest completed.");
+        } else {
+          console.warn("Failed to verify status. Please ensure the emoji is set and try again.");
+        }
+      } catch (serverError) {
+        console.error("Server error during status check:", serverError);
+      }
+    }, 100);
+  } catch (error) {
+    console.error("Error setting emoji status:", error);
+    if (error.message?.includes("SUGGESTED_EMOJI_INVALID")) {
+      console.log("Invalid emoji ID. Please contact support with ID: " + customEmojiId);
+    } else {
+      console.log("Unexpected error: " + error.message);
+    }
+  }
+},
+
+async handleDiceNickname(userId) {
+  try {
+    const response = await API.fetch("/check_dice_nickname", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+
+    if (typeof response.success !== "boolean") {
+      throw new Error("Invalid server response: 'success' field missing or invalid");
+    }
+
+    if (response.success) {
+      await this.completeQuest(userId, "dice_nickname");
+      console.log("Dice nickname quest completed successfully!");
+    } else {
+      console.log("Please add the 🎲 emoji to your Telegram nickname and wait a few seconds.");
+      setTimeout(async () => {
+        const retryResponse = await API.fetch("/check_dice_nickname", {
+          method: "POST",
+          body: JSON.stringify({ user_id: userId }),
+        });
+        if (retryResponse.success) {
+          await this.completeQuest(userId, "dice_nickname");
+          console.log("Dice nickname detected on retry! Quest completed.");
+        } else {
+          console.log("Dice emoji not detected in your nickname. Please ensure it's added correctly.");
+        }
+      }, 100);
+    }
+  } catch (error) {
+    console.error("Error checking dice nickname:", error);
+  }
+},
+
+async handleBoostChannel(userId) {
+  const tg = window.Telegram?.WebApp;
+  tg.openLink(`https://t.me/LuckyCubesChannel?boost`); // Явно указываем канал
+  setTimeout(async () => {
+    const boostResponse = await API.fetch("/check_boost_channel", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+    if (boostResponse.success) {
+      await this.completeQuest(userId, "boost_channel");
+    } else {
+      console.log("Boost not detected. Please boost the channel and try again.");
+    }
+  }, 100);
+},
   async completeQuest(userId, questName) {
     try {
       const response = await API.fetch("/update_quest_new", {
@@ -1347,28 +1360,28 @@ const Friends = {
     this.updateFriendsCount();
   },
 
-  async updateFriendsCount() {
-    const tg = window.Telegram?.WebApp;
-    const userId = tg.initDataUnsafe?.user?.id?.toString();
-    if (!userId || !this.elements.friendsCount) return;
+async updateFriendsCount() {
+  const tg = window.Telegram?.WebApp;
+  const userId = tg.initDataUnsafe?.user?.id?.toString();
+  if (!userId || !this.elements.friendsCount) return;
 
-    try {
-      if (AppState.userData && typeof AppState.userData.friends_count !== "undefined") {
-        this.elements.friendsCount.textContent = `${AppState.userData.friends_count} friends`;
+  try {
+    if (AppState.userData && typeof AppState.userData.rc !== "undefined") {
+      this.elements.friendsCount.textContent = `${AppState.userData.rc} friends`;
+    } else {
+      const response = await API.fetch(`/get_user_data_new/${userId}`);
+      if (response && typeof response.rc !== "undefined") {
+        AppState.userData = { ...AppState.userData, rc: response.rc };
+        this.elements.friendsCount.textContent = `${response.rc} friends`;
       } else {
-        const response = await API.fetch(`/get_user_data_new/${userId}`);
-        if (response && typeof response.friends_count !== "undefined") {
-          AppState.userData = { ...AppState.userData, friends_count: response.friends_count };
-          this.elements.friendsCount.textContent = `${response.friends_count} friends`;
-        } else {
-          this.elements.friendsCount.textContent = "0 friends";
-        }
+        this.elements.friendsCount.textContent = "0 friends";
       }
-    } catch (error) {
-      console.error("Failed to update friends count:", error);
-      this.elements.friendsCount.textContent = "Error";
     }
-  },
+  } catch (error) {
+    console.error("Failed to update friends count:", error);
+    this.elements.friendsCount.textContent = "Error";
+  }
+},
 };
 
 // Инициализация частиц
