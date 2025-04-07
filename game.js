@@ -221,17 +221,30 @@ class Particle {
         this.speed = { x: 0, y: 0 };
         this.init();
     }
+
     init() {
-        const FPS = 60;
-        const interval = setInterval(() => {
-            this.position.x += (FPS * this.speed.x) / 1000;
-            this.position.y -= (FPS * this.speed.y) / 1000;
-            this.life -= 1 / FPS;
-            if (this.life <= 0) {
-                clearInterval(interval);
-                this.parent.particles.delete(this.id);
-            }
-        }, 1000 / FPS);
+        // Инициализация параметров частицы (без интервала)
+        this.position.x = Math.random() * this.parent.size.x;
+        this.position.y = Math.random() * this.parent.size.y;
+        this.diameter = Math.random() * (this.parent.diameter.max - this.parent.diameter.min) + this.parent.diameter.min;
+        this.life = Math.random() * (this.parent.life.max - this.parent.life.min) + this.parent.life.min;
+        this.speed.x = Math.random() * (this.parent.speed.x.max - this.parent.speed.x.min) + this.parent.speed.x.min;
+        this.speed.y = Math.random() * (this.parent.speed.y.max - this.parent.speed.y.min) + this.parent.speed.y.min;
+    }
+
+    update(deltaTime) {
+        // Обновление состояния частицы на основе времени
+        this.position.x += this.speed.x * deltaTime;
+        this.position.y -= this.speed.y * deltaTime;
+        this.life -= deltaTime;
+        return this.life > 0; // Возвращает true, если частица жива
+    }
+
+    draw(ctx) {
+        // Отрисовка частицы
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, this.diameter / 2, 0, 2 * Math.PI);
+        ctx.fill();
     }
 }
 
@@ -251,40 +264,47 @@ class ParticleSystem {
         this.speed = { x: { min: -2, max: 2 }, y: { min: -2, max: 2 } };
         this.canvas.width = size.x;
         this.canvas.height = size.y;
+        this.ctx = this.canvas.getContext("2d");
+        this.lastTime = 0;
     }
+
     createParticle() {
         const particle = new Particle(this.lastId.toString(), this);
-        particle.position.x = Math.random() * this.size.x;
-        particle.position.y = Math.random() * this.size.y;
-        particle.diameter = Math.random() * (this.diameter.max - this.diameter.min) + this.diameter.min;
-        particle.life = Math.random() * (this.life.max - this.life.min) + this.life.min;
-        particle.speed.x = Math.random() * (this.speed.x.max - this.speed.x.min) + this.speed.x.min;
-        particle.speed.y = Math.random() * (this.speed.y.max - this.speed.y.min) + this.speed.y.min;
         this.particles.set(this.lastId.toString(), particle);
         this.lastId++;
     }
+
     init() {
-        const ctx = this.canvas.getContext("2d");
-        ctx.fillStyle = "white";
-        for (let i = 0; i < this.amount; i++) this.createParticle();
-        setInterval(() => {
-            if (this.particles.size < this.amount) this.createParticle();
-        }, 1000 / 60);
-        setInterval(() => {
-            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.particles.forEach(particle => {
-                ctx.beginPath();
-                ctx.arc(particle.position.x, particle.position.y, particle.diameter / 2, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-        }, 1000 / 60);
+        this.ctx.fillStyle = "white";
+        for (let i = 0; i < this.amount; i++) {
+            this.createParticle();
+        }
+        this.animate(performance.now());
+    }
+
+    animate(currentTime) {
+        const deltaTime = (currentTime - this.lastTime) / 1000;
+        this.lastTime = currentTime;
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.particles.forEach(particle => {
+            if (!particle.update(deltaTime)) {
+                this.particles.delete(particle.id);
+            } else {
+                particle.draw(this.ctx);
+            }
+        });
+
+        while (this.particles.size < this.amount) {
+            this.createParticle();
+        }
+
+        requestAnimationFrame((time) => this.animate(time));
     }
     resize(newSize, oldSize) {
         this.canvas.width = newSize.x;
         this.canvas.height = newSize.y;
         this.size = newSize;
-        const ctx = this.canvas.getContext("2d");
-        ctx.fillStyle = "white";
+        this.ctx.fillStyle = "white";
         this.particles.forEach(particle => {
             particle.position.x = (particle.position.x / oldSize.x) * newSize.x;
             particle.position.y = (particle.position.y / oldSize.y) * newSize.y;
