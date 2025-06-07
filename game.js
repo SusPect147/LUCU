@@ -5,7 +5,7 @@ if (typeof AppConfig === "undefined") {
     DEFAULT_SKIN: "classic",
     ANIMATION_DURATION: 3450,
     PROGRESS_DURATION: 3,
-    API_BASE_URL: "https://backend12-production-1210.up.railway.app",
+    API_BASE_URL: "https://backend12-p9bz.onrender.com",
     FALLBACK_AVATAR: "pictures/cubics/классика/начальный-кубик.gif",
   };
 }
@@ -47,13 +47,13 @@ async function loadConfig(tg) {
 
     const data = await response.json();
     Object.assign(AppConfig, {
-      API_BASE_URL: data.u || "https://backend12-production-1210.up.railway.app",
+      API_BASE_URL: data.u || "https://backend12-p9bz.onrender.com",
       CHANNEL_USERNAME: data.c || "@LuckyCubesChannel", // Убедимся, что используем правильный канал
     });
   } catch (error) {
     console.error("Failed to load config:", error);
     Object.assign(AppConfig, {
-      API_BASE_URL: "https://backend12-production-1210.up.railway.app",
+      API_BASE_URL: "https://backend12-p9bz.onrender.com",
       CHANNEL_USERNAME: "@LuckyCubesChannel", // Значение по умолчанию
     });
   }
@@ -108,7 +108,7 @@ const Utils = {
  * @returns {Promise<Object>} - Ответ от сервера
  */
 const API = {
-  baseUrl: "https://backend12-production-1210.up.railway.app",
+  baseUrl: "https://backend12-p9bz.onrender.com",
   defaultHeaders: {
     "Content-Type": "application/json",
     "X-Telegram-Init-Data": window.Telegram.WebApp.initData || "",
